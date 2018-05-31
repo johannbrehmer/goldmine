@@ -1,4 +1,4 @@
-class Inference():
+class Inference:
 
     """ Base class for inference methods. """
 
