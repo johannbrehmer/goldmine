@@ -3,7 +3,7 @@ class Simulator:
     """ Base class for simulators with access to joint score and joint likelihood ratios. """
 
     def __init__(self):
-        raise NotImplementedError()
+        pass
 
     def simulator_name(self):
         raise NotImplementedError()

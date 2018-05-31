@@ -1,7 +1,4 @@
-import numpy as np
-
-from ..simulators.epidemiology import Epidemiology
-from ..simulators.galton import Galton
+import autograd.numpy as np
 
 
 def s_from_r(r):
@@ -21,16 +18,3 @@ def check_random_state(random_state):
         return np.random.RandomState(random_state)
     else:
         return random_state
-
-
-def create_simulator(simulator_name):
-    if simulator_name == 'epidemiology':
-        return Epidemiology()
-    elif simulator_name == 'galton':
-        return Galton()
-    else:
-        raise ValueError('Simulator name %s unknown'.format(simulator_name))
-
-
-def create_inference(inference_name):
-    raise ValueError('Inference technique name %s unknown'.format(inference_name))

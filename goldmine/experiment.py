@@ -1,6 +1,22 @@
+#! /usr/bin/env python
+
+from __future__ import absolute_import, division, print_function
+
+import argparse
+import logging
+from os import sys, path
 import numpy as np
 
-from .various.utils import create_simulator
+base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
+
+try:
+    from goldmine.various.look_up import create_simulator
+except ImportError:
+    if base_dir in sys.path:
+        raise
+    sys.path.append(base_dir)
+    print(sys.path)
+    from goldmine.various.look_up import create_simulator
 
 
 def run_simulator(simulator_name, theta0, theta1, n_samples_per_theta,
@@ -103,3 +119,44 @@ def run_simulator(simulator_name, theta0, theta1, n_samples_per_theta,
         np.save(folder + '/' + filename_prefix + '_theta1' + '.npy', all_theta1)
         np.save(folder + '/' + filename_prefix + '_x' + '.npy', all_x)
         np.save(folder + '/' + filename_prefix + '_y' + '.npy', all_y)
+
+
+def experiment():
+    """ Main function """
+
+    # Set up logging
+    logging.basicConfig(format='%(asctime)s %(levelname)s    %(message)s', level=logging.DEBUG,
+                        datefmt='%d.%m.%Y %H:%M:%S')
+    logging.info('Hi! How are you today?')
+
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
+
+    parser.add_argument('task', help='Which part of the inference chain to do: "simulate", "train", or "test"')
+    parser.add_argument('simulator', help='Which problem to test: "galton" or "epidemiology"')
+    parser.add_argument('method', default=None, help='Which inference method to use: "nde", "scandal", ...')
+
+    args = parser.parse_args()
+
+    logging.info('Startup options:')
+    logging.info('  Task:             %s', args.task)
+    logging.info('  Simulator:        %s', args.simulator)
+    logging.info('  Inference method: %s', args.method)
+
+    if args.task not in ['simulate', 'train', 'test']:
+        raise ValueError('Unknown task: {1}'.format(args.task))
+    if args.simulator not in ['galton', 'epidemiology']:
+        raise ValueError('Unknown simulator: {1}'.format(args.simulator))
+
+    if args.task == 'simulate':
+        run_simulator(
+            args.simulator,
+            theta0=[-.8],
+            theta1=[-.6],
+            n_samples_per_theta=1000,
+            folder=base_dir + '/goldmine/data/samples',
+            filename_prefix='galton_'
+        )
+
+if __name__ == '__main__':
+    experiment()

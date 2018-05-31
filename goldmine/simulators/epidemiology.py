@@ -1,7 +1,7 @@
 import autograd.numpy as np
 import autograd as ag
 
-from .base import Simulator
+from goldmine.simulators.base import Simulator
 
 
 class Epidemiology(Simulator):

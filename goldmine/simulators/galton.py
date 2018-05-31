@@ -1,8 +1,8 @@
 import autograd.numpy as np
 import autograd as ag
 
-from .base import Simulator
-from ..various.utils import check_random_state, sigmoid
+from goldmine.simulators.base import Simulator
+from goldmine.various.utils import sigmoid, check_random_state
 
 
 class GeneralizedGaltonBoard(Simulator):
