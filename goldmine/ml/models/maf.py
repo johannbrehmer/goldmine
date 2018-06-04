@@ -4,7 +4,7 @@ import numpy.random as rng
 import torch
 import torch.nn as nn
 from torch import FloatTensor
-from torch.autograd import Variable
+from torch.autograd import Variable, grad
 
 from .made import GaussianMADE, ConditionalGaussianMADE
 from .batch_norm import BatchNorm
@@ -54,6 +54,10 @@ class MaskedAutoregressiveFlow(nn.Module):
     def forward(self, x, fix_batch_norm=False):
 
         """ Transforms x into u = f^-1(x) """
+
+        # Change batch norm means only while training
+        if not self.training:
+            fix_batch_norm = True
 
         logdet_dudx = 0.0
         u = x
@@ -129,8 +133,9 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         self.mode = mode
         self.alpha = alpha
 
-        # log p
+        # log p and score
         self.log_likelihood = None
+        self.score = None
 
         # Build MADEs
         self.mades = nn.ModuleList()
@@ -148,9 +153,17 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
                 bn = BatchNorm(n_inputs, alpha=self.alpha)
                 self.bns.append(bn)
 
-    def forward(self, theta, x, fix_batch_norm=False):
+    def forward(self, theta, x, fix_batch_norm=False, track_score=True):
 
         """ Transforms x into u = f^-1(x) """
+
+        # Change batch norm means only while training
+        if not self.training:
+            fix_batch_norm = True
+
+        # Track gradient wrt theta
+        if track_score:
+            theta.requires_grad = True
 
         logdet_dudx = 0.0
         u = x
@@ -170,6 +183,12 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         const = float(-0.5 * self.n_inputs * np.log(2 * np.pi))
         self.log_likelihood = const - 0.5 * torch.sum(u ** 2, dim=1) + logdet_dudx
 
+        # Score
+        if track_score:
+            self.score = grad(self.log_likelihood, theta,
+                              grad_outputs=torch.autograd.Variable(torch.ones_like(self.log_likelihood.data)),
+                              only_inputs=True, create_graph=True)[0]
+
         return u
 
     def log_p(self, theta, x):
@@ -179,6 +198,14 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         _ = self.forward(theta, x)
 
         return self.log_likelihood
+
+    def score(self, theta, x):
+
+        """ Calculates log p(x) """
+
+        _ = self.forward(theta, x)
+
+        return self.score
 
     def gen(self, theta, n_samples=1, u=None):
         """
