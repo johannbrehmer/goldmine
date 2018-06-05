@@ -5,9 +5,6 @@ class Inference:
     def __init__(self, simulator):
         raise NotImplementedError()
 
-    def inference_name(self):
-        raise NotImplementedError()
-
     def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None):
         raise NotImplementedError()
 

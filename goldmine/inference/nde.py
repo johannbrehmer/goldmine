@@ -28,9 +28,6 @@ class MAFInference(Inference):
 
         self.maf = None
 
-    def inference_name(self):
-        return 'maf'
-
     def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None):
 
         raise NotImplementedError()
