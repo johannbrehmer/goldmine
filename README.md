@@ -1,1 +1,1 @@
-# goldmine
+# Flowing gold: SCANDALously good density estimation

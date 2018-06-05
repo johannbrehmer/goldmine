@@ -32,6 +32,7 @@ def simple_trainer(model,
         ys = torch.stack([torch.Tensor(i) for i in labels])
 
     dataset = TensorDataset(xs, ys)
+
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
