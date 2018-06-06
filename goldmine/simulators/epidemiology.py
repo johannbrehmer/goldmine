@@ -28,19 +28,16 @@ class Epidemiology(Simulator):
 
     """
 
-    def __init__(self,
-                 n_individuals=53,
-                 n_strains=33,
-                 overall_prevalence=None,
-                 n_time_steps=10,
-                 initial_infection=False,
-                 use_original_summary_statistics=True,
-                 use_prevalence_covariance=False):
+    def __init__(self, n_individuals=53, n_strains=33, overall_prevalence=None, n_time_steps=10,
+                 initial_infection=False, use_original_summary_statistics=True, use_prevalence_covariance=False):
+
+        super().__init__()
 
         # Save parameters
         self.n_individuals = n_individuals
         self.n_strains = n_strains
         self.overall_prevalence = overall_prevalence
+        self.n_time_steps = n_time_steps
         self.initial_infection = initial_infection
         self.use_original_summary_statistics = use_original_summary_statistics
         self.use_prevalence_covariance = use_prevalence_covariance
@@ -55,6 +52,9 @@ class Epidemiology(Simulator):
 
         # Parameters
         self.n_parameters = 3
+
+        # Autograd
+        self._d_simulate_transmission = ag.grad_and_aux(self._simulate_transmission)
 
     def theta_defaults(self, n_benchmarks=100, random=True):
 
@@ -91,7 +91,7 @@ class Epidemiology(Simulator):
 
     def _simulate_transmission(self, theta):
 
-        # log p(x, z
+        # Track log p(x, z) (to calculate the score later)
         logp_xz = 0.
 
         # Initial state
@@ -109,7 +109,7 @@ class Epidemiology(Simulator):
 
             # Exposure
             exposure = np.sum(
-                old_state / (self.n_individuals - 1)
+                state / (self.n_individuals - 1)
                 * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_individuals, self.n_strains)),
                 axis=0
             )
@@ -123,17 +123,17 @@ class Epidemiology(Simulator):
             any_infection = np.broadcast_to(any_infection)
 
             # Infection threshold
-            probabilities_infection = (
+            probabilities_infected = (
                     np.invert(state)
                     * (any_infection + np.invert(any_infection) * theta[2])
                     * (theta[0] * exposure + theta[1] * prevalence)
             )
 
             # Accumulate probabilities
-            logp_xz += np.sum(np.log(probabilities_infection))
+            logp_xz += np.sum(np.log(probabilities_infected))
 
             # Update state
-            state = (dice < probabilities_infection)
+            state = (dice < probabilities_infected)
 
         return logp_xz, state
 
@@ -150,7 +150,7 @@ class Epidemiology(Simulator):
         n_observed_strains = len(p_observed_strains)
 
         # Shannon entropy of observed strain distribution (Numminen 1)
-        Shannon_entropy = - np.sum(p_observed_strains * np.log(p_observed_strains))
+        shannon_entropy = - np.sum(p_observed_strains * np.log(p_observed_strains))
 
         # Any / multiple infections of individuals
         any_infection = (np.sum(state, axis=1) > 0)
@@ -163,30 +163,40 @@ class Epidemiology(Simulator):
         prevalence_multiple = np.sum(multiple_infections, dtype=np.float) / self.n_individuals
 
         # Combine summary statistics
-        summary_statistics = np.array([Shannon_entropy, n_observed_strains, prevalence_any, prevalence_multiple])
+        summary_statistics = np.array([shannon_entropy, n_observed_strains, prevalence_any, prevalence_multiple])
 
         return summary_statistics
 
     def rvs(self, theta, n, random_state=None):
 
-        x = []
+        all_x = []
 
         for i in range(n):
-            # Initial infection
-            state = self._draw_initial_state()
+            _, state = self._simulate_transmission(theta)
+            x = self._calculate_observables(state)
 
-            # Spread
-            for t in range(self.n_time_steps):
-                state = self._time_step(state, theta)
+            all_x.append(x)
 
-            # Observables
-            x.append(_calculate_observables(state))
+        all_x = np.asarray(all_x)
 
-        x = np.asarray(x)
-        return x
+        return all_x
 
     def rvs_score(self, theta, theta_score, n, random_state=None):
-        pass
+
+        all_x = []
+        all_t_xz = []
+
+        for i in range(n):
+            t_xz, state = self._d_simulate_transmission(theta)
+            x = self._calculate_observables(state)
+
+            all_x.append(x)
+            all_t_xz.append(t_xz)
+
+        all_x = np.asarray(all_x)
+        all_t_xz = np.asarray(all_t_xz)
+
+        return all_x, all_t_xz
 
     def rvs_ratio(self, theta, theta0, theta1, n, random_state=None):
         pass
