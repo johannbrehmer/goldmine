@@ -89,57 +89,83 @@ class Epidemiology(Simulator):
 
         return benchmarks
 
-    def _draw_initial_state(self):
+    def _simulate_transmission(self, theta):
 
+        # log p(x, z
+        logp_xz = 0.
+
+        # Initial state
         if self.initial_infection:
-            # Random numbers
             dice = np.rand(self.n_individuals, self.n_strains)
-
-            # Infection threshold
             threshold = np.broadcast_to(self.overall_prevalence, (self.n_individuals, self.n_strains))
-
-            # Initial infection states
             state = (dice < threshold)
-
         else:
             state = np.zeros((self.n_individuals, self.n_strains))
 
-        return state
+        # Time steps
+        for t in range(self.n_time_steps):
+            # Random numbers
+            dice = np.rand(self.n_individuals, self.n_strains)
 
-    def _time_step(self, old_state, theta):
+            # Exposure
+            exposure = np.sum(
+                old_state / (self.n_individuals - 1)
+                * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_individuals, self.n_strains)),
+                axis=0
+            )
+            exposure = np.broadcast_to(exposure, (self.n_individuals, self.n_strains))
 
-        # Random numbers
-        dice = np.rand(self.n_individuals, self.n_strains)
+            # Prevalence of each strain
+            prevalence = np.broadcast_to(self.overall_prevalence, (self.n_individuals, self.n_strains))
 
-        # Exposure
-        exposure = np.sum(
-            old_state / (self.n_individuals - 1)
-            * np.broadcast_to(1. / np.sum(old_state, axis=1), (self.n_individuals, self.n_strains)),
-            axis=0
-        )
-        exposure = np.broadcast_to(exposure, (self.n_individuals, self.n_strains))
+            # Individual infection status
+            any_infection = (np.sum(state, axis=1) > 0)
+            any_infection = np.broadcast_to(any_infection)
 
-        # Prevalence
-        prevalence = np.broadcast_to(self.overall_prevalence, (self.n_individuals, self.n_strains))
+            # Infection threshold
+            probabilities_infection = (
+                    np.invert(state)
+                    * (any_infection + np.invert(any_infection) * theta[2])
+                    * (theta[0] * exposure + theta[1] * prevalence)
+            )
 
-        # Individual infection status
-        any_infection = (np.sum(old_state, axis=1) > 0)
-        any_infection = np.broadcast_to(any_infection)
+            # Accumulate probabilities
+            logp_xz += np.sum(np.log(probabilities_infection))
 
-        # Infection threshold
-        threshold = (
-                np.invert(old_state)
-                * (any_infection + np.invert(any_infection) * theta[2])
-                * (theta[0] * exposure + theta[1] * prevalence)
-        )
+            # Update state
+            state = (dice < probabilities_infection)
 
-        # Initial infection states
-        new_state = (dice < threshold)
-
-        return new_state
+        return logp_xz, state
 
     def _calculate_observables(self, state):
-        pass
+
+        # TODO: Resampling?
+
+        # Distribution of observed strains
+        p_observed_strains = np.sum(state, axis=0)
+        p_observed_strains = p_observed_strains[np.nonzero(p_observed_strains)]  # Remove zeros
+        p_observed_strains = p_observed_strains.astype(np.float) / float(np.sum(p_observed_strains))  # Normalize
+
+        # Number of observed strains (Numminen 2)
+        n_observed_strains = len(p_observed_strains)
+
+        # Shannon entropy of observed strain distribution (Numminen 1)
+        Shannon_entropy = - np.sum(p_observed_strains * np.log(p_observed_strains))
+
+        # Any / multiple infections of individuals
+        any_infection = (np.sum(state, axis=1) > 0)
+        multiple_infections = (np.sum(state, axis=1) > 1)
+
+        # Prevalence of any infection (Numminen 3)
+        prevalence_any = np.sum(any_infection, dtype=np.float) / self.n_individuals
+
+        # Prevalence of multiple infections (Numminen 4)
+        prevalence_multiple = np.sum(multiple_infections, dtype=np.float) / self.n_individuals
+
+        # Combine summary statistics
+        summary_statistics = np.array([Shannon_entropy, n_observed_strains, prevalence_any, prevalence_multiple])
+
+        return summary_statistics
 
     def rvs(self, theta, n, random_state=None):
 
