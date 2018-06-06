@@ -142,15 +142,20 @@ class Epidemiology(Simulator):
 
         # TODO: Resampling?
 
-        # Distribution of observed strains
-        p_observed_strains = np.sum(state, axis=0)
-        p_observed_strains = p_observed_strains[np.nonzero(p_observed_strains)]  # Remove zeros
-        p_observed_strains = p_observed_strains.astype(np.float) / float(np.sum(p_observed_strains))  # Normalize
+        # Proportion of individuals with the most common strain (Numminem cross-check)
+        strain_observations = np.sum(state, axis=0)
+        most_common_strain = np.argmax(strain_observations)
+        prevalence_most_common_strain = np.sum(state[:,most_common_strain], dtype=np.float) / float(self.n_individuals)
+
+        # Number of singleton strains (= only on 1 individual, Numminem cross-check)
+        n_singleton_strains = np.sum(strain_observations == 1)
 
         # Number of observed strains (Numminen 2)
-        n_observed_strains = len(p_observed_strains)
+        n_observed_strains = len(strain_observations[np.nonzero(strain_observations)])
 
         # Shannon entropy of observed strain distribution (Numminen 1)
+        p_observed_strains = strain_observations[np.nonzero(strain_observations)]  # Remove zeros
+        p_observed_strains = p_observed_strains.astype(np.float) / float(np.sum(p_observed_strains))  # Normalize
         shannon_entropy = - np.sum(p_observed_strains * np.log(p_observed_strains))
 
         # Any / multiple infections of individuals
@@ -164,7 +169,14 @@ class Epidemiology(Simulator):
         prevalence_multiple = np.sum(multiple_infections, dtype=np.float) / self.n_individuals
 
         # Combine summary statistics
-        summary_statistics = np.array([shannon_entropy, n_observed_strains, prevalence_any, prevalence_multiple])
+        summary_statistics = np.array([
+            shannon_entropy,
+            n_observed_strains,
+            prevalence_any,
+            prevalence_multiple,
+            prevalence_most_common_strain,
+            n_singleton_strains
+        ])
 
         return summary_statistics
 
@@ -207,4 +219,7 @@ class Epidemiology(Simulator):
         pass
 
     def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None):
+
+
+
         pass
