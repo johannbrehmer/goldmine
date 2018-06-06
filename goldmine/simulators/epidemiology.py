@@ -3,6 +3,7 @@ import autograd as ag
 from itertools import product
 
 from goldmine.simulators.base import Simulator
+from goldmine.various.utils import check_random_state
 
 
 class Epidemiology(Simulator):
@@ -89,30 +90,29 @@ class Epidemiology(Simulator):
 
         return benchmarks
 
-    def _simulate_transmission(self, theta):
+    def _simulate_transmission(self, theta, rng):
 
         # Track log p(x, z) (to calculate the score later)
         logp_xz = 0.
 
         # Initial state
         if self.initial_infection:
-            dice = np.rand(self.n_individuals, self.n_strains)
+            dice = rng.rand(self.n_individuals, self.n_strains)
             threshold = np.broadcast_to(self.overall_prevalence, (self.n_individuals, self.n_strains))
             state = (dice < threshold)
         else:
-            state = np.zeros((self.n_individuals, self.n_strains))
+            state = np.zeros((self.n_individuals, self.n_strains), dtype=np.bool)
 
         # Time steps
         for t in range(self.n_time_steps):
             # Random numbers
-            dice = np.rand(self.n_individuals, self.n_strains)
+            dice = rng.rand(self.n_individuals, self.n_strains)
 
             # Exposure
-            exposure = np.sum(
-                state / (self.n_individuals - 1)
-                * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_individuals, self.n_strains)),
-                axis=0
-            )
+            exposure = (state / (self.n_individuals - 1.)
+                        * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains,  self.n_individuals)).T)
+            exposure[np.invert(np.isfinite(exposure))] = 0.
+            exposure = np.sum(exposure, axis=0)
             exposure = np.broadcast_to(exposure, (self.n_individuals, self.n_strains))
 
             # Prevalence of each strain
@@ -120,20 +120,21 @@ class Epidemiology(Simulator):
 
             # Individual infection status
             any_infection = (np.sum(state, axis=1) > 0)
-            any_infection = np.broadcast_to(any_infection)
+            any_infection = np.broadcast_to(any_infection, (self.n_strains, self.n_individuals)).T
 
             # Infection threshold
             probabilities_infected = (
                     np.invert(state)
-                    * (any_infection + np.invert(any_infection) * theta[2])
+                    * (any_infection * theta[2] + np.invert(any_infection))
                     * (theta[0] * exposure + theta[1] * prevalence)
             )
 
-            # Accumulate probabilities
-            logp_xz += np.sum(np.log(probabilities_infected))
-
             # Update state
             state = (dice < probabilities_infected)
+
+            # Accumulate probabilities
+            log_p_this_decision = state * probabilities_infected + (1 - state) * (1. - probabilities_infected)
+            logp_xz = logp_xz + np.sum(np.log(log_p_this_decision))
 
         return logp_xz, state
 
@@ -169,10 +170,12 @@ class Epidemiology(Simulator):
 
     def rvs(self, theta, n, random_state=None):
 
+        rng = check_random_state(random_state)
+
         all_x = []
 
         for i in range(n):
-            _, state = self._simulate_transmission(theta)
+            _, state = self._simulate_transmission(theta, rng)
             x = self._calculate_observables(state)
 
             all_x.append(x)
@@ -183,11 +186,13 @@ class Epidemiology(Simulator):
 
     def rvs_score(self, theta, theta_score, n, random_state=None):
 
+        rng = check_random_state(random_state)
+
         all_x = []
         all_t_xz = []
 
         for i in range(n):
-            t_xz, state = self._d_simulate_transmission(theta)
+            t_xz, state = self._d_simulate_transmission(theta, rng)
             x = self._calculate_observables(state)
 
             all_x.append(x)
