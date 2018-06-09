@@ -90,7 +90,7 @@ class Epidemiology(Simulator):
 
         return benchmarks
 
-    def _simulate_transmission(self, theta, rng):
+    def _simulate_transmission(self, theta, rng, return_history=False):
 
         # Track log p(x, z) (to calculate the score later)
         logp_xz = 0.
@@ -103,6 +103,10 @@ class Epidemiology(Simulator):
         else:
             state = np.zeros((self.n_individuals, self.n_strains), dtype=np.bool)
 
+        # Track state history
+        if return_history:
+            history = [state]
+
         # Time steps
         for t in range(self.n_time_steps):
             # Random numbers
@@ -110,7 +114,7 @@ class Epidemiology(Simulator):
 
             # Exposure
             exposure = (state / (self.n_individuals - 1.)
-                        * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains,  self.n_individuals)).T)
+                        * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains, self.n_individuals)).T)
             exposure[np.invert(np.isfinite(exposure))] = 0.
             exposure = np.sum(exposure, axis=0)
             exposure = np.broadcast_to(exposure, (self.n_individuals, self.n_strains))
@@ -136,6 +140,13 @@ class Epidemiology(Simulator):
             log_p_this_decision = state * probabilities_infected + (1 - state) * (1. - probabilities_infected)
             logp_xz = logp_xz + np.sum(np.log(log_p_this_decision))
 
+            # Track state history
+            if return_history:
+                history.append(state)
+
+        if return_history:
+            return logp_xz, (state, history)
+
         return logp_xz, state
 
     def _calculate_observables(self, state):
@@ -145,7 +156,7 @@ class Epidemiology(Simulator):
         # Proportion of individuals with the most common strain (Numminem cross-check)
         strain_observations = np.sum(state, axis=0)
         most_common_strain = np.argmax(strain_observations)
-        prevalence_most_common_strain = np.sum(state[:,most_common_strain], dtype=np.float) / float(self.n_individuals)
+        prevalence_most_common_strain = np.sum(state[:, most_common_strain], dtype=np.float) / float(self.n_individuals)
 
         # Number of singleton strains (= only on 1 individual, Numminem cross-check)
         n_singleton_strains = np.sum(strain_observations == 1)
@@ -180,30 +191,45 @@ class Epidemiology(Simulator):
 
         return summary_statistics
 
-    def rvs(self, theta, n, random_state=None):
+    def rvs(self, theta, n, random_state=None, return_histories=False):
 
         rng = check_random_state(random_state)
 
         all_x = []
+        histories = []
 
         for i in range(n):
-            _, state = self._simulate_transmission(theta, rng)
+            if return_histories:
+                _, (state, history) = self._simulate_transmission(theta, rng, return_history=True)
+                histories.append(history)
+            else:
+                _, state = self._simulate_transmission(theta, rng, return_history=False)
+
             x = self._calculate_observables(state)
 
             all_x.append(x)
 
         all_x = np.asarray(all_x)
 
+        if return_histories:
+            return all_x, histories
         return all_x
 
-    def rvs_score(self, theta, theta_score, n, random_state=None):
+    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
 
         rng = check_random_state(random_state)
 
         all_x = []
         all_t_xz = []
+        histories = []
 
         for i in range(n):
+            if return_histories:
+                t_xz, (state, history) = self._d_simulate_transmission(theta, rng, return_history=True)
+                histories.append(history)
+            else:
+                t_xz, state = self._d_simulate_transmission(theta, rng, return_history=False)
+
             t_xz, state = self._d_simulate_transmission(theta, rng)
             x = self._calculate_observables(state)
 
@@ -213,13 +239,12 @@ class Epidemiology(Simulator):
         all_x = np.asarray(all_x)
         all_t_xz = np.asarray(all_t_xz)
 
+        if return_histories:
+            return all_x, all_t_xz, histories
         return all_x, all_t_xz
 
     def rvs_ratio(self, theta, theta0, theta1, n, random_state=None):
         pass
 
     def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None):
-
-
-
         pass
