@@ -18,12 +18,12 @@ class Epidemiology(Simulator):
     Number of individuals: 29
     Overall prevalence of strains: see Fig. I of said paper
     Number of time steps simulated: 10
-    gamma: fixed to 1
 
     Parameters of interest and uniform priors in that paper:
     beta: 0...11
     Lambda: 0...2
     theta: 0...1
+    gamma: fixed to 1
 
     Observables:
 
@@ -52,7 +52,7 @@ class Epidemiology(Simulator):
         assert self.overall_prevalence.shape[0] == self.n_strains, 'Wrong number of strains in prevalence'
 
         # Parameters
-        self.n_parameters = 3
+        self.n_parameters = 4
 
         # Autograd
         self._d_simulate_transmission = ag.grad_and_aux(self._simulate_transmission)
@@ -60,8 +60,8 @@ class Epidemiology(Simulator):
     def theta_defaults(self, n_benchmarks=100, random=True):
 
         # Ranges
-        theta_min = np.array([0., 0., 0.])
-        theta_max = np.array([11., 2., 1.])
+        theta_min = np.array([ 0., 0., 0., 0.1])
+        theta_max = np.array([11., 2., 1.,  1.])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
@@ -113,8 +113,11 @@ class Epidemiology(Simulator):
             dice = rng.rand(self.n_individuals, self.n_strains)
 
             # Exposure
-            exposure = (state / (self.n_individuals - 1.)
-                        * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains, self.n_individuals)).T)
+            try:
+                exposure = (state / (self.n_individuals - 1.)
+                            * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains, self.n_individuals)).T)
+            except RuntimeWarning:
+                pass
             exposure[np.invert(np.isfinite(exposure))] = 0.
             exposure = np.sum(exposure, axis=0)
             exposure = np.broadcast_to(exposure, (self.n_individuals, self.n_strains))
@@ -131,6 +134,7 @@ class Epidemiology(Simulator):
                     np.invert(state)
                     * (any_infection * theta[2] + np.invert(any_infection))
                     * (theta[0] * exposure + theta[1] * prevalence)
+                    + state * (1. - theta[3])
             )
 
             # Update state
@@ -151,7 +155,8 @@ class Epidemiology(Simulator):
 
     def _calculate_observables(self, state):
 
-        # TODO: Resampling?
+        # Note that this is very different from the original paper, which uses an observation model tailored to the
+        # collected data
 
         # Proportion of individuals with the most common strain (Numminem cross-check)
         strain_observations = np.sum(state, axis=0)
