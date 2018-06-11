@@ -4,13 +4,43 @@ import numpy as np
 import torch
 from torch import Tensor
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import Dataset, TensorDataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+
+
+class GoldDataset(torch.utils.data.Dataset):
+
+    def __init__(self, theta, x, y=None, r_xz=None, t_xz=None):
+        self.n = theta.shape[0]
+
+        placeholder = torch.stack([Tensor([0.]) for i in range(self.n)])
+
+        self.theta = theta
+        self.x = x
+        self.y = placeholder if y is None else y
+        self.r_xz = placeholder if r_xz is None else r_xz
+        self.t_xz = placeholder if t_xz is None else t_xz
+
+        assert len(self.theta) == self.n
+        assert len(self.x) == self.n
+        assert len(self.y) == self.n
+        assert len(self.r_xz) == self.n
+        assert len(self.t_xz) == self.n
+
+    def __getitem__(self, index):
+        return (self.theta[index],
+                self.x[index],
+                self.y[index],
+                self.r_xz[index],
+                self.t_xz[index])
+
+    def __len__(self):
+        return self.n
 
 
 def train(model,
           loss,
-          thetas, xs, ys=None,
+          thetas, xs, ys=None, r_xzs=None, t_xzs=None,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
@@ -36,6 +66,7 @@ def train(model,
     :return:
     """
 
+    # TODO: support for r and z terms in losses
     # TODO: Implement early stopping
     # TODO: Save learning curves
 
@@ -43,16 +74,20 @@ def train(model,
 
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
-    device = torch.device("cuda" if run_on_gpu else "cpu")
+    # device = torch.device("cuda" if run_on_gpu else "cpu")
 
-    # Data set
+    # Convert to Tensor
     thetas = torch.stack([Tensor(i) for i in thetas])
     xs = torch.stack([Tensor(i) for i in xs])
-    thetas_x = torch.stack([thetas, xs], dim=0)
     if ys is not None:
         ys = torch.stack([Tensor(i) for i in ys])
+    if r_xzs is not None:
+        r_xzs = torch.stack([Tensor(i) for i in r_xzs])
+    if t_xzs is not None:
+        t_xzs = torch.stack([Tensor(i) for i in t_xzs])
 
-    dataset = TensorDataset(thetas_x, ys)
+    # Dataset
+    dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
 
     # Train / validation split
     if validation_split is not None:
@@ -107,12 +142,11 @@ def train(model,
             param_group['lr'] = lr
 
         # Loop over batches
-        for i_batch, (theta_x, y) in enumerate(train_loader):
-            theta = theta_x[0, :]
-            x = theta_x[1, :]
-            theta = theta.to(device)
-            x = x.to(device)
-            y = y.to(device)
+        for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
+            # theta = theta.to(device)
+            # x = x.to(device)
+            # y = y.to(device)
+
             optimizer.zero_grad()
 
             # Evaluate loss
@@ -138,12 +172,10 @@ def train(model,
         with torch.no_grad():
             model.eval()
 
-            for i_batch, (theta_x, y) in enumerate(validation_loader):
-                theta = theta_x[0, :]
-                x = theta_x[1, :]
-                theta = theta.to(device)
-                x = x.to(device)
-                y = y.to(device)
+            for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
+                # theta = theta.to(device)
+                # x = x.to(device)
+                # y = y.to(device)
 
                 # Evaluate loss
                 yhat = model(theta, x)

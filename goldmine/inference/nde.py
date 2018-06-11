@@ -33,6 +33,24 @@ class MAFInference(Inference):
             alpha=0.1
         )
 
+    def requires_class_label(self):
+        return False
+
+    def requires_joint_ratio(self):
+        return False
+
+    def requires_joint_score(self):
+        return False
+
+    def predicts_density(self):
+        return True
+
+    def predicts_ratio(self):
+        return True
+
+    def predicts_score(self):
+        return True
+
     def fit(self,
             theta=None,
             x=None,

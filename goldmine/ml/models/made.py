@@ -6,7 +6,7 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .utils.masks import create_degrees, create_masks, create_weights, create_weights_conditional
+from .masks import create_degrees, create_masks, create_weights, create_weights_conditional
 
 dtype = np.float32
 
