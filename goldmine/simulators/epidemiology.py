@@ -1,6 +1,7 @@
 import autograd.numpy as np
 import autograd as ag
 from itertools import product
+import logging
 
 from goldmine.simulators.base import Simulator
 from goldmine.various.utils import check_random_state
@@ -29,7 +30,7 @@ class Epidemiology(Simulator):
 
     """
 
-    def __init__(self, n_individuals=53, n_strains=33, overall_prevalence=None, n_time_steps=10,
+    def __init__(self, n_individuals=53, n_strains=33, overall_prevalence=None, end_time=10, delta_t=0.01,
                  initial_infection=False, use_original_summary_statistics=True, use_prevalence_covariance=False):
 
         super().__init__()
@@ -38,7 +39,8 @@ class Epidemiology(Simulator):
         self.n_individuals = n_individuals
         self.n_strains = n_strains
         self.overall_prevalence = overall_prevalence
-        self.n_time_steps = n_time_steps
+        self.end_time = end_time
+        self.delta_t = delta_t
         self.initial_infection = initial_infection
         self.use_original_summary_statistics = use_original_summary_statistics
         self.use_prevalence_covariance = use_prevalence_covariance
@@ -60,35 +62,36 @@ class Epidemiology(Simulator):
     def theta_defaults(self, n_benchmarks=100, random=True):
 
         # Ranges
-        theta_min = np.array([ 0., 0., 0., 0.1])
-        theta_max = np.array([11., 2., 1.,  1.])
+        theta_min = np.array([0., 0., 0., 1.])
+        theta_max = np.array([11., 2., 1., 1.])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
             benchmarks = np.random.rand(n_benchmarks, self.n_parameters)
 
         else:
-            n_points_per_dimension = int(n_benchmarks ** (1 / self.n_parameters))
+            n_free_parameters = 3
+            n_points_per_dimension = int(n_benchmarks ** (1 / n_free_parameters))
 
-            if n_points_per_dimension ** self.n_parameters != n_benchmarks:
+            if n_points_per_dimension ** n_free_parameters != n_benchmarks:
                 raise Warning(
-                    'Number of requested non-random parameter benchmarks not compatible with number of parameters.'
-                    + ' Returning {0} benchmarks instead.'.format(n_points_per_dimension ** self.n_parameters)
+                    'Number of requested grid parameter benchmarks not compatible with number of parameters.'
+                    + ' Returning {0} benchmarks instead.'.format(n_points_per_dimension ** n_free_parameters)
                 )
 
-            benchmarks = np.array(
-                list(
-                    product(
-                        *[np.linspace(0., 1., n_points_per_dimension) for i in range(self.n_parameters)]
-                    )
+            benchmarks_free = list(
+                product(
+                    *[np.linspace(0., 1., n_points_per_dimension) for i in range(n_free_parameters)]
                 )
             )
+            benchmarks = [[b[0], b[1], b[2], 0.] for b in benchmarks_free]
+            benchmarks = np.array(benchmarks)
 
         # Rescale to correct ranges
-        benchmarks[:] += theta_min
         benchmarks[:] *= (theta_max - theta_min)
+        benchmarks[:] += theta_min
 
-        return benchmarks
+        return benchmarks, None
 
     def _simulate_transmission(self, theta, rng, return_history=False):
 
@@ -108,16 +111,18 @@ class Epidemiology(Simulator):
             history = [state]
 
         # Time steps
-        for t in range(self.n_time_steps):
+        n_time_steps = int(round(self.end_time / self.delta_t))
+
+        for i in range(n_time_steps):
+            # Time
+            t = i * self.delta_t
+
             # Random numbers
             dice = rng.rand(self.n_individuals, self.n_strains)
 
             # Exposure
-            try:
-                exposure = (state / (self.n_individuals - 1.)
-                            * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains, self.n_individuals)).T)
-            except RuntimeWarning:
-                pass
+            exposure = (state / (self.n_individuals - 1.)
+                        * np.broadcast_to(1. / np.sum(state, axis=1), (self.n_strains, self.n_individuals)).T)
             exposure[np.invert(np.isfinite(exposure))] = 0.
             exposure = np.sum(exposure, axis=0)
             exposure = np.broadcast_to(exposure, (self.n_individuals, self.n_strains))
@@ -134,7 +139,8 @@ class Epidemiology(Simulator):
                     np.invert(state)
                     * (any_infection * theta[2] + np.invert(any_infection))
                     * (theta[0] * exposure + theta[1] * prevalence)
-                    + state * (1. - theta[3])
+                    * self.delta_t
+                    + state * (1. - theta[3] * self.delta_t)
             )
 
             # Update state
@@ -198,6 +204,8 @@ class Epidemiology(Simulator):
 
     def rvs(self, theta, n, random_state=None, return_histories=False):
 
+        logging.info('Simulating %s epidemic evolutions for theta = %s', n, theta)
+
         rng = check_random_state(random_state)
 
         all_x = []
@@ -222,6 +230,8 @@ class Epidemiology(Simulator):
 
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
 
+        logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
+
         rng = check_random_state(random_state)
 
         all_x = []
@@ -235,7 +245,6 @@ class Epidemiology(Simulator):
             else:
                 t_xz, state = self._d_simulate_transmission(theta, rng, return_history=False)
 
-            t_xz, state = self._d_simulate_transmission(theta, rng)
             x = self._calculate_observables(state)
 
             all_x.append(x)

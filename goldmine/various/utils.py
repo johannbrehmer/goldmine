@@ -1,16 +1,5 @@
-import autograd.numpy as np
-
-
-def s_from_r(r):
-    return np.clip(1. / (1. + r), 0., 1.)
-
-
-def r_from_s(s, epsilon=1.e-6):
-    return np.clip((1. - s + epsilon) / (s + epsilon), epsilon, None)
-
-
-def sigmoid(x):
-    return 1. / (1. + np.exp(-x))
+import numpy as np
+import logging
 
 
 def check_random_state(random_state):
@@ -18,3 +7,10 @@ def check_random_state(random_state):
         return np.random.RandomState(random_state)
     else:
         return random_state
+
+
+def general_init():
+    logging.basicConfig(format='%(asctime)s %(levelname)s    %(message)s', level=logging.DEBUG,
+                        datefmt='%d.%m.%Y %H:%M:%S')
+    logging.info('Hi! How are you today?')
+    np.seterr(divide='ignore', invalid='ignore')
