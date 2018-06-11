@@ -1,35 +1,66 @@
-import math
 import numpy as np
-import numpy.random as rng
-from scipy.stats import beta, norm
-from sklearn.utils import shuffle
-
 import torch
-from torch import Tensor
-from torch.autograd import Variable
-import torch.nn as nn
-from torch.nn import Parameter
-import torch.nn.functional as F
-import torch.optim as optim
-
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
+from goldmine.ml.trainers import train
 
 
 class MAFInference(Inference):
+    """ Neural conditional density estimation with masked autoregressive flows. """
 
-    """ Base class for inference methods. """
+    # TODO: Weight initialization
 
-    def __init__(self):
+    def __init__(self,
+                 n_parameters,
+                 n_observables,
+                 n_mades=3,
+                 n_made_hidden_layers=3,
+                 n_made_units_per_layer=20,
+                 batch_norm=False):
         super().__init__()
 
         self.dtype = np.float32
 
-        self.maf = None
+        self.maf = ConditionalMaskedAutoregressiveFlow(
+            n_conditionals=n_parameters,
+            n_inputs=n_observables,
+            n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
+            n_mades=n_mades,
+            batch_norm=batch_norm,
+            input_order='sequential',
+            mode='sequential',
+            alpha=0.1
+        )
 
-    def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None):
-        raise NotImplementedError()
+    def fit(self,
+            theta=None,
+            x=None,
+            y=None,
+            r_xz=None,
+            t_xz=None,
+            batch_size=64,
+            initial_learning_rate=0.001,
+            final_learning_rate=0.0001,
+            n_epochs=50):
+        """ Trains MAF """
+
+        def loss(model, y_true, y_pred):
+            log_likelihood = model.log_likelihood
+            loss = - torch.mean(log_likelihood)
+            return loss
+
+        train(
+            model=self.maf,
+            loss=loss,
+            thetas=theta,
+            xs=x,
+            ys=None,
+            batch_size=batch_size,
+            initial_learning_rate=initial_learning_rate,
+            final_learning_rate=final_learning_rate,
+            n_epochs=50
+        )
 
     def save(self, filename):
         raise NotImplementedError()
@@ -45,4 +76,3 @@ class MAFInference(Inference):
 
     def predict_score(self, x=None, theta=None):
         raise NotImplementedError()
-

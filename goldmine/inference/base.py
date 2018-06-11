@@ -2,7 +2,7 @@ class Inference:
 
     """ Base class for inference methods. """
 
-    def __init__(self, simulator):
+    def __init__(self):
         raise NotImplementedError()
 
     def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None):
