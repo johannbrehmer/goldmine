@@ -13,10 +13,10 @@ def create_simulator(simulator_name):
         raise ValueError('Simulator name {} unknown'.format(simulator_name))
 
 
-def create_inference(inference_name):
+def create_inference(inference_name, **params):
     if inference_name == 'maf':
-        return MAFInference
+        return MAFInference(**params)
     elif inference_name == 'scandal':
-        return SCANDALInference
+        return SCANDALInference(**params)
     else:
         raise ValueError('Inference technique name {} unknown'.format(inference_name))

@@ -1,7 +1,7 @@
 class Inference:
     """ Base class for inference methods. """
 
-    def __init__(self):
+    def __init__(self, **params):
         pass
 
     def requires_class_label(self):

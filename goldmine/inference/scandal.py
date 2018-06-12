@@ -11,17 +11,17 @@ from goldmine.ml.losses import negative_log_likelihood, score_mse
 class SCANDALInference(Inference):
     """ Neural conditional density estimation with masked autoregressive flows. """
 
-    def __init__(self,
-                 n_parameters,
-                 n_observables,
-                 alpha=1.,
-                 n_mades=3,
-                 n_made_hidden_layers=3,
-                 n_made_units_per_layer=20,
-                 batch_norm=False):
+    def __init__(self, **params):
         super().__init__()
 
-        self.alpha = alpha
+        # Parameters
+        n_parameters = params['n_parameters']
+        n_observables = params['n_observables']
+        self.alpha = params.get('alpha', 1.)
+        n_mades = params.get('n_mades', 3)
+        n_made_hidden_layers = params.get('n_made_hidden_layers', 3)
+        n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
+        batch_norm = params.get('batch_norm', False)
 
         self.maf = ConditionalMaskedAutoregressiveFlow(
             n_conditionals=n_parameters,
@@ -92,21 +92,21 @@ class SCANDALInference(Inference):
         self.maf.load_state_dict(torch.load(filename))
 
     def predict_density(self, x=None, theta=None, log=False):
-        log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).numpy()
+        log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()
 
         if log:
             return log_likelihood
         return np.exp(log_likelihood)
 
     def predict_ratio(self, x=None, theta=None, theta1=None, log=False):
-        log_likelihood_theta0 = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).numpy()
-        log_likelihood_theta1 = self.maf.predict_log_likelihood(tensor(theta1), tensor(x)).numpy()
+        log_likelihood_theta0 = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()
+        log_likelihood_theta1 = self.maf.predict_log_likelihood(tensor(theta1), tensor(x)).detach().numpy()
 
         if log:
             return log_likelihood_theta0 - log_likelihood_theta1
         return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
 
     def predict_score(self, x=None, theta=None):
-        score = self.maf.predict_score(tensor(theta), tensor(x)).numpy()
+        score = self.maf.predict_score(tensor(theta), tensor(x)).detach().numpy()
 
         return score

@@ -175,6 +175,7 @@ def train(model,
             loss.backward()
             optimizer.step()
 
+        train_loss /= len(train_loader)
         train_losses.append(train_loss)
 
         # Validation
@@ -199,6 +200,7 @@ def train(model,
             loss = loss_function(model, y, r_xz, t_xz)
             val_loss += loss.item()
 
+        val_loss /= len(validation_loader)
         val_losses.append(val_loss)
 
         # Early stopping

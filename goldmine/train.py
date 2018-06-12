@@ -52,7 +52,12 @@ def train(simulator_name,
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
 
-    inference = create_inference(inference_name)(n_parameters, n_observables, alpha=alpha)
+    inference = create_inference(
+        inference_name,
+        n_parameters=n_parameters,
+        n_observables=n_observables,
+        alpha=alpha
+    )
 
     if inference.requires_class_label():
         ys = np.load(sample_folder + '/' + sample_filename + '_y.npy')
@@ -123,6 +128,8 @@ def main():
         alpha=args.alpha,
         training_sample_size=args.trainingsamplesize
     )
+
+    logging.info("That's all for now, have a nice day!")
 
 
 if __name__ == '__main__':
