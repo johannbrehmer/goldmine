@@ -39,8 +39,9 @@ class GoldDataset(torch.utils.data.Dataset):
 
 
 def train(model,
-          loss_function,
+          loss_functions,
           thetas, xs, ys=None, r_xzs=None, t_xzs=None,
+          loss_weights=None,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
@@ -66,8 +67,6 @@ def train(model,
     :param learning_curve_filename:
     :return:
     """
-
-    # TODO: support for r and z terms in losses
 
     logging.info('Starting training')
 
@@ -130,7 +129,19 @@ def train(model,
     early_stopping_best_model = None
     early_stopping_epoch = None
 
-    # Log losses over training
+    # Loss function
+    if loss_weights is None:
+        loss_weights = [1.] * len(loss_functions)
+
+    def loss_function(model, y_true, r_true, t_true):
+        _loss = loss_weights[0] * loss_functions[0](model, y_true, r_true, t_true)
+
+        for weight, function in zip(loss_weights[1:], loss_functions[1:]):
+            _loss = _loss + weight * function(model, y_true, r_true, t_true)
+
+        return _loss
+
+    # Losses over training
     train_losses = []
     val_losses = []
 
@@ -155,8 +166,8 @@ def train(model,
             optimizer.zero_grad()
 
             # Evaluate loss
-            yhat = model(theta, x)
-            loss = loss_function(model, y, yhat)
+            _ = model(theta, x)
+            loss = loss_function(model, y, r_xz, t_xz)
             train_loss += loss.item()
 
             # Calculate gradient and update optimizer

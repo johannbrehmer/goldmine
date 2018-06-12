@@ -65,7 +65,7 @@ class MAFInference(Inference):
 
         train(
             model=self.maf,
-            loss_function=negative_log_likelihood_loss,
+            loss_functions=[negative_log_likelihood_loss],
             thetas=theta,
             xs=x,
             ys=None,
