@@ -63,14 +63,12 @@ class MAFInference(Inference):
             n_epochs=50):
         """ Trains MAF """
 
-        def loss(model, y_true, y_pred):
-            log_likelihood = model.log_likelihood
-            loss = - torch.mean(log_likelihood)
-            return loss
+        def nll_loss(model, y_true, y_pred):
+            return -torch.mean(model.log_likelihood)
 
         train(
             model=self.maf,
-            loss=loss,
+            loss_function=nll_loss,
             thetas=theta,
             xs=x,
             ys=None,

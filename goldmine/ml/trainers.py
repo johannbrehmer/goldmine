@@ -2,9 +2,9 @@ import logging
 import numpy as np
 
 import torch
-from torch import Tensor
+from torch import tensor
 import torch.optim as optim
-from torch.utils.data import Dataset, TensorDataset, DataLoader
+from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
@@ -13,7 +13,7 @@ class GoldDataset(torch.utils.data.Dataset):
     def __init__(self, theta, x, y=None, r_xz=None, t_xz=None):
         self.n = theta.shape[0]
 
-        placeholder = torch.stack([Tensor([0.]) for i in range(self.n)])
+        placeholder = torch.stack([tensor([0.]) for i in range(self.n)])
 
         self.theta = theta
         self.x = x
@@ -39,13 +39,14 @@ class GoldDataset(torch.utils.data.Dataset):
 
 
 def train(model,
-          loss,
+          loss_function,
           thetas, xs, ys=None, r_xzs=None, t_xzs=None,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
           validation_split=None, early_stopping=False, early_stopping_patience=10,
-          learning_curve_folder=None, learning_curve_filename=None):
+          learning_curve_folder=None, learning_curve_filename=None,
+          n_epochs_verbose=1):
     """
 
     :param model:
@@ -74,17 +75,17 @@ def train(model,
 
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
-    # device = torch.device("cuda" if run_on_gpu else "cpu")
+    device = torch.device("cuda" if run_on_gpu else "cpu")
 
     # Convert to Tensor
-    thetas = torch.stack([Tensor(i) for i in thetas])
-    xs = torch.stack([Tensor(i) for i in xs])
+    thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
+    xs = torch.stack([tensor(i) for i in xs])
     if ys is not None:
-        ys = torch.stack([Tensor(i) for i in ys])
+        ys = torch.stack([tensor(i) for i in ys])
     if r_xzs is not None:
-        r_xzs = torch.stack([Tensor(i) for i in r_xzs])
+        r_xzs = torch.stack([tensor(i) for i in r_xzs])
     if t_xzs is not None:
-        t_xzs = torch.stack([Tensor(i) for i in t_xzs])
+        t_xzs = torch.stack([tensor(i) for i in t_xzs])
 
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
@@ -143,15 +144,15 @@ def train(model,
 
         # Loop over batches
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
-            # theta = theta.to(device)
-            # x = x.to(device)
-            # y = y.to(device)
+            theta = theta.to(device)
+            x = x.to(device)
+            y = y.to(device)
 
             optimizer.zero_grad()
 
             # Evaluate loss
             yhat = model(theta, x)
-            loss = loss(model, y, yhat)
+            loss = loss_function(model, y, yhat)
             train_loss += loss.item()
 
             # Calculate gradient and update optimizer
@@ -173,18 +174,18 @@ def train(model,
             model.eval()
 
             for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
-                # theta = theta.to(device)
-                # x = x.to(device)
-                # y = y.to(device)
+                theta = theta.to(device)
+                x = x.to(device)
+                y = y.to(device)
 
                 # Evaluate loss
                 yhat = model(theta, x)
-                loss = loss(model, y, yhat)
+                loss = loss_function(model, y, yhat)
                 val_loss += loss.item()
 
             validation_losses.append(val_loss)
 
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % n_epochs_verbose == 0:
             logging.info('  Epoch %d: train loss %.3f, validation loss %.3f'
                          % (epoch + 1, train_losses[-1], validation_losses[-1]))
 

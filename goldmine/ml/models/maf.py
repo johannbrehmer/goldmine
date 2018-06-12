@@ -1,15 +1,14 @@
 import numpy as np
 import numpy.random as rng
+import logging
 
 import torch
 import torch.nn as nn
-from torch import FloatTensor
-from torch.autograd import Variable, grad
+from torch import tensor
+from torch.autograd import grad
 
 from .made import GaussianMADE, ConditionalGaussianMADE
 from .batch_norm import BatchNorm
-
-dtype = np.float32
 
 
 class MaskedAutoregressiveFlow(nn.Module):
@@ -95,7 +94,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         :return: samples
         """
 
-        x = Variable(FloatTensor(rng.randn(n_samples, self.n_inputs).astype(dtype))) if u is None else u
+        x = tensor(rng.randn(n_samples, self.n_inputs)) if u is None else u
 
         if self.batch_norm:
             mades = [made for made in self.mades]
@@ -162,7 +161,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
             fix_batch_norm = True
 
         # Track gradient wrt theta
-        if track_score:
+        if track_score and not theta.requires_grad:  # Can this happen?
             theta.requires_grad = True
 
         logdet_dudx = 0.0
@@ -186,7 +185,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         # Score
         if track_score:
             self.score = grad(self.log_likelihood, theta,
-                              grad_outputs=torch.autograd.Variable(torch.ones_like(self.log_likelihood.data)),
+                              grad_outputs=torch.ones_like(self.log_likelihood.data),
                               only_inputs=True, create_graph=True)[0]
 
         return u
@@ -215,7 +214,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         :return: samples
         """
 
-        x = Variable(FloatTensor(rng.randn(n_samples, self.n_inputs).astype(dtype))) if u is None else u
+        x = tensor(rng.randn(n_samples, self.n_inputs)) if u is None else u
 
         if self.batch_norm:
             mades = [made for made in self.mades]
