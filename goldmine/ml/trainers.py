@@ -69,6 +69,7 @@ def train(model,
     """
 
     logging.info('Starting training')
+    logging.debug('Score data: %s', t_xzs)
 
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()

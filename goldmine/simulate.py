@@ -118,7 +118,7 @@ def simulate(simulator_name,
         for y in draw_from:
 
             if generate_joint_ratio and generate_joint_score:
-                x, r_xz, t_xy = simulator.rvs_ratio_score(
+                x, r_xz, t_xz = simulator.rvs_ratio_score(
                     theta=theta0_,
                     theta0=theta0_,
                     theta1=theta1_,
@@ -135,7 +135,7 @@ def simulate(simulator_name,
                     random_state=random_state
                 )
             elif generate_joint_score:
-                x, r_xz, t_xy = simulator.rvs_score(
+                x, t_xz = simulator.rvs_score(
                     theta=theta0_,
                     theta_score=theta0_,
                     n=n_samples_per_theta_and_draw,
@@ -153,9 +153,9 @@ def simulate(simulator_name,
             all_x += list(x)
             all_y += [y] * n_samples_per_theta_and_draw
             if generate_joint_ratio:
-                all_r_xz += list(all_r_xz)
+                all_r_xz += list(r_xz)
             if generate_joint_score:
-                all_t_xz += list(all_t_xz)
+                all_t_xz += list(t_xz)
 
     logging.info('Saving results')
 
@@ -185,7 +185,7 @@ def main():
     parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to no theta1')
     parser.add_argument('--gridsampling', action='store_true', help='If argument theta0 is not set, samples theta0 on a'
                                                                     + ' grid rather than randomly')
-    parser.add_argument('--nsamples', default=100, help='Number of samples per theta value')
+    parser.add_argument('--nsamples', type=int, default=100, help='Number of samples per theta value')
     parser.add_argument('--noratio', action='store_true', help='Do not generate joint ratio')
     parser.add_argument('--noscore', action='store_true', help='Do not generate joint score')
 

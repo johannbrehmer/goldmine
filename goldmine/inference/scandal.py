@@ -8,17 +8,20 @@ from goldmine.ml.trainers import train
 from goldmine.ml.losses import negative_log_likelihood, score_mse
 
 
-class MAFInference(Inference):
+class SCANDALInference(Inference):
     """ Neural conditional density estimation with masked autoregressive flows. """
 
     def __init__(self,
                  n_parameters,
                  n_observables,
+                 alpha=1.,
                  n_mades=3,
                  n_made_hidden_layers=3,
                  n_made_units_per_layer=20,
                  batch_norm=False):
         super().__init__()
+
+        self.alpha = alpha
 
         self.maf = ConditionalMaskedAutoregressiveFlow(
             n_conditionals=n_parameters,
@@ -70,6 +73,7 @@ class MAFInference(Inference):
         train(
             model=self.maf,
             loss_functions=[negative_log_likelihood, score_mse],
+            loss_weights=[1., self.alpha],
             thetas=theta,
             xs=x,
             t_xzs=t_xz,

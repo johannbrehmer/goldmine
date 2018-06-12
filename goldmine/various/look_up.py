@@ -1,6 +1,8 @@
 from goldmine.simulators.epidemiology import Epidemiology
 from goldmine.simulators.galton import GeneralizedGaltonBoard
 from goldmine.inference.nde import MAFInference
+from goldmine.inference.scandal import SCANDALInference
+
 
 def create_simulator(simulator_name):
     if simulator_name == 'epidemiology':
@@ -14,5 +16,7 @@ def create_simulator(simulator_name):
 def create_inference(inference_name):
     if inference_name == 'maf':
         return MAFInference
+    elif inference_name == 'scandal':
+        return SCANDALInference
     else:
         raise ValueError('Inference technique name {} unknown'.format(inference_name))

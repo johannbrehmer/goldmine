@@ -68,11 +68,11 @@ def train(simulator_name,
     else:
         t_xz = None
 
+    logging.debug('Score data: %s', t_xz)
+
     # Restricted training sample size
     if training_sample_size is not None and training_sample_size < n_samples:
         thetas, xs, ys, r_xz, t_xz = shuffle(thetas, xs, ys, r_xz, t_xz)
-
-    logging.debug('Array shapes: x = %s, theta = %s', xs.shape, thetas.shape)
 
     # Train model
     inference.fit(
@@ -87,7 +87,7 @@ def train(simulator_name,
     )
 
     # Save models
-    inference.save(model_folder + '/' + output_filename)
+    inference.save(model_folder + '/' + output_filename + '.pt')
 
 
 def main():
