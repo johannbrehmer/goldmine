@@ -22,14 +22,14 @@ except ImportError:
 
 
 def simulate(simulator_name,
+             sample_label,
              theta0=None,
              theta1=None,
              draw_from=None,
+             grid_sampling=False,
              generate_joint_ratio=True,
              generate_joint_score=True,
              n_samples_per_theta=1000,
-             folder='',
-             filename_prefix='',
              random_state=None):
     """
     Draws sample from a simulator.
@@ -49,12 +49,35 @@ def simulate(simulator_name,
     :param random_state: Numpy random state.
     """
 
+    logging.info('Starting simulation')
+    logging.info('  Simulator:            %s', simulator_name)
+    logging.info('  Sample:               %s', sample_label)
+    logging.info('  theta0:               %s', 'default' if theta0 is None else theta0)
+    logging.info('  theta1:               %s', 'default' if theta1 is None else theta1)
+    if theta0 is None:
+        logging.info('  theta sampling:       %s', 'grid' if grid_sampling else 'random')
+    logging.info('  Samples / theta:      %s', n_samples_per_theta)
+    logging.info('  Generate joint ratio: %s', generate_joint_ratio)
+    logging.info('  Generate joint score: %s', generate_joint_score)
+
     simulator = create_simulator(simulator_name)
 
-    # Check inputs
-    if theta0 is None:
-        theta0, theta1 = simulator.theta_defaults()
+    # Load data
+    if theta0 is not None:
+        theta0 = np.load(base_dir + '/goldmine/data/thetas/' + simulator_name + '/' + theta0)
 
+    if theta1 is not None:
+        theta1 = np.load(base_dir + '/goldmine/data/thetas/' + simulator_name + '/' + theta1)
+
+    # Filenames
+    folder = base_dir + '/goldmine/data/samples/' + simulator_name
+    filename = simulator_name + '_' + sample_label
+
+    # Default thetas
+    if theta0 is None:
+        theta0, theta1 = simulator.theta_defaults(random=not grid_sampling)
+
+    # Check thetas
     has_theta1 = (theta1 is not None)
 
     if has_theta1:
@@ -95,7 +118,7 @@ def simulate(simulator_name,
         for y in draw_from:
 
             if generate_joint_ratio and generate_joint_score:
-                x, r_xz, t_xy = simulator.rvs_ratio_score(
+                x, r_xz, t_xz = simulator.rvs_ratio_score(
                     theta=theta0_,
                     theta0=theta0_,
                     theta1=theta1_,
@@ -112,7 +135,7 @@ def simulate(simulator_name,
                     random_state=random_state
                 )
             elif generate_joint_score:
-                x, r_xz, t_xy = simulator.rvs_score(
+                x, t_xz = simulator.rvs_score(
                     theta=theta0_,
                     theta_score=theta0_,
                     n=n_samples_per_theta_and_draw,
@@ -130,24 +153,24 @@ def simulate(simulator_name,
             all_x += list(x)
             all_y += [y] * n_samples_per_theta_and_draw
             if generate_joint_ratio:
-                all_r_xz += list(all_r_xz)
+                all_r_xz += list(r_xz)
             if generate_joint_score:
-                all_t_xz += list(all_t_xz)
+                all_t_xz += list(t_xz)
 
     logging.info('Saving results')
 
     # Save results
-    np.save(folder + '/' + filename_prefix + '_theta0' + '.npy', all_theta0)
-    np.save(folder + '/' + filename_prefix + '_theta1' + '.npy', all_theta1)
-    np.save(folder + '/' + filename_prefix + '_x' + '.npy', all_x)
-    np.save(folder + '/' + filename_prefix + '_y' + '.npy', all_y)
+    np.save(folder + '/' + filename + '_theta0' + '.npy', all_theta0)
+    np.save(folder + '/' + filename + '_theta1' + '.npy', all_theta1)
+    np.save(folder + '/' + filename + '_x' + '.npy', all_x)
+    np.save(folder + '/' + filename + '_y' + '.npy', all_y)
     if generate_joint_ratio:
-        np.save(folder + '/' + filename_prefix + '_r_xz' + '.npy', all_r_xz)
+        np.save(folder + '/' + filename + '_r_xz' + '.npy', all_r_xz)
     if generate_joint_score:
-        np.save(folder + '/' + filename_prefix + '_t_xz' + '.npy', all_t_xz)
+        np.save(folder + '/' + filename + '_t_xz' + '.npy', all_t_xz)
 
 
-def run_simulate():
+def main():
     """ Starts simulation """
 
     # Set up logging and numpy
@@ -162,54 +185,26 @@ def run_simulate():
     parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to no theta1')
     parser.add_argument('--gridsampling', action='store_true', help='If argument theta0 is not set, samples theta0 on a'
                                                                     + ' grid rather than randomly')
-    parser.add_argument('--nsamples', default=100, help='Number of samples per theta value')
+    parser.add_argument('--nsamples', type=int, default=100, help='Number of samples per theta value')
     parser.add_argument('--noratio', action='store_true', help='Do not generate joint ratio')
     parser.add_argument('--noscore', action='store_true', help='Do not generate joint score')
 
     args = parser.parse_args()
 
-    logging.info('Simulation routine')
-    logging.info('  Simulator:            %s', args.simulator)
-    logging.info('  Sample:               %s', args.sample)
-    logging.info('  theta0:               %s', 'default' if args.theta0 is None else args.theta0)
-    logging.info('  theta1:               %s', 'default' if args.theta1 is None else args.theta1)
-    if args.theta0 is None:
-        logging.info('  theta sampling:       %s', 'grid' if args.gridsampling else 'random')
-    logging.info('  Samples / theta:      %s', args.nsamples)
-    logging.info('  Generate joint ratio: %s', not args.noratio)
-    logging.info('  Generate joint score: %s', not args.noscore)
-
-    # Validate inputs
-    if args.simulator not in ['galton', 'epidemiology']:
-        raise ValueError('Unknown simulator: {0}'.format(args.simulator))
-
-    # Load data
-    theta0 = args.theta0
-    if theta0 is not None:
-        theta0 = np.load(base_dir + '/goldmine/data/thetas/' + args.simulator + '/' + theta0)
-
-    theta1 = args.theta1
-    if theta1 is not None:
-        theta1 = np.load(base_dir + '/goldmine/data/thetas/' + args.simulator + '/' + theta1)
-
-    # Filenames
-    sample_folder = base_dir + '/goldmine/data/samples/' + args.simulator
-    sample_filename = args.simulator + '_' + args.sample
-
     # Start simulation
     simulate(
         args.simulator,
-        theta0=theta0,
-        theta1=theta1,
+        args.sample,
+        theta0=args.theta0,
+        theta1=args.theta1,
         n_samples_per_theta=args.nsamples,
-        folder=sample_folder,
-        filename_prefix=sample_filename,
         generate_joint_ratio=not args.noratio,
         generate_joint_score=not args.noscore,
+        grid_sampling=args.gridsampling
     )
 
     logging.info("That's all for now, have a nice day!")
 
 
 if __name__ == '__main__':
-    run_simulate()
+    main()

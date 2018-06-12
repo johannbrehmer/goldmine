@@ -152,13 +152,13 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
                 bn = BatchNorm(n_inputs, alpha=self.alpha)
                 self.bns.append(bn)
 
-    def forward(self, theta, x, fix_batch_norm=False, track_score=True):
+    def forward(self, theta, x, fix_batch_norm=None, track_score=True):
 
         """ Transforms x into u = f^-1(x) """
 
         # Change batch norm means only while training
-        if not self.training:
-            fix_batch_norm = True
+        if fix_batch_norm is None:
+            fix_batch_norm = not self.training
 
         # Track gradient wrt theta
         if track_score and not theta.requires_grad:  # Can this happen?
@@ -190,7 +190,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         return u
 
-    def log_p(self, theta, x):
+    def predict_log_likelihood(self, theta, x):
 
         """ Calculates log p(x) """
 
@@ -198,7 +198,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         return self.log_likelihood
 
-    def score(self, theta, x):
+    def predict_score(self, theta, x):
 
         """ Calculates log p(x) """
 
@@ -206,7 +206,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         return self.score
 
-    def gen(self, theta, n_samples=1, u=None):
+    def generate_samples(self, theta, n_samples=1, u=None):
         """
         Generate samples, by propagating random numbers through each made.
         :param n_samples: number of samples
@@ -222,10 +222,10 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
             for i, (made, bn) in enumerate(zip(mades[::-1], bns[::-1])):
                 x = bn.inverse(x)
-                x = made.gen(theta, n_samples, x)
+                x = made.generate_samples(theta, n_samples, x)
         else:
             mades = [made for made in self.mades]
             for made in mades[::-1]:
-                x = made.gen(theta, n_samples, x)
+                x = made.generate_samples(theta, n_samples, x)
 
         return x
