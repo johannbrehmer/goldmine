@@ -112,10 +112,8 @@ def simulate(simulator_name,
                     random_state=random_state
                 )
             elif generate_joint_score:
-                x, r_xz, t_xy = simulator.rvs_ratio_score(
+                x, r_xz, t_xy = simulator.rvs_score(
                     theta=theta0_,
-                    theta0=theta0_,
-                    theta1=theta1_,
                     theta_score=theta0_,
                     n=n_samples_per_theta_and_draw,
                     random_state=random_state
@@ -170,7 +168,7 @@ def run_simulate():
 
     args = parser.parse_args()
 
-    logging.info('Starting simulation')
+    logging.info('Simulation routine')
     logging.info('  Simulator:            %s', args.simulator)
     logging.info('  Sample:               %s', args.sample)
     logging.info('  theta0:               %s', 'default' if args.theta0 is None else args.theta0)

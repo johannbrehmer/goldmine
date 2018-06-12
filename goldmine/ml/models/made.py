@@ -1,14 +1,13 @@
 import numpy as np
 import numpy.random as rng
+import logging
 
 import torch
-from torch.autograd import Variable
+from torch import tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .utils.masks import create_degrees, create_masks, create_weights, create_weights_conditional
-
-dtype = np.float32
+from .masks import create_degrees, create_masks, create_weights, create_weights_conditional
 
 
 class GaussianMADE(nn.Module):
@@ -84,20 +83,18 @@ class GaussianMADE(nn.Module):
 
         # TODO: reformulate in pyTorch instread of numpy
 
-        x = np.zeros([n_samples, self.n_inputs], dtype=dtype)
-        # x = Variable(FloatTensor(np.zeros([n_samples, self.n_inputs], dtype=dtype))) if u is None else u
-        u = rng.randn(n_samples, self.n_inputs).astype(dtype) if u is None else u.data
-        # u = Variable(FloatTensor(rng.randn(n_samples, self.n_inputs).astype(dtype))) if u is None else u
+        x = np.zeros([n_samples, self.n_inputs])
+        u = rng.randn(n_samples, self.n_inputs) if u is None else u.data.numpy()
 
         for i in range(1, self.n_inputs + 1):
-            self.forward(Variable(torch.Tensor(x)))  # Sets Gaussian parameters: self.m and self.logp
+            self.forward(tensor(x))  # Sets Gaussian parameters: self.m and self.logp
             m = self.m.data.numpy()
             logp = self.logp.data.numpy()
 
             idx = np.argwhere(self.input_order == i)[0, 0]
             x[:, idx] = m[:, idx] + np.exp(np.minimum(-0.5 * logp[:, idx], 10.0)) * u[:, idx]
 
-        return Variable(torch.Tensor(x))
+        return tensor(x)
 
 
 class ConditionalGaussianMADE(nn.Module):
@@ -184,15 +181,15 @@ class ConditionalGaussianMADE(nn.Module):
 
         # TODO: reformulate in pyTorch instread of numpy
 
-        x = np.zeros([n_samples, self.n_inputs], dtype=dtype)
-        u = rng.randn(n_samples, self.n_inputs).astype(dtype) if u is None else u.data.numpy()
+        x = np.zeros([n_samples, self.n_inputs])
+        u = rng.randn(n_samples, self.n_inputs) if u is None else u.data.numpy()
 
         for i in range(1, self.n_inputs + 1):
-            self.forward(Variable(torch.Tensor(theta)), Variable(torch.Tensor(x)))
+            self.forward(tensor(theta), tensor(x))
             m = self.m.data.numpy()
             logp = self.logp.data.numpy()
 
             idx = np.argwhere(self.input_order == i)[0, 0]
             x[:, idx] = m[:, idx] + np.exp(np.minimum(-0.5 * logp[:, idx], 10.0)) * u[:, idx]
 
-        return Variable(torch.Tensor(x))
+        return tensor(x)

@@ -2,10 +2,11 @@ import numpy as np
 import numpy.random as rng
 
 import torch
-from torch.autograd import Variable
+from torch import tensor
 import torch.nn as nn
 
-dtype = np.float32
+# TODO: switch to pure torch syntax
+# TODO: consider unifying dtypes (float?)
 
 
 def create_degrees(n_inputs, n_hiddens, input_order, mode):
@@ -68,12 +69,12 @@ def create_masks(degrees):
     Ms = []
 
     for l, (d0, d1) in enumerate(zip(degrees[:-1], degrees[1:])):
-        M = d0[:, np.newaxis] <= d1
-        M = Variable(torch.Tensor(M.astype(dtype)))  # ?
+        M = (d0[:, np.newaxis] <= d1).astype(np.float)
+        M = tensor(M)
         Ms.append(M)
 
-    Mmp = degrees[-1][:, np.newaxis] < degrees[0]
-    Mmp = Variable(torch.Tensor(Mmp.astype(dtype)))
+    Mmp = (degrees[-1][:, np.newaxis] < degrees[0]).astype(np.float)
+    Mmp = tensor(Mmp)
 
     return Ms, Mmp
 
@@ -93,31 +94,26 @@ def create_weights(n_inputs, n_hiddens, n_comps=None):
     n_units = np.concatenate(([n_inputs], n_hiddens))
 
     for N0, N1 in zip(n_units[:-1], n_units[1:]):
-        W = nn.Parameter(torch.Tensor((rng.randn(N0, N1) / np.sqrt(N0 + 1)).astype(dtype)))
-        b = nn.Parameter(torch.Tensor(np.zeros(N1, dtype=dtype)))
+        W = nn.Parameter(tensor((rng.randn(N0, N1) / np.sqrt(N0 + 1))))
+        b = nn.Parameter(tensor(np.zeros((N1,))))
         Ws.append(W)
         bs.append(b)
 
     if n_comps is None:
-        Wm = nn.Parameter(torch.Tensor((rng.randn(n_units[-1], n_inputs)
-                                        / np.sqrt(n_units[-1] + 1)).astype(dtype)))
-        Wp = nn.Parameter(torch.Tensor((rng.randn(n_units[-1], n_inputs)
-                                        / np.sqrt(n_units[-1] + 1)).astype(dtype)))
-        bm = nn.Parameter(torch.Tensor(np.zeros(n_inputs, dtype=dtype)))
-        bp = nn.Parameter(torch.Tensor(np.zeros(n_inputs, dtype=dtype)))
+        Wm = nn.Parameter(tensor((rng.randn(n_units[-1], n_inputs) / np.sqrt(n_units[-1] + 1))))
+        Wp = nn.Parameter(tensor((rng.randn(n_units[-1], n_inputs) / np.sqrt(n_units[-1] + 1))))
+        bm = nn.Parameter(tensor(np.zeros((n_inputs,))))
+        bp = nn.Parameter(tensor(np.zeros((n_inputs,))))
 
         return Ws, bs, Wm, bm, Wp, bp
     else:
 
-        Wm = nn.Parameter(torch.Tensor((rng.randn(n_units[-1], n_inputs, n_comps)
-                                        / np.sqrt(n_units[-1] + 1)).astype(dtype)))
-        Wp = nn.Parameter(torch.Tensor((rng.randn(n_units[-1], n_inputs, n_comps)
-                                        / np.sqrt(n_units[-1] + 1)).astype(dtype)))
-        Wa = nn.Parameter(torch.Tensor((rng.randn(n_units[-1], n_inputs, n_comps)
-                                        / np.sqrt(n_units[-1] + 1)).astype(dtype)))
-        bm = nn.Parameter(torch.Tensor(rng.randn(n_inputs, n_comps).astype(dtype)))
-        bp = nn.Parameter(torch.Tensor(rng.randn(n_inputs, n_comps).astype(dtype)))
-        ba = nn.Parameter(torch.Tensor(rng.randn(n_inputs, n_comps).astype(dtype)))
+        Wm = nn.Parameter(tensor((rng.randn(n_units[-1], n_inputs, n_comps) / np.sqrt(n_units[-1] + 1))))
+        Wp = nn.Parameter(tensor((rng.randn(n_units[-1], n_inputs, n_comps) / np.sqrt(n_units[-1] + 1))))
+        Wa = nn.Parameter(tensor((rng.randn(n_units[-1], n_inputs, n_comps) / np.sqrt(n_units[-1] + 1))))
+        bm = nn.Parameter(tensor(rng.randn(n_inputs, n_comps)))
+        bp = nn.Parameter(tensor(rng.randn(n_inputs, n_comps)))
+        ba = nn.Parameter(tensor(rng.randn(n_inputs, n_comps)))
 
         return Ws, bs, Wm, bm, Wp, bp, Wa, ba
 
@@ -132,6 +128,5 @@ def create_weights_conditional(n_conditionals, n_inputs, n_hiddens, n_comps):
     :return: weights and biases, as theano shared variables
     """
 
-    Wx = nn.Parameter(
-        torch.Tensor((rng.randn(n_conditionals, n_hiddens[0]) / np.sqrt(n_conditionals + 1)).astype(dtype)))
+    Wx = nn.Parameter(tensor((rng.randn(n_conditionals, n_hiddens[0]) / np.sqrt(n_conditionals + 1))))
     return (Wx,) + create_weights(n_inputs, n_hiddens, n_comps)

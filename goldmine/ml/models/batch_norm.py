@@ -1,13 +1,7 @@
 import numpy as np
 
 import torch
-# from torch import FloatTensor
-from torch.autograd import Variable
 import torch.nn as nn
-
-# from torch.nn import Parameter
-
-dtype = np.float32
 
 
 class BatchNorm(nn.Module):
@@ -43,8 +37,8 @@ class BatchNorm(nn.Module):
 
             # keep track of running mean and var (for u -> x direction)
             if self.running_mean is None:
-                self.running_mean = Variable(torch.zeros(self.n_units))
-                self.running_var = Variable(torch.zeros(self.n_units))
+                self.running_mean = torch.zeros(self.n_units)
+                self.running_var = torch.zeros(self.n_units)
                 self.running_mean += self.mean
                 self.running_var += self.var
             else:
