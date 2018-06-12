@@ -44,7 +44,7 @@ def train(model,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
-          validation_split=None, early_stopping=False, early_stopping_patience=10,
+          validation_split=0.2, early_stopping=True,
           learning_curve_folder=None, learning_curve_filename=None,
           n_epochs_verbose=1):
     """
@@ -68,8 +68,6 @@ def train(model,
     """
 
     # TODO: support for r and z terms in losses
-    # TODO: Implement early stopping
-    # TODO: Save learning curves
 
     logging.info('Starting training')
 
@@ -126,6 +124,12 @@ def train(model,
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
 
+    # Early stopping
+    early_stopping = early_stopping and (validation_split is not None)
+    early_stopping_best_validation_loss = None
+    early_stopping_best_model = None
+    early_stopping_epoch = None
+
     # Log losses over training
     train_losses = []
     validation_losses = []
@@ -163,109 +167,54 @@ def train(model,
 
         # Validation
         if validation_split is None:
-            if (epoch + 1) % 10 == 0:
+            if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
                 logging.info('  Epoch %d: train loss %.3f'
                              % (epoch + 1, train_losses[-1]))
             continue
 
         val_loss = 0.0
 
-        with torch.no_grad():
-            model.eval()
+        #with torch.no_grad():
+        model.eval()
 
-            for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
-                theta = theta.to(device)
-                x = x.to(device)
-                y = y.to(device)
+        for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
+            theta = theta.to(device)
+            x = x.to(device)
+            y = y.to(device)
 
-                # Evaluate loss
-                yhat = model(theta, x)
-                loss = loss_function(model, y, yhat)
-                val_loss += loss.item()
+            # Evaluate loss
+            yhat = model(theta, x)
+            loss = loss_function(model, y, yhat)
+            val_loss += loss.item()
 
-            validation_losses.append(val_loss)
+        validation_losses.append(val_loss)
 
-        if (epoch + 1) % n_epochs_verbose == 0:
+        # Early stopping
+        if early_stopping:
+            if early_stopping_best_validation_loss is None or val_loss < early_stopping_best_validation_loss:
+                early_stopping_best_validation_loss = val_loss
+                early_stopping_best_model = model.state_dict()
+                early_stopping_epoch = epoch
+
+        if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
             logging.info('  Epoch %d: train loss %.3f, validation loss %.3f'
                          % (epoch + 1, train_losses[-1], validation_losses[-1]))
 
-        # ### OLD CODE ###
-        #
-        # theta_train, x_train = shuffle(theta_train, x_train)
-        # theta_validation, x_validation = shuffle(theta_train, x_train)
-        #
-        # # Train batches
-        # n_batches = int(math.ceil(len(x_train) / batch_size))
-        # for i in range(n_batches):
-        #     x_train_batch = Variable(torch.Tensor(x_train[i * batch_size:(i + 1) * batch_size]))
-        #     theta_train_batch = Variable(torch.Tensor(theta_train[i * batch_size:(i + 1) * batch_size]))
-        #     x_val_batch = Variable(torch.Tensor(x_validation[i * batch_size:(i + 1) * batch_size]))
-        #     theta_val_batch = Variable(torch.Tensor(theta_validation[i * batch_size:(i + 1) * batch_size]))
-        #
-        #     optimizer.zero_grad()
-        #
-        #     u = model(theta_train_batch, x_train_batch)
-        #     log_likelihood = model.log_likelihood
-        #     loss = - torch.mean(log_likelihood)
-        #     train_loss += loss.data[0]
-        #
-        #     loss.backward()
-        #     optimizer.step()
-        #
-        #     u = model(theta_val_batch, x_val_batch)
-        #     log_likelihood = model.log_likelihood
-        #     loss = - torch.mean(log_likelihood)
-        #     val_loss += loss.data[0]
-        #
-        # train_losses.append(train_loss)
-        # validation_losses.append(val_loss)
-        #
-        # # print statistics
-        # if epoch % 100 == 99:
-        #     logging.info('Epoch %d: train loss %.3f, validation loss %.3f'
-        #                  % (epoch + 1, train_losses[-1], validation_losses[-1]))
-        #
-        # #### GOOGLE CODE ###
-        #
-        # def train(epoch):
-        #     model.train()
-        #     train_loss = 0
-        #     for batch_idx, (data, _) in enumerate(train_loader):
-        #         data = data.to(device)
-        #         optimizer.zero_grad()
-        #         recon_batch, mu, logvar = model(data)
-        #         loss = loss_function(recon_batch, data, mu, logvar)
-        #         loss.backward()
-        #         train_loss += loss.item()
-        #         optimizer.step()
-        #         if batch_idx % args.log_interval == 0:
-        #             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #                 epoch, batch_idx * len(data), len(train_loader.dataset),
-        #                        100. * batch_idx / len(train_loader),
-        #                        loss.item() / len(data)))
-        #
-        #     print('====> Epoch: {} Average loss: {:.4f}'.format(
-        #         epoch, train_loss / len(train_loader.dataset)))
-        #
-        # def test(epoch):
-        #     model.eval()
-        #     test_loss = 0
-        #     with torch.no_grad():
-        #         for i, (data, _) in enumerate(test_loader):
-        #             data = data.to(device)
-        #             recon_batch, mu, logvar = model(data)
-        #             test_loss += loss_function(recon_batch, data, mu, logvar).item()
-        #             if i == 0:
-        #                 n = min(data.size(0), 8)
-        #                 comparison = torch.cat([data[:n],
-        #                                         recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
-        #                 save_image(comparison.cpu(),
-        #                            'results/reconstruction_' + str(epoch) + '.png', nrow=n)
-        #
-        #     test_loss /= len(test_loader.dataset)
-        #     print('====> Test set loss: {:.4f}'.format(test_loss))
-        #
-        # ### END ###
+    # Early stopping
+    if early_stopping:
+        if early_stopping_best_validation_loss < val_loss:
+            logging.info('Early stopping after epoch %s, with loss %s compared to final loss %s',
+                         early_stopping_epoch, early_stopping_best_validation_loss, val_loss)
+            model.load_state_dict(early_stopping_best_model)
+        else:
+            logging.info('Early stopping does not improve performance')
+
+
+    # Save learning curve
+    if learning_curve_folder is not None and learning_curve_filename is not None:
+        np.save(learning_curve_folder + '/' + learning_curve_filename + '_train_loss.npy', train_losses)
+        if validation_split is not None:
+            np.save(learning_curve_folder + '/' + learning_curve_filename + '_validation_loss.npy', validation_losses)
 
     logging.info('Finished training')
 

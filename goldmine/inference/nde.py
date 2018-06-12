@@ -20,8 +20,6 @@ class MAFInference(Inference):
                  batch_norm=False):
         super().__init__()
 
-        self.dtype = np.float32
-
         self.maf = ConditionalMaskedAutoregressiveFlow(
             n_conditionals=n_parameters,
             n_inputs=n_observables,
@@ -79,10 +77,10 @@ class MAFInference(Inference):
         )
 
     def save(self, filename):
-        raise NotImplementedError()
+        torch.save(self.maf.state_dict(), filename)
 
     def load(self, filename):
-        raise NotImplementedError()
+        self.maf.load_state_dict(torch.load(filename))
 
     def predict_density(self, x=None, theta=None):
         raise NotImplementedError()

@@ -72,7 +72,7 @@ def train(simulator_name,
         final_learning_rate=final_lr
     )
 
-    # Save model
+    # Save models
     inference.save(model_folder + '/' + model_filename)
 
 
@@ -92,7 +92,7 @@ def run_train():
 
     args = parser.parse_args()
 
-    logging.info('Starting simulation')
+    logging.info('Training routine')
     logging.info('  Simulator:            %s', args.simulator)
     logging.info('  Inference method:     %s', args.inference)
 
