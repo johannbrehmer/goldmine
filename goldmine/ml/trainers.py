@@ -196,7 +196,7 @@ def train(model,
 
             # Evaluate loss
             yhat = model(theta, x)
-            loss = loss_function(model, y, yhat)
+            loss = loss_function(model, y, r_xz, t_xz)
             val_loss += loss.item()
 
         val_losses.append(val_loss)

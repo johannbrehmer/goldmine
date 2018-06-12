@@ -23,6 +23,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          alpha=1.,
           training_sample_size=None,
           n_epochs=50,
           batch_size=64,
@@ -51,7 +52,7 @@ def train(simulator_name,
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
 
-    inference = create_inference(inference_name)(n_parameters, n_observables)
+    inference = create_inference(inference_name)(n_parameters, n_observables, alpha=alpha)
 
     if inference.requires_class_label():
         ys = np.load(sample_folder + '/' + sample_filename + '_y.npy')
@@ -101,6 +102,8 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "galton" or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
+    parser.add_argument('--alpha', type=float, default=1.,
+                        help='alpha parameter for SCANDAL')
     parser.add_argument('--trainingsamplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')
 
@@ -109,6 +112,7 @@ def main():
     logging.info('Start-up options:')
     logging.info('  Simulator:            %s', args.simulator)
     logging.info('  Inference method:     %s', args.inference)
+    logging.info('  alpha:                %s', args.alpha)
     logging.info('  Training sample size: %s',
                  'maximal' if args.trainingsamplesize is None else args.trainingsamplesize)
 
@@ -116,6 +120,7 @@ def main():
     train(
         args.simulator,
         args.inference,
+        alpha=args.alpha,
         training_sample_size=args.trainingsamplesize
     )
 
