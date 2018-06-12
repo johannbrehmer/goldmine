@@ -4,12 +4,11 @@ import torch
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
 from goldmine.ml.trainers import train
+from goldmine.ml.losses import negative_log_likelihood_loss
 
 
 class MAFInference(Inference):
     """ Neural conditional density estimation with masked autoregressive flows. """
-
-    # TODO: Weight initialization
 
     def __init__(self,
                  n_parameters,
@@ -61,12 +60,9 @@ class MAFInference(Inference):
             n_epochs=50):
         """ Trains MAF """
 
-        def nll_loss(model, y_true, y_pred):
-            return -torch.mean(model.log_likelihood)
-
         train(
             model=self.maf,
-            loss_function=nll_loss,
+            loss_function=negative_log_likelihood_loss,
             thetas=theta,
             xs=x,
             ys=None,

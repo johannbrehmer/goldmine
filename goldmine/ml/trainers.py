@@ -126,13 +126,13 @@ def train(model,
 
     # Early stopping
     early_stopping = early_stopping and (validation_split is not None)
-    early_stopping_best_validation_loss = None
+    early_stopping_best_val_loss = None
     early_stopping_best_model = None
     early_stopping_epoch = None
 
     # Log losses over training
     train_losses = []
-    validation_losses = []
+    val_losses = []
 
     # Loop over epochs
     for epoch in range(n_epochs):
@@ -174,7 +174,7 @@ def train(model,
 
         val_loss = 0.0
 
-        #with torch.no_grad():
+        # with torch.no_grad():
         model.eval()
 
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
@@ -187,35 +187,38 @@ def train(model,
             loss = loss_function(model, y, yhat)
             val_loss += loss.item()
 
-        validation_losses.append(val_loss)
+        val_losses.append(val_loss)
 
         # Early stopping
         if early_stopping:
-            if early_stopping_best_validation_loss is None or val_loss < early_stopping_best_validation_loss:
-                early_stopping_best_validation_loss = val_loss
+            if early_stopping_best_val_loss is None or val_loss < early_stopping_best_val_loss:
+                early_stopping_best_val_loss = val_loss
                 early_stopping_best_model = model.state_dict()
                 early_stopping_epoch = epoch
 
         if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
-            logging.info('  Epoch %d: train loss %.3f, validation loss %.3f'
-                         % (epoch + 1, train_losses[-1], validation_losses[-1]))
+            if early_stopping and epoch == early_stopping_epoch:
+                logging.info('  Epoch %d: train loss %.3f, validation loss %.3f (*)'
+                             % (epoch + 1, train_losses[-1], val_losses[-1]))
+            else:
+                logging.info('  Epoch %d: train loss %.3f, validation loss %.3f'
+                             % (epoch + 1, train_losses[-1], val_losses[-1]))
 
     # Early stopping
     if early_stopping:
-        if early_stopping_best_validation_loss < val_loss:
+        if early_stopping_best_val_loss < val_loss:
             logging.info('Early stopping after epoch %s, with loss %s compared to final loss %s',
-                         early_stopping_epoch, early_stopping_best_validation_loss, val_loss)
+                         early_stopping_epoch + 1, early_stopping_best_val_loss, val_loss)
             model.load_state_dict(early_stopping_best_model)
         else:
-            logging.info('Early stopping does not improve performance')
-
+            logging.info('Early stopping did not improve performance')
 
     # Save learning curve
     if learning_curve_folder is not None and learning_curve_filename is not None:
         np.save(learning_curve_folder + '/' + learning_curve_filename + '_train_loss.npy', train_losses)
         if validation_split is not None:
-            np.save(learning_curve_folder + '/' + learning_curve_filename + '_validation_loss.npy', validation_losses)
+            np.save(learning_curve_folder + '/' + learning_curve_filename + '_validation_loss.npy', val_losses)
 
     logging.info('Finished training')
 
-    return train_losses, validation_losses
+    return train_losses, val_losses
