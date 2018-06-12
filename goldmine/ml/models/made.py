@@ -162,7 +162,7 @@ class ConditionalGaussianMADE(nn.Module):
 
         return u
 
-    def log_p(self, theta, x):
+    def predict_log_likelihood(self, theta, x):
 
         """ Calculates log p(x) """
 
@@ -170,7 +170,7 @@ class ConditionalGaussianMADE(nn.Module):
 
         return self.log_likelihood
 
-    def gen(self, theta, n_samples=1, u=None):
+    def generate_samples(self, theta, n_samples=1, u=None):
         """
         Generate samples from made. Requires as many evaluations as number of inputs.
         :param theta: conditionals

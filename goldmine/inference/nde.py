@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch import tensor
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
@@ -82,11 +83,22 @@ class MAFInference(Inference):
     def load(self, filename):
         self.maf.load_state_dict(torch.load(filename))
 
-    def predict_density(self, x=None, theta=None):
-        raise NotImplementedError()
+    def predict_density(self, x=None, theta=None, log=False):
+        log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).numpy()
 
-    def predict_ratio(self, x=None, theta=None, theta1=None):
-        raise NotImplementedError()
+        if log:
+            return log_likelihood
+        return np.exp(log_likelihood)
+
+    def predict_ratio(self, x=None, theta=None, theta1=None, log=False):
+        log_likelihood_theta0 = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).numpy()
+        log_likelihood_theta1 = self.maf.predict_log_likelihood(tensor(theta1), tensor(x)).numpy()
+
+        if log:
+            return log_likelihood_theta0 - log_likelihood_theta1
+        return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
 
     def predict_score(self, x=None, theta=None):
-        raise NotImplementedError()
+        score = self.maf.predict_score(tensor(theta), tensor(x)).numpy()
+
+        return score
