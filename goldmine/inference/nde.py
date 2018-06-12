@@ -57,7 +57,9 @@ class MAFInference(Inference):
             batch_size=64,
             initial_learning_rate=0.001,
             final_learning_rate=0.0001,
-            n_epochs=50):
+            n_epochs=50,
+            learning_curve_folder=None,
+            learning_curve_filename=None):
         """ Trains MAF """
 
         train(
@@ -69,7 +71,9 @@ class MAFInference(Inference):
             batch_size=batch_size,
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
-            n_epochs=50
+            n_epochs=50,
+            learning_curve_folder=learning_curve_folder,
+            learning_curve_filename=learning_curve_filename
         )
 
     def save(self, filename):
