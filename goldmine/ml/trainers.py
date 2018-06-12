@@ -68,6 +68,8 @@ def train(model,
     :return:
     """
 
+    # TODO: write out separate losses
+
     logging.info('Starting training')
     logging.debug('Score data: %s', t_xzs)
 
@@ -196,7 +198,7 @@ def train(model,
             y = y.to(device)
 
             # Evaluate loss
-            yhat = model(theta, x)
+            _ = model(theta, x)
             loss = loss_function(model, y, r_xz, t_xz)
             val_loss += loss.item()
 

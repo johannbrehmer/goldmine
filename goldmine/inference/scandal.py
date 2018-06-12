@@ -43,13 +43,13 @@ class SCANDALInference(Inference):
     def requires_joint_score(self):
         return True
 
-    def predicts_density(self):
+    def can_predict_density(self):
         return True
 
-    def predicts_ratio(self):
+    def can_predict_ratio(self):
         return True
 
-    def predicts_score(self):
+    def can_predict_score(self):
         return True
 
     def fit(self,
@@ -110,3 +110,8 @@ class SCANDALInference(Inference):
         score = self.maf.predict_score(tensor(theta), tensor(x)).detach().numpy()
 
         return score
+
+    def generate_samples(self, theta=None):
+
+        # TODO
+        raise NotImplementedError

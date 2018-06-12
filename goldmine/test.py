@@ -27,6 +27,8 @@ def test(simulator_name,
          training_sample_size=None):
     """ Main training function """
 
+    # TODO: generate samples from inference method
+
     # Folders
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
