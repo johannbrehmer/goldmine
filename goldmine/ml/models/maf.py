@@ -206,13 +206,15 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         return self.score
 
-    def generate_samples(self, theta, n_samples=1, u=None):
+    def generate_samples(self, theta, u=None):
         """
         Generate samples, by propagating random numbers through each made.
         :param n_samples: number of samples
         :param u: random numbers to use in generating samples; if None, new random numbers are drawn
         :return: samples
         """
+
+        n_samples = theta.shape[0]
 
         x = tensor(rng.randn(n_samples, self.n_inputs)) if u is None else u
 
@@ -222,10 +224,10 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
             for i, (made, bn) in enumerate(zip(mades[::-1], bns[::-1])):
                 x = bn.inverse(x)
-                x = made.generate_samples(theta, n_samples, x)
+                x = made.generate_samples(theta, x)
         else:
             mades = [made for made in self.mades]
             for made in mades[::-1]:
-                x = made.generate_samples(theta, n_samples, x)
+                x = made.generate_samples(theta, x)
 
         return x

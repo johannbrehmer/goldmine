@@ -43,15 +43,6 @@ class SCANDALInference(Inference):
     def requires_joint_score(self):
         return True
 
-    def can_predict_density(self):
-        return True
-
-    def can_predict_ratio(self):
-        return True
-
-    def can_predict_score(self):
-        return True
-
     def fit(self,
             theta=None,
             x=None,
@@ -91,14 +82,14 @@ class SCANDALInference(Inference):
     def load(self, filename):
         self.maf.load_state_dict(torch.load(filename))
 
-    def predict_density(self, x=None, theta=None, log=False):
+    def predict_density(self, x, theta, log=False):
         log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()
 
         if log:
             return log_likelihood
         return np.exp(log_likelihood)
 
-    def predict_ratio(self, x=None, theta=None, theta1=None, log=False):
+    def predict_ratio(self, x, theta, theta1, log=False):
         log_likelihood_theta0 = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()
         log_likelihood_theta1 = self.maf.predict_log_likelihood(tensor(theta1), tensor(x)).detach().numpy()
 
@@ -106,12 +97,11 @@ class SCANDALInference(Inference):
             return log_likelihood_theta0 - log_likelihood_theta1
         return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
 
-    def predict_score(self, x=None, theta=None):
+    def predict_score(self, x, theta):
         score = self.maf.predict_score(tensor(theta), tensor(x)).detach().numpy()
 
         return score
 
-    def generate_samples(self, theta=None):
-
-        # TODO
-        raise NotImplementedError
+    def generate_samples(self, theta):
+        samples = self.maf.generate_samples(theta).detach().numpy()
+        return samples

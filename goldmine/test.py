@@ -27,26 +27,33 @@ def test(simulator_name,
          training_sample_size=None):
     """ Main training function """
 
-    # TODO: generate samples from inference method
+    logging.info('Starting evaluation')
+    logging.info('  Simulator:            %s', simulator_name)
+    logging.info('  Inference method:     %s', inference_name)
+    logging.info('  alpha:                %s', alpha)
+    logging.info('  Training sample size: %s',
+                 'maximal' if args.trainingsamplesize is None else args.trainingsamplesize)
 
-    # Folders
+    # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    # Filenames
     sample_filename = simulator_name + '_test'
     model_filename = simulator_name + '_' + inference_name
     if training_sample_size is not None:
         model_filename += '_trainingsamplesize_' + str(training_sample_size)
 
     # Load test data
+    logging.info('Loading test sample')
     thetas = np.load(sample_folder + '/' + sample_filename + '_theta0.npy')
     xs = np.load(sample_folder + '/' + sample_filename + '_x.npy')
 
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
 
+    # Load inference model
+    logging.info('Loading trained model')
     inference = create_inference(
         inference_name,
         n_parameters=n_parameters,
@@ -54,14 +61,23 @@ def test(simulator_name,
         alpha=alpha
     )
 
-    # Load model
     inference.load(model_folder + '/' + model_filename + '.pt')
 
-    # Evaluate on test sample
-    log_p_hat = inference.predict_density(xs, thetas, log=True)
+    # Evaluate density on test sample
+    logging.info('Estimating densities on test sample')
+    try:
+        log_p_hat = inference.predict_density(xs, thetas, log=True)
+        np.save(result_folder + '/' + model_filename + '_log_p_hat.npy', log_p_hat)
+    except NotImplementedError:
+        logging.warning('Inference method %s does not support density evaluation', inference_name)
 
-    # Save results
-    np.save(result_folder + '/' + model_filename + '_log_p_hat.pt', log_p_hat)
+    # Generate samples
+    logging.info('Generating samples according to learned density')
+    try:
+        samples = inference.generate_samples(thetas)
+        np.save(result_folder + '/' + model_filename + '_samples_from_p_hat.npy', samples)
+    except NotImplementedError:
+        logging.warning('Inference method %s does not support sample generation', inference_name)
 
 
 def main():
@@ -81,13 +97,6 @@ def main():
                         help='Number of (training + validation) samples considered')
 
     args = parser.parse_args()
-
-    logging.info('Start-up options:')
-    logging.info('  Simulator:            %s', args.simulator)
-    logging.info('  Inference method:     %s', args.inference)
-    logging.info('  alpha:                %s', args.alpha)
-    logging.info('  Training sample size: %s',
-                 'maximal' if args.trainingsamplesize is None else args.trainingsamplesize)
 
     # Start simulation
     test(

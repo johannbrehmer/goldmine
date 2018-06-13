@@ -13,18 +13,6 @@ class Inference:
     def requires_joint_score(self):
         raise NotImplementedError()
 
-    def can_predict_density(self):
-        return NotImplementedError()
-
-    def can_predict_ratio(self):
-        return NotImplementedError()
-
-    def can_predict_score(self):
-        return NotImplementedError()
-
-    def can_generate_samples(self):
-        return NotImplementedError()
-
     def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None,
             batch_size=64, initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50):
         raise NotImplementedError()
@@ -35,14 +23,14 @@ class Inference:
     def load(self, filename):
         raise NotImplementedError()
 
-    def predict_density(self, x=None, theta=None):
+    def predict_density(self, x, theta):
         raise NotImplementedError()
 
-    def predict_ratio(self, x=None, theta=None, theta1=None):
+    def predict_ratio(self, x, theta, theta1):
         raise NotImplementedError()
 
-    def predict_score(self, x=None, theta=None):
+    def predict_score(self, x, theta):
         raise NotImplementedError()
 
-    def generate_samples(self, theta=None):
+    def generate_samples(self, theta):
         raise NotImplementedError()

@@ -31,20 +31,28 @@ def train(simulator_name,
           final_lr=0.0001):
     """ Main training function """
 
-    # Folders
+    logging.info('Starting training')
+    logging.info('  Simulator:            %s', simulator_name)
+    logging.info('  Inference method:     %s', inference_name)
+    logging.info('  alpha:                %s', alpha)
+    logging.info('  Training sample size: %s',
+                 'maximal' if training_sample_size is None else training_sample_size)
+    logging.info('  Epochs:               %s', n_epochs)
+    logging.info('  Batch size:           %s', batch_size)
+    logging.info('  Learning rate:        %s initially, decaying to %s', initial_lr, final_lr)
+
+    # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    # Input filenames
     sample_filename = simulator_name + '_train'
-
-    # Output filenames
     output_filename = simulator_name + '_' + inference_name
     if training_sample_size is not None:
         output_filename += '_trainingsamplesize_' + str(training_sample_size)
 
-    # Load training data
+    # Load training data and creating model
+    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/' + sample_filename + '_*.npy')
     thetas = np.load(sample_folder + '/' + sample_filename + '_theta0.npy')
     xs = np.load(sample_folder + '/' + sample_filename + '_x.npy')
 
@@ -74,13 +82,12 @@ def train(simulator_name,
     else:
         t_xz = None
 
-    logging.debug('Score data: %s', t_xz)
-
     # Restricted training sample size
     if training_sample_size is not None and training_sample_size < n_samples:
         thetas, xs, ys, r_xz, t_xz = shuffle(thetas, xs, ys, r_xz, t_xz)
 
     # Train model
+    logging.info('Training model %s on %s data', inference_name, simulator_name)
     inference.fit(
         thetas, xs,
         ys, r_xz, t_xz,
@@ -93,6 +100,7 @@ def train(simulator_name,
     )
 
     # Save models
+    logging.info('Saving learned model to %s', model_folder + '/' + output_filename + '.pt')
     inference.save(model_folder + '/' + output_filename + '.pt')
 
 
@@ -113,13 +121,6 @@ def main():
                         help='Number of (training + validation) samples considered')
 
     args = parser.parse_args()
-
-    logging.info('Start-up options:')
-    logging.info('  Simulator:            %s', args.simulator)
-    logging.info('  Inference method:     %s', args.inference)
-    logging.info('  alpha:                %s', args.alpha)
-    logging.info('  Training sample size: %s',
-                 'maximal' if args.trainingsamplesize is None else args.trainingsamplesize)
 
     # Start simulation
     train(

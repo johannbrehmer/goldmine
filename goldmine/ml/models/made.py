@@ -170,7 +170,7 @@ class ConditionalGaussianMADE(nn.Module):
 
         return self.log_likelihood
 
-    def generate_samples(self, theta, n_samples=1, u=None):
+    def generate_samples(self, theta, u=None):
         """
         Generate samples from made. Requires as many evaluations as number of inputs.
         :param theta: conditionals
@@ -180,6 +180,8 @@ class ConditionalGaussianMADE(nn.Module):
         """
 
         # TODO: reformulate in pyTorch instread of numpy
+
+        n_samples = theta.shape[0]
 
         x = np.zeros([n_samples, self.n_inputs])
         u = rng.randn(n_samples, self.n_inputs) if u is None else u.data.numpy()
