@@ -12,6 +12,7 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 try:
     from goldmine.various.look_up import create_inference
     from goldmine.various.utils import general_init
+    from goldmine.various.discriminate_samples import discriminate_samples
 except ImportError:
     if base_dir in sys.path:
         raise
@@ -19,20 +20,27 @@ except ImportError:
     print(sys.path)
     from goldmine.various.look_up import create_inference
     from goldmine.various.utils import general_init
+    from goldmine.various.discriminate_samples import discriminate_samples
 
 
 def test(simulator_name,
          inference_name,
          alpha=1.,
-         training_sample_size=None):
+         training_sample_size=None,
+         evaluate_density=True,
+         generate_samples=True,
+         classify_surrogate_vs_true_samples=True):
     """ Main training function """
 
     logging.info('Starting evaluation')
-    logging.info('  Simulator:            %s', simulator_name)
-    logging.info('  Inference method:     %s', inference_name)
-    logging.info('  alpha:                %s', alpha)
-    logging.info('  Training sample size: %s',
-                 'maximal' if args.trainingsamplesize is None else args.trainingsamplesize)
+    logging.info('  Simulator:                %s', simulator_name)
+    logging.info('  Inference method:         %s', inference_name)
+    logging.info('  alpha:                    %s', alpha)
+    logging.info('  Training sample size:     %s',
+                 'maximal' if training_sample_size is None else training_sample_size)
+    logging.info('  Evaluate densities:       %s', evaluate_density)
+    logging.info('  Evaluate densities:       %s', generate_samples)
+    logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
@@ -64,20 +72,29 @@ def test(simulator_name,
     inference.load(model_folder + '/' + model_filename + '.pt')
 
     # Evaluate density on test sample
-    logging.info('Estimating densities on test sample')
-    try:
-        log_p_hat = inference.predict_density(xs, thetas, log=True)
-        np.save(result_folder + '/' + model_filename + '_log_p_hat.npy', log_p_hat)
-    except NotImplementedError:
-        logging.warning('Inference method %s does not support density evaluation', inference_name)
+    if evaluate_density:
+        logging.info('Estimating densities on test sample')
+        try:
+            log_p_hat = inference.predict_density(xs, thetas, log=True)
+            np.save(result_folder + '/' + model_filename + '_log_p_hat.npy', log_p_hat)
+        except NotImplementedError:
+            logging.warning('Inference method %s does not support density evaluation', inference_name)
 
     # Generate samples
-    logging.info('Generating samples according to learned density')
-    try:
-        samples = inference.generate_samples(thetas)
-        np.save(result_folder + '/' + model_filename + '_samples_from_p_hat.npy', samples)
-    except NotImplementedError:
-        logging.warning('Inference method %s does not support sample generation', inference_name)
+    if generate_samples:
+        logging.info('Generating samples according to learned density')
+        try:
+            samples = inference.generate_samples(thetas)
+            np.save(result_folder + '/' + model_filename + '_samples_from_p_hat.npy', samples)
+        except NotImplementedError:
+            logging.warning('Inference method %s does not support sample generation', inference_name)
+
+    # Train classifier to distinguish samples from surrogate from samples from simulator
+    if classify_surrogate_vs_true_samples:
+        logging.info('Training classifier to discriminate surrogate samples from simulator samples')
+        xs_surrogate = np.load(result_folder + '/' + model_filename + '_samples_from_p_hat.npy')
+        roc_auc = discriminate_samples(xs, xs_surrogate)
+        np.save(result_folder + '/' + model_filename + '_roc_auc_surrogate_vs_simulator.npy', [roc_auc])
 
 
 def main():
