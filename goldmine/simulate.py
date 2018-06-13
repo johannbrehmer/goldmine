@@ -34,6 +34,8 @@ def simulate(simulator_name,
     """
     Draws sample from a simulator.
 
+    :param grid_sampling:
+    :param sample_label:
     :param simulator_name: Specifies the simulator. Currently supported are 'galton' and 'epidemiology'.
     :param theta0: None or ndarray that provides a list of theta0 values (the numerator of the likelihood ratio as well
                    as the score reference point). If None, load simulator defaults.
@@ -44,8 +46,6 @@ def simulate(simulator_name,
     :param generate_joint_ratio: bool, whether to ask the simulator for the joint ratio (only if theta1 is given).
     :param generate_joint_score: bool, whether to ask the simulator for the joint score.
     :param n_samples_per_theta: Number of samples per combination of theta0 and theta1.
-    :param filename_prefix:
-    :param folder:
     :param random_state: Numpy random state.
     """
 

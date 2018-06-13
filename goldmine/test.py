@@ -30,7 +30,7 @@ def test(simulator_name,
          evaluate_density=True,
          generate_samples=True,
          classify_surrogate_vs_true_samples=True):
-    """ Main training function """
+    """ Main evaluation function """
 
     logging.info('Starting evaluation')
     logging.info('  Simulator:                %s', simulator_name)
