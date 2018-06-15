@@ -4,11 +4,12 @@ import logging
 from sklearn.metrics import roc_auc_score, roc_curve
 
 import torch
-from torch import tensor
-from torch.nn import Sequential, Linear, ReLU, CrossEntropyLoss
+from torch import tensor, nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+
+from goldmine.various.settings import dtype, dtype_np
 
 
 def discriminate_samples(x1, x2, test_split=0.5,
@@ -22,13 +23,13 @@ def discriminate_samples(x1, x2, test_split=0.5,
     device = torch.device("cuda" if run_on_gpu else "cpu")
 
     # Prepare data
-    xs = np.vstack([x1, x2])
-    ys = np.vstack([np.zeros(x1.shape[0], 1), np.ones(x2.shape[0], 1)])
+    xs = np.vstack([x1, x2]).astype(dtype_np)
+    ys = np.hstack([np.zeros((x1.shape[0],)), np.ones((x2.shape[0],))]).astype(dtype_np)
 
     n_samples, n_inputs = xs.shape
 
-    xs = torch.stack([tensor(i) for i in xs])
-    ys = torch.stack([tensor(i) for i in ys])
+    xs = torch.stack([tensor(i, dtype=dtype) for i in xs])
+    ys = tensor(ys, dtype=torch.long)  # Has to be long to use CrossEntropyLoss
 
     dataset = TensorDataset(xs, ys)
 
@@ -61,20 +62,25 @@ def discriminate_samples(x1, x2, test_split=0.5,
 
     for i in range(n_hidden_layers):
         n_in = n_inputs if i == 0 else n_units_per_hidden_layer
-        n_out = 1 if i == n_hidden_layers - 1 else n_units_per_hidden_layer
+        n_out = 2 if i == n_hidden_layers - 1 else n_units_per_hidden_layer
 
-        layers.append(('linear' + str(i), Linear(n_in, n_out, 5)))
-        layers.append(('relu' + str(i), ReLU()))
+        layers.append(('linear' + str(i), nn.Linear(n_in, n_out, 5)))
 
-    classifier = Sequential(OrderedDict(layers))
+        if i < n_hidden_layers - 1:
+            layers.append(('relu' + str(i), nn.ReLU()))
+
+    layers.append(('softmax', nn.Softmax(dim=1)))
+
+    classifier = nn.Sequential(OrderedDict(layers))
 
     # Train
-    loss_function = CrossEntropyLoss()
+    loss_function = nn.CrossEntropyLoss()
 
     optimizer = optim.Adam(classifier.parameters(), lr=initial_learning_rate)
 
     for epoch in range(n_epochs):
         classifier.train()
+        train_loss = 0.
 
         lr = initial_learning_rate * (final_learning_rate / initial_learning_rate) ** float(epoch / (n_epochs - 1.))
         for param_group in optimizer.param_groups:
@@ -86,23 +92,28 @@ def discriminate_samples(x1, x2, test_split=0.5,
 
             optimizer.zero_grad()
             yhat = classifier(x)
-            loss = loss_function(y, yhat)
+            loss = loss_function(yhat, y)
             loss.backward()
             optimizer.step()
 
-        logging.info('Epoch %s / %s done', epoch + 1, n_epochs)
+            train_loss += loss.item()
+
+        train_loss /= len(train_loader)
+
+        if (epoch + 1) % 10 == 0:
+            logging.info('  Epoch %s / %s: train loss %s', epoch + 1, n_epochs, train_loss)
 
     # Evaluate
     logging.info('Evaluating discriminative classifier')
     classifier.eval()
-    with torch.no_grad:
+    with torch.no_grad():
         x_test = x_test.to(device)
         y_test = y_test.to(device)
 
         yhat_test = classifier(x_test)
 
     y_test = y_test.detach().numpy()
-    yhat_test = yhat_test.detach().numpy()
+    yhat_test = yhat_test.detach().numpy()[:,1]
 
     # Calculate ROC AUC
     logging.info('Calculating ROC curve')
