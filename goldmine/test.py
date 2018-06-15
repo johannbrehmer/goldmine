@@ -93,8 +93,10 @@ def test(simulator_name,
     if classify_surrogate_vs_true_samples:
         logging.info('Training classifier to discriminate surrogate samples from simulator samples')
         xs_surrogate = np.load(result_folder + '/' + model_filename + '_samples_from_p_hat.npy')
-        roc_auc = discriminate_samples(xs, xs_surrogate)
+        roc_auc, tpr, fpr = discriminate_samples(xs, xs_surrogate)
         np.save(result_folder + '/' + model_filename + '_roc_auc_surrogate_vs_simulator.npy', [roc_auc])
+        np.save(result_folder + '/' + model_filename + '_fpr_surrogate_vs_simulator.npy', [fpr])
+        np.save(result_folder + '/' + model_filename + '_tpr_surrogate_vs_simulator.npy', [tpr])
 
 
 def main():
@@ -112,6 +114,8 @@ def main():
                         help='alpha parameter for SCANDAL')
     parser.add_argument('--trainingsamplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')
+    parser.add_argument('--classifiertest', action='store_true',
+                        help='Train classifier to discriminate between samples from simulator and surrogate')
 
     args = parser.parse_args()
 
@@ -120,7 +124,10 @@ def main():
         args.simulator,
         args.inference,
         alpha=args.alpha,
-        training_sample_size=args.trainingsamplesize
+        training_sample_size=args.trainingsamplesize,
+        evaluate_density=True,
+        generate_samples=args.classifiertest,
+        classify_surrogate_vs_true_samples=args.classifiertest
     )
 
     logging.info("That's all for now, have a nice day!")

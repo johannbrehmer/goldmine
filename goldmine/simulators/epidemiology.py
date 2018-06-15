@@ -30,7 +30,7 @@ class Epidemiology(Simulator):
 
     """
 
-    def __init__(self, n_individuals=53, n_strains=33, overall_prevalence=None, end_time=10, delta_t=0.01,
+    def __init__(self, n_individuals=53, n_strains=33, overall_prevalence=None, end_time=10, delta_t=0.1,
                  initial_infection=False, use_original_summary_statistics=True, use_prevalence_covariance=False):
 
         super().__init__()
