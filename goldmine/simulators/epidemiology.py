@@ -59,7 +59,11 @@ class Epidemiology(Simulator):
         # Autograd
         self._d_simulate_transmission = ag.grad_and_aux(self._simulate_transmission)
 
-    def theta_defaults(self, n_benchmarks=100, random=True):
+    def theta_defaults(self, n_benchmarks=100, single_theta=False, random=True):
+
+        # Single benchmark point
+        if single_theta:
+            return [np.array([3.589, 0.593, 0.097, 1.])], None
 
         # Ranges
         theta_min = np.array([0., 0., 0., 1.])
