@@ -64,6 +64,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         for i, made in enumerate(self.mades):
             # inverse autoregressive transform
             u = made(u)
+
             logdet_dudx += 0.5 * torch.sum(made.logp, dim=1)
 
             # batch normalization
@@ -155,6 +156,14 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
     def forward(self, theta, x, fix_batch_norm=None, track_score=True):
 
         """ Transforms x into u = f^-1(x) """
+
+        if x.shape[1] != self.n_inputs:
+            logging.error('x has wrong shape: %s', x.shape)
+            logging.debug('theta shape: %s', theta.shape)
+            logging.debug('theta content: %s', theta)
+            logging.debug('x content: %s', x)
+
+            raise ValueError('Wrong x shape')
 
         # Change batch norm means only while training
         if fix_batch_norm is None:

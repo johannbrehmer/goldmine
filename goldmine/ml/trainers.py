@@ -47,7 +47,7 @@ def train(model,
           run_on_gpu=True,
           validation_split=0.2, early_stopping=True,
           learning_curve_folder=None, learning_curve_filename=None,
-          n_epochs_verbose=1):
+          n_epochs_verbose=10):
     """
 
     :param model:
@@ -71,7 +71,6 @@ def train(model,
     # TODO: write out separate losses
 
     logging.info('Starting training')
-    logging.debug('Score data: %s', t_xzs)
 
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
@@ -166,6 +165,9 @@ def train(model,
             x = x.to(device)
             y = y.to(device)
 
+            if theta.shape[1] != 4 or x.shape[1] != 6:
+                logging.debug('WAAAAAHH! Training going wrong -- theta: %s, x: %s', theta.shape, x.shape)
+
             optimizer.zero_grad()
 
             # Evaluate loss
@@ -196,6 +198,9 @@ def train(model,
             theta = theta.to(device)
             x = x.to(device)
             y = y.to(device)
+
+            if theta.shape[1] != 4 or x.shape[1] != 6:
+                logging.debug('WAAAAAHH! Validation going wrong -- theta: %s, x: %s', theta.shape, x.shape)
 
             # Evaluate loss
             _ = model(theta, x)

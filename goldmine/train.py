@@ -60,6 +60,8 @@ def train(simulator_name,
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
 
+    logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
+
     inference = create_inference(
         inference_name,
         n_parameters=n_parameters,
@@ -85,6 +87,17 @@ def train(simulator_name,
     # Restricted training sample size
     if training_sample_size is not None and training_sample_size < n_samples:
         thetas, xs, ys, r_xz, t_xz = shuffle(thetas, xs, ys, r_xz, t_xz)
+
+        thetas = thetas[:training_sample_size]
+        xs = xs[:training_sample_size]
+        if ys is not None:
+            ys = ys[:training_sample_size]
+        if r_xz is not None:
+            r_xz = r_xz[:training_sample_size]
+        if t_xz is not None:
+            t_xz = t_xz[:training_sample_size]
+
+        logging.info('Only using %s of %s training samples', xs.shape[0], n_samples)
 
     # Train model
     logging.info('Training model %s on %s data', inference_name, simulator_name)

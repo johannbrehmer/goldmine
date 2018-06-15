@@ -140,7 +140,17 @@ class ConditionalGaussianMADE(nn.Module):
         """ Transforms theta, x into u = f^-1(x | theta) """
 
         # First hidden layer
-        h = F.relu(F.linear(theta, torch.t(self.Wx)) + F.linear(x, torch.t(self.Ms[0] * self.Ws[0]), self.bs[0]))
+
+
+        try:
+            h = F.relu(F.linear(theta, torch.t(self.Wx)) + F.linear(x, torch.t(self.Ms[0] * self.Ws[0]), self.bs[0]))
+
+        except RuntimeError:
+            logging.error('Abort! Abort!')
+            logging.info('MADE settings: n_inputs = %s, n_conditionals = %s', self.n_inputs, self.n_conditionals)
+            logging.info('Shapes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
+                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
+            raise()
 
         # feedforward propagation
         for M, W, b in zip(self.Ms[1:], self.Ws[1:], self.bs[1:]):

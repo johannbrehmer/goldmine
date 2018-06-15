@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from torch import tensor
+import logging
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
@@ -22,6 +23,15 @@ class SCANDALInference(Inference):
         n_made_hidden_layers = params.get('n_made_hidden_layers', 3)
         n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
         batch_norm = params.get('batch_norm', False)
+
+        logging.info('Initialized SCANDAL with the following settings:')
+        logging.info('  Parameters:    %s', n_parameters)
+        logging.info('  Observables:   %s', n_observables)
+        logging.info('  alpha:         %s', self.alpha)
+        logging.info('  MADEs:         %s', n_mades)
+        logging.info('  Hidden layers: %s', n_made_hidden_layers)
+        logging.info('  Units:         %s', n_made_units_per_layer)
+        logging.info('  Batch norm:    %s', batch_norm)
 
         self.maf = ConditionalMaskedAutoregressiveFlow(
             n_conditionals=n_parameters,
@@ -56,6 +66,17 @@ class SCANDALInference(Inference):
             learning_curve_folder=None,
             learning_curve_filename=None):
         """ Trains MAF """
+
+        logging.info('Training SCANDAL with settings:')
+        logging.info('  theta given:   %s', theta is not None)
+        logging.info('  x given:       %s', x is not None)
+        logging.info('  y given:       %s', y is not None)
+        logging.info('  r_xz given:    %s', r_xz is not None)
+        logging.info('  t_xz given:    %s', t_xz is not None)
+        logging.info('  Batch size:    %s', batch_size)
+        logging.info('  Learning rate: %s -> %s', initial_learning_rate, final_learning_rate)
+        logging.info('  Epochs:        %s', n_epochs)
+
 
         assert theta is not None
         assert x is not None
