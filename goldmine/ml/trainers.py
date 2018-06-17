@@ -46,7 +46,7 @@ def train(model,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
-          validation_split=0.2, early_stopping=False,
+          validation_split=0.2, early_stopping=True,
           learning_curve_folder=None, learning_curve_filename=None,
           n_epochs_verbose=1):
     """
@@ -225,8 +225,8 @@ def train(model,
                 individual_val_loss[i] += individual_loss.item()
             total_val_loss += loss.item()
 
-        individual_val_loss /= len(train_loader)
-        total_val_loss /= len(train_loader)
+        individual_val_loss /= len(validation_loader)
+        total_val_loss /= len(validation_loader)
 
         total_losses_val.append(total_val_loss)
         individual_losses_val.append(individual_val_loss)
