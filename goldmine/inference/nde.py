@@ -85,7 +85,7 @@ class MAFInference(Inference):
             batch_size=batch_size,
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
-            n_epochs=50,
+            n_epochs=n_epochs,
             learning_curve_folder=learning_curve_folder,
             learning_curve_filename=learning_curve_filename
         )

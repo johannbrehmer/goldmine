@@ -134,6 +134,10 @@ def main():
                         help='Number of (training + validation) samples considered')
     parser.add_argument('--epochs', type=int, default=50,
                         help='Number of epochs')
+    parser.add_argument('--lr', type=float, default=0.001,
+                        help='Initial learning rate')
+    parser.add_argument('--lrdecay', type=float, default=0.1,
+                        help='Factor of learning rate decay over the whole training')
 
     args = parser.parse_args()
 
@@ -143,7 +147,9 @@ def main():
         args.inference,
         alpha=args.alpha,
         training_sample_size=args.trainingsamplesize,
-        n_epochs=args.epochs
+        n_epochs=args.epochs,
+        initial_lr=args.lr,
+        final_lr=args.lr*args.lrdecay
     )
 
     logging.info("That's all for now, have a nice day!")

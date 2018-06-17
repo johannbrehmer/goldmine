@@ -126,7 +126,7 @@ def train(model,
     optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
 
     # Early stopping
-    early_stopping = early_stopping and (validation_split is not None)
+    early_stopping = early_stopping and (validation_split is not None) and (n_epochs > 1)
     early_stopping_best_val_loss = None
     early_stopping_best_model = None
     early_stopping_epoch = None
@@ -155,9 +155,10 @@ def train(model,
         train_loss = 0.0
 
         # Learning rate decay
-        lr = initial_learning_rate * (final_learning_rate / initial_learning_rate) ** float(epoch / (n_epochs - 1.))
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+        if n_epochs > 1:
+            lr = initial_learning_rate * (final_learning_rate / initial_learning_rate) ** float(epoch / (n_epochs - 1.))
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
 
         # Loop over batches
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
