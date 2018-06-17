@@ -42,6 +42,7 @@ def train(model,
           loss_functions,
           thetas, xs, ys=None, r_xzs=None, t_xzs=None,
           loss_weights=None,
+          loss_labels=None,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
@@ -131,28 +132,33 @@ def train(model,
     early_stopping_best_model = None
     early_stopping_epoch = None
 
-    # Loss function
+    # Loss functions
+    n_losses = len(loss_functions)
+
     if loss_weights is None:
-        loss_weights = [1.] * len(loss_functions)
+        loss_weights = [1.] * n_losses
 
-    def loss_function(model, y_true, r_true, t_true):
-        _loss = loss_weights[0] * loss_functions[0](model, y_true, r_true, t_true)
-
-        for weight, function in zip(loss_weights[1:], loss_functions[1:]):
-            _loss = _loss + weight * function(model, y_true, r_true, t_true)
-
-        return _loss
+    # def loss_function(model, y_true, r_true, t_true):
+    #     _loss = loss_weights[0] * loss_functions[0](model, y_true, r_true, t_true)
+    #
+    #     for weight, function in zip(loss_weights[1:], loss_functions[1:]):
+    #         _loss = _loss + weight * function(model, y_true, r_true, t_true)
+    #
+    #     return _loss
 
     # Losses over training
-    train_losses = []
-    val_losses = []
+    individual_losses_train = []
+    individual_losses_val = []
+    total_losses_train = []
+    total_losses_val = []
 
     # Loop over epochs
     for epoch in range(n_epochs):
 
         # Training
         model.train()
-        train_loss = 0.0
+        individual_train_loss = np.zeros(n_losses)
+        total_train_loss = 0.0
 
         # Learning rate decay
         if n_epochs > 1:
@@ -170,27 +176,37 @@ def train(model,
 
             # Evaluate loss
             _ = model(theta, x)
-            loss = loss_function(model, y, r_xz, t_xz)
-            train_loss += loss.item()
+
+            losses = [loss_function(model, y, r_xz, t_xz) for loss_function in loss_functions]
+            loss = loss_weights[0] * losses[0]
+            for _w, _l in zip(loss_weights[1:], losses[1:]):
+                loss += _w * _l
+
+            for i, individual_loss in enumerate(losses):
+                individual_train_loss[i] += individual_loss.item()
+            total_train_loss += loss.item()
 
             # Calculate gradient and update optimizer
             loss.backward()
             optimizer.step()
 
-        train_loss /= len(train_loader)
-        train_losses.append(train_loss)
+        individual_train_loss /= len(train_loader)
+        total_train_loss /= len(train_loader)
+
+        total_losses_train.append(total_train_loss)
+        individual_losses_train.append(individual_train_loss)
 
         # Validation
         if validation_split is None:
             if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
                 logging.info('  Epoch %d: train loss %.3f'
-                             % (epoch + 1, train_losses[-1]))
+                             % (epoch + 1, total_losses_train[-1]))
             continue
-
-        val_loss = 0.0
 
         # with torch.no_grad():
         model.eval()
+        individual_val_loss = np.zeros(n_losses)
+        total_val_loss = 0.0
 
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
             theta = theta.to(device)
@@ -199,42 +215,68 @@ def train(model,
 
             # Evaluate loss
             _ = model(theta, x)
-            loss = loss_function(model, y, r_xz, t_xz)
-            val_loss += loss.item()
 
-        val_loss /= len(validation_loader)
-        val_losses.append(val_loss)
+            losses = [loss_function(model, y, r_xz, t_xz) for loss_function in loss_functions]
+            loss = loss_weights[0] * losses[0]
+            for _w, _l in zip(loss_weights[1:], losses[1:]):
+                loss += _w * _l
+
+            for i, individual_loss in enumerate(losses):
+                individual_val_loss[i] += individual_loss.item()
+            total_val_loss += loss.item()
+
+        individual_val_loss /= len(train_loader)
+        total_val_loss /= len(train_loader)
+
+        total_losses_val.append(total_val_loss)
+        individual_losses_val.append(individual_val_loss)
 
         # Early stopping
         if early_stopping:
-            if early_stopping_best_val_loss is None or val_loss < early_stopping_best_val_loss:
-                early_stopping_best_val_loss = val_loss
+            if early_stopping_best_val_loss is None or total_val_loss < early_stopping_best_val_loss:
+                early_stopping_best_val_loss = total_val_loss
                 early_stopping_best_model = model.state_dict()
                 early_stopping_epoch = epoch
 
         if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
             if early_stopping and epoch == early_stopping_epoch:
                 logging.info('  Epoch %d: train loss %.3f, validation loss %.3f (*)'
-                             % (epoch + 1, train_losses[-1], val_losses[-1]))
+                             % (epoch + 1, total_losses_train[-1], total_losses_val[-1]))
             else:
                 logging.info('  Epoch %d: train loss %.3f, validation loss %.3f'
-                             % (epoch + 1, train_losses[-1], val_losses[-1]))
+                             % (epoch + 1, total_losses_train[-1], total_losses_val[-1]))
 
     # Early stopping
     if early_stopping:
-        if early_stopping_best_val_loss < val_loss:
+        if early_stopping_best_val_loss < total_val_loss:
             logging.info('Early stopping after epoch %s, with loss %s compared to final loss %s',
-                         early_stopping_epoch + 1, early_stopping_best_val_loss, val_loss)
+                         early_stopping_epoch + 1, early_stopping_best_val_loss, total_val_loss)
             model.load_state_dict(early_stopping_best_model)
         else:
             logging.info('Early stopping did not improve performance')
 
     # Save learning curve
     if learning_curve_folder is not None and learning_curve_filename is not None:
-        np.save(learning_curve_folder + '/' + learning_curve_filename + '_train_loss.npy', train_losses)
+
+        np.save(learning_curve_folder + '/' + learning_curve_filename + '_train_loss.npy', total_losses_train)
         if validation_split is not None:
-            np.save(learning_curve_folder + '/' + learning_curve_filename + '_validation_loss.npy', val_losses)
+            np.save(learning_curve_folder + '/' + learning_curve_filename + '_validation_loss.npy', total_losses_val)
+
+        if loss_labels is not None:
+            individual_losses_train = np.array(individual_losses_train)
+            individual_losses_val = np.array(individual_losses_val)
+
+            for i, label in enumerate(loss_labels):
+                np.save(
+                    learning_curve_folder + '/' + learning_curve_filename + '_train_loss_' + label + '.npy',
+                    individual_losses_train[:, i]
+                )
+                if validation_split is not None:
+                    np.save(
+                        learning_curve_folder + '/' + learning_curve_filename + '_validation_loss_' + label + '.npy',
+                        individual_losses_val[:, i]
+                    )
 
     logging.info('Finished training')
 
-    return train_losses, val_losses
+    return total_losses_train, total_losses_val

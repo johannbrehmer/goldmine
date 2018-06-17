@@ -103,6 +103,7 @@ class SCANDALInference(Inference):
             model=self.maf,
             loss_functions=[negative_log_likelihood, score_mse],
             loss_weights=[1., alpha],
+            loss_labels=['nll', 'score'],
             thetas=theta,
             xs=x,
             t_xzs=t_xz,
