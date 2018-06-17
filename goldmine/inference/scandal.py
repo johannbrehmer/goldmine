@@ -15,34 +15,49 @@ class SCANDALInference(Inference):
     def __init__(self, **params):
         super().__init__()
 
-        # Parameters
-        n_parameters = params['n_parameters']
-        n_observables = params['n_observables']
-        self.alpha = params.get('alpha', 1.)
-        n_mades = params.get('n_mades', 2)
-        n_made_hidden_layers = params.get('n_made_hidden_layers', 2)
-        n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
-        batch_norm = params.get('batch_norm', False)
+        filename = params.get('filename', None)
 
-        logging.info('Initialized SCANDAL with the following settings:')
-        logging.info('  Parameters:    %s', n_parameters)
-        logging.info('  Observables:   %s', n_observables)
-        logging.info('  alpha:         %s', self.alpha)
-        logging.info('  MADEs:         %s', n_mades)
-        logging.info('  Hidden layers: %s', n_made_hidden_layers)
-        logging.info('  Units:         %s', n_made_units_per_layer)
-        logging.info('  Batch norm:    %s', batch_norm)
+        # New MAF setup
+        if filename is None:
+            # Parameters for new MAF
+            n_parameters = params['n_parameters']
+            n_observables = params['n_observables']
+            n_mades = params.get('n_mades', 2)
+            n_made_hidden_layers = params.get('n_made_hidden_layers', 2)
+            n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
+            batch_norm = params.get('batch_norm', False)
 
-        self.maf = ConditionalMaskedAutoregressiveFlow(
-            n_conditionals=n_parameters,
-            n_inputs=n_observables,
-            n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
-            n_mades=n_mades,
-            batch_norm=batch_norm,
-            input_order='sequential',
-            mode='sequential',
-            alpha=0.1
-        )
+            logging.info('Initialized NDE (MAF) with the following settings:')
+            logging.info('  Parameters:    %s', n_parameters)
+            logging.info('  Observables:   %s', n_observables)
+            logging.info('  MADEs:         %s', n_mades)
+            logging.info('  Hidden layers: %s', n_made_hidden_layers)
+            logging.info('  Units:         %s', n_made_units_per_layer)
+            logging.info('  Batch norm:    %s', batch_norm)
+
+            # MAF
+            self.maf = ConditionalMaskedAutoregressiveFlow(
+                n_conditionals=n_parameters,
+                n_inputs=n_observables,
+                n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
+                n_mades=n_mades,
+                batch_norm=batch_norm,
+                input_order='sequential',
+                mode='sequential',
+                alpha=0.1
+            )
+
+        # Load trained model from file
+        else:
+            self.maf = torch.load(filename)
+
+            logging.info('Loaded NDE (MAF) from file:')
+            logging.info('  Filename:      %s', filename)
+            logging.info('  Parameters:    %s', self.maf.n_conditionals)
+            logging.info('  Observables:   %s', self.maf.n_inputs)
+            logging.info('  MADEs:         %s', self.maf.n_mades)
+            logging.info('  Hidden layers: %s', self.maf.n_hiddens)
+            logging.info('  Batch norm:    %s', self.maf.batch_norm)
 
     def requires_class_label(self):
         return False
@@ -63,11 +78,13 @@ class SCANDALInference(Inference):
             initial_learning_rate=0.001,
             final_learning_rate=0.0001,
             n_epochs=50,
+            alpha=0.01,
             learning_curve_folder=None,
             learning_curve_filename=None):
         """ Trains MAF """
 
         logging.info('Training SCANDAL with settings:')
+        logging.info('  alpha:         %s', alpha)
         logging.info('  theta given:   %s', theta is not None)
         logging.info('  x given:       %s', x is not None)
         logging.info('  y given:       %s', y is not None)
@@ -85,23 +102,20 @@ class SCANDALInference(Inference):
         train(
             model=self.maf,
             loss_functions=[negative_log_likelihood, score_mse],
-            loss_weights=[1., self.alpha],
+            loss_weights=[1., alpha],
             thetas=theta,
             xs=x,
             t_xzs=t_xz,
             batch_size=batch_size,
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
-            n_epochs=50,
+            n_epochs=n_epochs,
             learning_curve_folder=learning_curve_folder,
             learning_curve_filename=learning_curve_filename
         )
 
     def save(self, filename):
-        torch.save(self.maf.state_dict(), filename)
-
-    def load(self, filename):
-        self.maf.load_state_dict(torch.load(filename))
+        torch.save(self.maf, filename)
 
     def predict_density(self, theta, x, log=False):
         log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()

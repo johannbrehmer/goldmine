@@ -20,9 +20,6 @@ class Inference:
     def save(self, filename):
         raise NotImplementedError()
 
-    def load(self, filename):
-        raise NotImplementedError()
-
     def predict_density(self, theta, x):
         raise NotImplementedError()
 

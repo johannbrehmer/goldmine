@@ -65,8 +65,7 @@ def train(simulator_name,
     inference = create_inference(
         inference_name,
         n_parameters=n_parameters,
-        n_observables=n_observables,
-        alpha=alpha
+        n_observables=n_observables
     )
 
     if inference.requires_class_label():
@@ -108,6 +107,7 @@ def train(simulator_name,
         batch_size=batch_size,
         initial_learning_rate=initial_lr,
         final_learning_rate=final_lr,
+        alpha=alpha,
         learning_curve_folder=result_folder,
         learning_curve_filename=output_filename
     )
@@ -128,7 +128,7 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
-    parser.add_argument('--alpha', type=float, default=1.,
+    parser.add_argument('--alpha', type=float, default=0.01,
                         help='alpha parameter for SCANDAL')
     parser.add_argument('--trainingsamplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')

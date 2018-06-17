@@ -94,12 +94,8 @@ def test(simulator_name,
     logging.info('Loading trained model from %s', model_folder + '/' + model_filename + '.pt')
     inference = create_inference(
         inference_name,
-        n_parameters=n_parameters,
-        n_observables=n_observables,
-        alpha=alpha
+        filename=model_folder + '/' + model_filename + '.pt'
     )
-
-    inference.load(model_folder + '/' + model_filename + '.pt')
 
     # Evaluate density on test sample
     if evaluate_densities:

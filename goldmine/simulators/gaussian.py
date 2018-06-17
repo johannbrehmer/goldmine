@@ -41,15 +41,18 @@ class GaussianSimulator(Simulator):
 
     def rvs(self, theta, n, random_state=None):
 
-        x = np.random.normal(theta ** 2, 1. + 0.25 * theta**2, n).reshape((-1, 1))
+        x = np.random.normal(theta, 1. + theta**2, n).reshape((-1, 1))
 
         return x
 
     def rvs_score(self, theta, theta_score, n, random_state=None):
 
-        x = np.random.normal(theta ** 2, 1. + 0.25 * theta.flatten() ** 2, n).reshape((-1, 1))
-        score = (1. / (1 + 0.25 * theta_score**2)
-                 + 0.25 * theta_score * (x-theta_score)**2 / (1 + 0.25 * theta_score**2)**2)
+        x = np.random.normal(theta, 1. + theta ** 2, n).reshape((-1, 1))
+
+        # log p = const - 0.5 * (x - theta)**2 / (1 + theta**2)
+        # score = 0.5 * 2 * (x - theta) / (1 + theta**2) + 0.5 * (x - theta)**2 / (1 + theta**2)**2 * 2 * theta
+        score = ((x - theta_score) / (1 + theta_score**2)
+                 + theta_score * (x - theta_score)**2 / (1 + theta_score**2)**2)
 
         return x, score
 
