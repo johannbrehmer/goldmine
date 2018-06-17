@@ -91,7 +91,7 @@ def test(simulator_name,
                  n_samples_singletheta, n_parameters_singletheta, n_observables_singletheta)
 
     # Load inference model
-    logging.info('Loading trained model')
+    logging.info('Loading trained model from %s', model_folder + '/' + model_filename + '.pt')
     inference = create_inference(
         inference_name,
         n_parameters=n_parameters,
@@ -105,15 +105,15 @@ def test(simulator_name,
     if evaluate_densities:
         try:
             logging.info('Estimating densities on train sample')
-            log_p_hat = inference.predict_density(xs_train, thetas, log=True)
+            log_p_hat = inference.predict_density(thetas, xs_train, log=True)
             np.save(result_folder + '/' + model_filename + '_train_log_p_hat.npy', log_p_hat)
 
             logging.info('Estimating densities on many-theta test sample')
-            log_p_hat = inference.predict_density(xs, thetas, log=True)
+            log_p_hat = inference.predict_density(thetas, xs, log=True)
             np.save(result_folder + '/' + model_filename + '_test_log_p_hat.npy', log_p_hat)
 
             logging.info('Estimating densities on single-theta test sample')
-            log_p_hat = inference.predict_density(xs_singletheta, thetas_singletheta, log=True)
+            log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
             np.save(result_folder + '/' + model_filename + '_test_singletheta_log_p_hat.npy', log_p_hat)
 
         except NotImplementedError:

@@ -19,8 +19,8 @@ class SCANDALInference(Inference):
         n_parameters = params['n_parameters']
         n_observables = params['n_observables']
         self.alpha = params.get('alpha', 1.)
-        n_mades = params.get('n_mades', 3)
-        n_made_hidden_layers = params.get('n_made_hidden_layers', 3)
+        n_mades = params.get('n_mades', 2)
+        n_made_hidden_layers = params.get('n_made_hidden_layers', 2)
         n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
         batch_norm = params.get('batch_norm', False)
 
@@ -103,22 +103,22 @@ class SCANDALInference(Inference):
     def load(self, filename):
         self.maf.load_state_dict(torch.load(filename))
 
-    def predict_density(self, x, theta, log=False):
+    def predict_density(self, theta, x, log=False):
         log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()
 
         if log:
             return log_likelihood
         return np.exp(log_likelihood)
 
-    def predict_ratio(self, x, theta, theta1, log=False):
-        log_likelihood_theta0 = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()
+    def predict_ratio(self, theta0, theta1, x, log=False):
+        log_likelihood_theta0 = self.maf.predict_log_likelihood(tensor(theta0), tensor(x)).detach().numpy()
         log_likelihood_theta1 = self.maf.predict_log_likelihood(tensor(theta1), tensor(x)).detach().numpy()
 
         if log:
             return log_likelihood_theta0 - log_likelihood_theta1
         return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
 
-    def predict_score(self, x, theta):
+    def predict_score(self, theta, x):
         score = self.maf.predict_score(tensor(theta), tensor(x)).detach().numpy()
 
         return score

@@ -1,11 +1,14 @@
 from goldmine.simulators.epidemiology import Epidemiology
 from goldmine.simulators.galton import GeneralizedGaltonBoard
+from goldmine.simulators.gaussian import GaussianSimulator
 from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
 
 
 def create_simulator(simulator_name):
-    if simulator_name == 'epidemiology':
+    if simulator_name == 'gaussian':
+        return GaussianSimulator()
+    elif simulator_name == 'epidemiology':
         return Epidemiology()
     elif simulator_name == 'galton':
         return GeneralizedGaltonBoard()

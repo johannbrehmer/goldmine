@@ -23,13 +23,13 @@ class Inference:
     def load(self, filename):
         raise NotImplementedError()
 
-    def predict_density(self, x, theta):
+    def predict_density(self, theta, x):
         raise NotImplementedError()
 
-    def predict_ratio(self, x, theta, theta1):
+    def predict_ratio(self, theta0, theta1, x):
         raise NotImplementedError()
 
-    def predict_score(self, x, theta):
+    def predict_score(self, theta, x):
         raise NotImplementedError()
 
     def generate_samples(self, theta):

@@ -59,7 +59,7 @@ class Epidemiology(Simulator):
         # Autograd
         self._d_simulate_transmission = ag.grad_and_aux(self._simulate_transmission)
 
-    def theta_defaults(self, n_benchmarks=100, single_theta=False, random=True):
+    def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
 
         # Single benchmark point
         if single_theta:
@@ -71,13 +71,13 @@ class Epidemiology(Simulator):
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
-            benchmarks = np.random.rand(n_benchmarks, self.n_parameters)
+            benchmarks = np.random.rand(n_thetas, self.n_parameters)
 
         else:
             n_free_parameters = 3
-            n_points_per_dimension = int(n_benchmarks ** (1 / n_free_parameters))
+            n_points_per_dimension = int(n_thetas ** (1 / n_free_parameters))
 
-            if n_points_per_dimension ** n_free_parameters != n_benchmarks:
+            if n_points_per_dimension ** n_free_parameters != n_thetas:
                 raise Warning(
                     'Number of requested grid parameter benchmarks not compatible with number of parameters.'
                     + ' Returning {0} benchmarks instead.'.format(n_points_per_dimension ** n_free_parameters)

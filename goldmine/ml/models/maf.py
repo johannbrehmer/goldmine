@@ -203,7 +203,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         """ Calculates log p(x) """
 
-        _ = self.forward(theta, x)
+        _ = self.forward(theta, x, fix_batch_norm=True)
 
         return self.log_likelihood
 
@@ -211,7 +211,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         """ Calculates log p(x) """
 
-        _ = self.forward(theta, x)
+        _ = self.forward(theta, x, fix_batch_norm=True)
 
         return self.score
 
