@@ -47,15 +47,28 @@ def test(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    sample_filename = simulator_name + '_test'
+    sample_filename = simulator_name
     model_filename = simulator_name + '_' + inference_name
     if training_sample_size is not None:
         model_filename += '_trainingsamplesize_' + str(training_sample_size)
 
+    # Load train data
+    logging.info('Loading train sample')
+    thetas_train = np.load(sample_folder + '/' + sample_filename + '_train' + '_theta0.npy')
+    xs_train = np.load(sample_folder + '/' + sample_filename + '_train' + '_x.npy')
+
+    n_samples_train = xs_train.shape[0]
+    n_observables_train = xs_train.shape[1]
+    n_parameters_train= thetas_train.shape[1]
+    assert thetas_train.shape[0] == n_samples_train
+
+    logging.info('Found %s samples with %s parameters and %s observables',
+                 n_samples_train, n_parameters_train, n_observables_train)
+
     # Load test data
     logging.info('Loading many-theta test sample')
-    thetas = np.load(sample_folder + '/' + sample_filename + '_theta0.npy')
-    xs = np.load(sample_folder + '/' + sample_filename + '_x.npy')
+    thetas = np.load(sample_folder + '/' + sample_filename + '_test' + '_theta0.npy')
+    xs = np.load(sample_folder + '/' + sample_filename + '_test' + '_x.npy')
 
     n_samples = xs.shape[0]
     n_observables = xs.shape[1]
@@ -66,8 +79,8 @@ def test(simulator_name,
 
     # Load test data (single theta)
     logging.info('Loading single-theta test sample')
-    thetas_singletheta = np.load(sample_folder + '/' + sample_filename + '_singletheta_theta0.npy')
-    xs_singletheta = np.load(sample_folder + '/' + sample_filename + '_singletheta_x.npy')
+    thetas_singletheta = np.load(sample_folder + '/' + sample_filename + '_test_singletheta_theta0.npy')
+    xs_singletheta = np.load(sample_folder + '/' + sample_filename + '_test_singletheta_x.npy')
 
     n_samples_singletheta = xs_singletheta.shape[0]
     n_observables_singletheta = xs_singletheta.shape[1]
@@ -90,17 +103,19 @@ def test(simulator_name,
 
     # Evaluate density on test sample
     if evaluate_densities:
-        logging.info('Estimating densities on many-theta test sample')
         try:
-            log_p_hat = inference.predict_density(xs, thetas, log=True)
-            np.save(result_folder + '/' + model_filename + '_log_p_hat.npy', log_p_hat)
-        except NotImplementedError:
-            logging.warning('Inference method %s does not support density evaluation', inference_name)
+            logging.info('Estimating densities on train sample')
+            log_p_hat = inference.predict_density(xs_train, thetas, log=True)
+            np.save(result_folder + '/' + model_filename + '_train_log_p_hat.npy', log_p_hat)
 
-        logging.info('Estimating densities on many-theta test sample')
-        try:
+            logging.info('Estimating densities on many-theta test sample')
+            log_p_hat = inference.predict_density(xs, thetas, log=True)
+            np.save(result_folder + '/' + model_filename + '_test_log_p_hat.npy', log_p_hat)
+
+            logging.info('Estimating densities on single-theta test sample')
             log_p_hat = inference.predict_density(xs_singletheta, thetas_singletheta, log=True)
-            np.save(result_folder + '/' + model_filename + '_singletheta_log_p_hat.npy', log_p_hat)
+            np.save(result_folder + '/' + model_filename + '_test_singletheta_log_p_hat.npy', log_p_hat)
+
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
 
