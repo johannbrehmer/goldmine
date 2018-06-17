@@ -45,7 +45,7 @@ def train(model,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           run_on_gpu=True,
-          validation_split=0.2, early_stopping=True,
+          validation_split=0.2, early_stopping=False,
           learning_curve_folder=None, learning_curve_filename=None,
           n_epochs_verbose=1):
     """

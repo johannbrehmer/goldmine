@@ -105,7 +105,7 @@ def test(simulator_name,
     if evaluate_densities:
         try:
             logging.info('Estimating densities on train sample')
-            log_p_hat = inference.predict_density(thetas, xs_train, log=True)
+            log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
             np.save(result_folder + '/' + model_filename + '_train_log_p_hat.npy', log_p_hat)
 
             logging.info('Estimating densities on many-theta test sample')
