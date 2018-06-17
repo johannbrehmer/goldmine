@@ -132,6 +132,8 @@ def main():
                         help='alpha parameter for SCANDAL')
     parser.add_argument('--trainingsamplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')
+    parser.add_argument('--epochs', type=int, default=50,
+                        help='Number of epochs')
 
     args = parser.parse_args()
 
@@ -140,7 +142,8 @@ def main():
         args.simulator,
         args.inference,
         alpha=args.alpha,
-        training_sample_size=args.trainingsamplesize
+        training_sample_size=args.trainingsamplesize,
+        n_epochs=args.epochs
     )
 
     logging.info("That's all for now, have a nice day!")
