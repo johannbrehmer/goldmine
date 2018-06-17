@@ -130,7 +130,7 @@ def main():
     parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
     parser.add_argument('--alpha', type=float, default=0.01,
                         help='alpha parameter for SCANDAL')
-    parser.add_argument('--trainingsamplesize', type=int, default=None,
+    parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')
     parser.add_argument('--epochs', type=int, default=50,
                         help='Number of epochs')
@@ -146,7 +146,7 @@ def main():
         args.simulator,
         args.inference,
         alpha=args.alpha,
-        training_sample_size=args.trainingsamplesize,
+        training_sample_size=args.samplesize,
         n_epochs=args.epochs,
         initial_lr=args.lr,
         final_lr=args.lr*args.lrdecay

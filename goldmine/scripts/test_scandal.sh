@@ -2,13 +2,13 @@
 
 cd /Users/johannbrehmer/work/projects/scandal/goldmine/goldmine
 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 100 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 200 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 500 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 1000 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 2000 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 5000 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 10000 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 20000 
-./test.py epidemiology scandal --alpha 0.01 --trainingsamplesize 50000 
-./test.py epidemiology scandal --alpha 0.01 
+./test.py epidemiology scandal --samplesize 100 --classifiertest
+./test.py epidemiology scandal --samplesize 200 --classifiertest
+./test.py epidemiology scandal --samplesize 500 --classifiertest
+./test.py epidemiology scandal --samplesize 1000 --classifiertest
+./test.py epidemiology scandal --samplesize 2000 --classifiertest
+./test.py epidemiology scandal --samplesize 5000 --classifiertest
+./test.py epidemiology scandal --samplesize 10000 --classifiertest
+./test.py epidemiology scandal --samplesize 20000 --classifiertest
+./test.py epidemiology scandal --samplesize 50000 --classifiertest
+./test.py epidemiology scandal --classifiertest

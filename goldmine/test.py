@@ -147,7 +147,7 @@ def main():
     parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
     parser.add_argument('--alpha', type=float, default=1.,
                         help='alpha parameter for SCANDAL')
-    parser.add_argument('--trainingsamplesize', type=int, default=None,
+    parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')
     parser.add_argument('--classifiertest', action='store_true',
                         help='Train classifier to discriminate between samples from simulator and surrogate')
@@ -159,7 +159,7 @@ def main():
         args.simulator,
         args.inference,
         alpha=args.alpha,
-        training_sample_size=args.trainingsamplesize,
+        training_sample_size=args.samplesize,
         evaluate_densities=True,
         generate_samples=args.classifiertest,
         classify_surrogate_vs_true_samples=args.classifiertest
