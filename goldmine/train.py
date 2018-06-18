@@ -29,7 +29,8 @@ def train(simulator_name,
           batch_norm=False,
           alpha=1.,
           training_sample_size=None,
-          n_epochs=50,
+          n_epochs=20,
+          compensate_sample_size=False,
           batch_size=64,
           initial_lr=0.001,
           final_lr=0.0001,
@@ -46,7 +47,10 @@ def train(simulator_name,
     logging.info('  SCANDAL alpha:        %s', alpha)
     logging.info('  Training sample size: %s',
                  'maximal' if training_sample_size is None else training_sample_size)
-    logging.info('  Epochs:               %s', n_epochs)
+    if compensate_sample_size and training_sample_size is not None:
+        logging.info('  Epochs:               %s (plus compensation for decreased sample size)', n_epochs)
+    else:
+        logging.info('  Epochs:               %s', n_epochs)
     logging.info('  Batch size:           %s', batch_size)
     logging.info('  Learning rate:        %s initially, decaying to %s', initial_lr, final_lr)
     logging.info('  Early stopping:       %s', early_stopping)
@@ -109,7 +113,12 @@ def train(simulator_name,
         if t_xz is not None:
             t_xz = t_xz[:training_sample_size]
 
-        logging.info('Only using %s of %s training samples', xs.shape[0], n_samples)
+        logging.info('Only using %s of %s training samples', training_sample_size, n_samples)
+
+        if compensate_sample_size and training_sample_size < n_samples:
+            n_epochs_compensated = int(round(n_epochs * n_samples / training_sample_size, 0))
+            logging.info('Compensating by increasing number of epochs from %s to %s', n_epochs, n_epochs_compensated)
+            n_epochs = n_epochs_compensated
 
     # Train model
     logging.info('Training model %s on %s data', inference_name, simulator_name)
@@ -153,15 +162,21 @@ def main():
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
     parser.add_argument('--samplesize', type=int, default=None,
-                        help='Number of (training + validation) samples considered. Default: use all available samples.')
-    parser.add_argument('--epochs', type=int, default=50,
-                        help='Number of epochs. Default: 50.')
+                        help='Number of (training + validation) samples considered. Default: use all available '
+                             + 'samples.')
+    parser.add_argument('--epochs', type=int, default=20,
+                        help='Number of epochs. Default: 20.')
+    parser.add_argument('--compensate_samplesize', action='store_true',
+                        help='If both this option and --samplesize are used, the number of epochs is increased to'
+                             + ' compensate for the decreased sample size.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
                         help='Factor of learning rate decay over the whole training. Default: 0.1.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
+    parser.add_argument('--gradientclip', default=1.,
+                        help='Gradient norm clipping threshold.')
 
     # TODO: Add option for multiple runs
     # TODO: Add option for custom filename parts
@@ -180,8 +195,9 @@ def main():
         alpha=args.alpha,
         training_sample_size=args.samplesize,
         n_epochs=args.epochs,
+        compensate_sample_size=args.compensate_samplesize,
         initial_lr=args.lr,
-        final_lr=args.lr*args.lrdecay,
+        final_lr=args.lr * args.lrdecay,
         early_stopping=not args.noearlystopping
     )
 

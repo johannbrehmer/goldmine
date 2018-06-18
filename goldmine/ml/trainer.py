@@ -6,6 +6,7 @@ from torch import tensor
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+from torch.nn.utils import clip_grad_norm
 
 
 class GoldDataset(torch.utils.data.Dataset):
@@ -45,32 +46,35 @@ def train(model,
           loss_labels=None,
           batch_size=64,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
+          clip_gradient=1.,
           run_on_gpu=True,
           validation_split=0.2, early_stopping=True,
           learning_curve_folder=None, learning_curve_filename=None,
-          n_epochs_verbose=1):
+          verbose='some'):
     """
 
     :param model:
-    :param loss: function loss(model, y_true, y_pred)
+    :param loss_functions:
     :param thetas:
     :param xs:
     :param ys:
+    :param r_xzs:
+    :param t_xzs:
+    :param loss_weights:
+    :param loss_labels:
     :param batch_size:
     :param initial_learning_rate:
     :param final_learning_rate:
     :param n_epochs:
+    :param clip_gradient:
     :param run_on_gpu:
     :param validation_split:
     :param early_stopping:
-    :param early_stopping_patience:
     :param learning_curve_folder:
     :param learning_curve_filename:
+    :param verbose: 'some', 'all', 'none'
     :return:
     """
-
-    # TODO: write out separate losses
-
     logging.info('Starting training')
 
     # CPU or GPU?
@@ -138,19 +142,18 @@ def train(model,
     if loss_weights is None:
         loss_weights = [1.] * n_losses
 
-    # def loss_function(model, y_true, r_true, t_true):
-    #     _loss = loss_weights[0] * loss_functions[0](model, y_true, r_true, t_true)
-    #
-    #     for weight, function in zip(loss_weights[1:], loss_functions[1:]):
-    #         _loss = _loss + weight * function(model, y_true, r_true, t_true)
-    #
-    #     return _loss
-
     # Losses over training
     individual_losses_train = []
     individual_losses_val = []
     total_losses_train = []
     total_losses_val = []
+
+    # Verbosity
+    n_epochs_verbose = None
+    if verbose == 'all':  # Print output after every epoch
+        n_epochs_verbose = 1
+    elif verbose == 'some':  # Print output after 10%, 20%, ..., 100% progress
+        n_epochs_verbose = int(round(n_epochs / 10, 0))
 
     # Loop over epochs
     for epoch in range(n_epochs):
@@ -196,6 +199,10 @@ def train(model,
             # Calculate gradient and update optimizer
             loss.backward()
             optimizer.step()
+
+            # Clip gradients
+            if clip_gradient is not None:
+                clip_grad_norm(model.parameters(), clip_gradient)
 
             # TODO: Avoid NaNs (-> clip gradient?)
 

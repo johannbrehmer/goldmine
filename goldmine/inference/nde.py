@@ -5,7 +5,7 @@ from torch import tensor
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
-from goldmine.ml.trainers import train
+from goldmine.ml.trainer import train
 from goldmine.ml.losses import negative_log_likelihood
 
 

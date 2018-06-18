@@ -5,7 +5,7 @@ import logging
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
-from goldmine.ml.trainers import train
+from goldmine.ml.trainer import train
 from goldmine.ml.losses import negative_log_likelihood, score_mse
 
 
@@ -78,25 +78,26 @@ class SCANDALInference(Inference):
             initial_learning_rate=0.001,
             final_learning_rate=0.0001,
             n_epochs=50,
+            early_stopping=True,
             alpha=0.01,
             learning_curve_folder=None,
             learning_curve_filename=None):
         """ Trains MAF """
 
-        logging.info('Training SCANDAL with settings:')
-        logging.info('  alpha:         %s', alpha)
-        logging.info('  theta given:   %s', theta is not None)
-        logging.info('  x given:       %s', x is not None)
-        logging.info('  y given:       %s', y is not None)
-        logging.info('  r_xz given:    %s', r_xz is not None)
-        logging.info('  t_xz given:    %s', t_xz is not None)
-        logging.info('  Samples:       %s', x.shape[0])
-        logging.info('  Parameters:    %s', theta.shape[1])
-        logging.info('  Obserables:    %s', x.shape[1])
-        logging.info('  Batch size:    %s', batch_size)
-        logging.info('  Learning rate: %s -> %s', initial_learning_rate, final_learning_rate)
-        logging.info('  Epochs:        %s', n_epochs)
-
+        logging.info('Training SCANDAL (MAF + score) with settings:')
+        logging.info('  alpha:          %s', alpha)
+        logging.info('  theta given:    %s', theta is not None)
+        logging.info('  x given:        %s', x is not None)
+        logging.info('  y given:        %s', y is not None)
+        logging.info('  r_xz given:     %s', r_xz is not None)
+        logging.info('  t_xz given:     %s', t_xz is not None)
+        logging.info('  Samples:        %s', x.shape[0])
+        logging.info('  Parameters:     %s', theta.shape[1])
+        logging.info('  Obserables:     %s', x.shape[1])
+        logging.info('  Batch size:     %s', batch_size)
+        logging.info('  Learning rate:  %s initially, decaying to %s', initial_learning_rate, final_learning_rate)
+        logging.info('  Early stopping: %s', early_stopping)
+        logging.info('  Epochs:         %s', n_epochs)
 
         assert theta is not None
         assert x is not None
@@ -114,6 +115,7 @@ class SCANDALInference(Inference):
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
             n_epochs=n_epochs,
+            early_stopping=early_stopping,
             learning_curve_folder=learning_curve_folder,
             learning_curve_filename=learning_curve_filename
         )
