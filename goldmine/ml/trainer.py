@@ -6,7 +6,7 @@ from torch import tensor
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 
 
 class GoldDataset(torch.utils.data.Dataset):
@@ -189,22 +189,13 @@ def train(model,
                 individual_train_loss[i] += individual_loss.item()
             total_train_loss += loss.item()
 
-            # # Debug output
-            # logging.debug('Epoch %s, batch %s:', epoch, i_batch)
-            # logging.debug('  theta = %s +/- %s', torch.mean(theta).detach().numpy(), torch.std(theta).detach().numpy())
-            # logging.debug('  x     = %s +/- %s', torch.mean(x).detach().numpy(), torch.std(x).detach().numpy())
-            # logging.debug('  loss  = %s', loss.item())
-            # logging.debug('        -> %s', total_train_loss)
-
             # Calculate gradient and update optimizer
             loss.backward()
             optimizer.step()
 
             # Clip gradients
             if clip_gradient is not None:
-                clip_grad_norm(model.parameters(), clip_gradient)
-
-            # TODO: Avoid NaNs (-> clip gradient?)
+                clip_grad_norm_(model.parameters(), clip_gradient)
 
         individual_train_loss /= len(train_loader)
         total_train_loss /= len(train_loader)

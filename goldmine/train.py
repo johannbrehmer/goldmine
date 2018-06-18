@@ -150,7 +150,7 @@ def main():
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
-    parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
+    parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
     parser.add_argument('--alpha', type=float, default=0.01,
                         help='alpha parameter for SCANDAL. Default: 0.01.')
     parser.add_argument('--nades', type=int, default=3,
