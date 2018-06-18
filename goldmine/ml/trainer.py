@@ -206,8 +206,8 @@ def train(model,
         # Validation
         if validation_split is None:
             if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
-                logging.info('  Epoch %d: train loss %.3f'
-                             % (epoch + 1, total_losses_train[-1]))
+                logging.info('  Epoch %d: train loss %s (%s)'
+                             % (epoch + 1, total_losses_train[-1], individual_losses_train[-1]))
             continue
 
         # with torch.no_grad():
@@ -247,11 +247,13 @@ def train(model,
 
         if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
             if early_stopping and epoch == early_stopping_epoch:
-                logging.info('  Epoch %d: train loss %.3f, validation loss %.3f (*)'
-                             % (epoch + 1, total_losses_train[-1], total_losses_val[-1]))
+                logging.info('  Epoch %d: train loss %s (%s), validation loss %s (%s) (*)'
+                             % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
+                                total_losses_val[-1], individual_losses_val[-1]))
             else:
-                logging.info('  Epoch %d: train loss %.3f, validation loss %.3f'
-                             % (epoch + 1, total_losses_train[-1], total_losses_val[-1]))
+                logging.info('  Epoch %d: train loss %s (%s), validation loss %s (%s)'
+                             % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
+                                total_losses_val[-1], individual_losses_val[-1]))
 
     # Early stopping
     if early_stopping:

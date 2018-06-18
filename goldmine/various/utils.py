@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-import sklearn
+import torch.nn.functional as F
 
 
 def check_random_state(random_state):
@@ -69,3 +69,14 @@ def load_and_check(filename, warning_threshold=1.e9):
                         filename, smallest, largest)
 
     return data
+
+
+def get_activation_function(activation_name):
+    if activation_name == 'relu':
+        return F.relu
+    elif activation_name == 'tanh':
+        return F.tanh
+    elif activation_name == 'sigmoid':
+        return F.sigmoid
+    else:
+        raise ValueError('Activation function %s unknown', activation_name)

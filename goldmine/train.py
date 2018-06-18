@@ -167,7 +167,7 @@ def main():
                         help='Number of units per hidden layer. Default: 20.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
-    parser.add_argument('--activation', type=str, default='relu',
+    parser.add_argument('--activation', type=str, default='tanh',
                         help='Activation function: "rely", "tanh", "sigmoid"')
     parser.add_argument('--bins', default='auto',
                         help='Number of bins per parameter and observable for histogram-based inference.')

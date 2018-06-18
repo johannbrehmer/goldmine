@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .masks import create_degrees, create_masks, create_weights, create_weights_conditional
+from goldmine.various.utils import get_activation_function
 
 
 class GaussianMADE(nn.Module):
@@ -24,6 +25,7 @@ class GaussianMADE(nn.Module):
 
         super(GaussianMADE, self).__init__()
 
+        # save input arguments
         self.activation = activation
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
@@ -35,15 +37,7 @@ class GaussianMADE(nn.Module):
         self.Ws, self.bs, self.Wm, self.bm, self.Wp, self.bp = create_weights(n_inputs, n_hiddens, None)
         self.input_order = self.degrees[0]
 
-        # Activation function
-        if activation == 'relu':
-            self.activation_function = F.relu
-        elif activation == 'tanh':
-            self.activation_function = F.tanh
-        elif activation == 'sigmoid':
-            self.activation_function = F.sigmoid
-        else:
-            raise ValueError('Activation function %s unknown', activation)
+        self.activation_function = get_activation_function(activation)
 
         # Output info
         self.m = None
@@ -114,7 +108,7 @@ class ConditionalGaussianMADE(nn.Module):
     inputs theta which is always conditioned on, and whose probability it doesn't model.
     """
 
-    def __init__(self, n_conditionals, n_inputs, n_hiddens, input_order='sequential',
+    def __init__(self, n_conditionals, n_inputs, n_hiddens, activation='relu', input_order='sequential',
                  mode='sequential'):
         """
         Constructor.
@@ -128,6 +122,7 @@ class ConditionalGaussianMADE(nn.Module):
         super(ConditionalGaussianMADE, self).__init__()
 
         # save input arguments
+        self.activation = activation
         self.n_conditionals = n_conditionals
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
@@ -141,6 +136,8 @@ class ConditionalGaussianMADE(nn.Module):
                                                                                                    n_hiddens, None)
         self.input_order = self.degrees[0]
 
+        self.activation_function = get_activation_function(activation)
+
         # Output info
         self.m = None
         self.logp = None
@@ -152,20 +149,20 @@ class ConditionalGaussianMADE(nn.Module):
 
         # First hidden layer
 
-
         try:
-            h = F.relu(F.linear(theta, torch.t(self.Wx)) + F.linear(x, torch.t(self.Ms[0] * self.Ws[0]), self.bs[0]))
+            h = self.activation_function(
+                F.linear(theta, torch.t(self.Wx)) + F.linear(x, torch.t(self.Ms[0] * self.Ws[0]), self.bs[0]))
 
         except RuntimeError:
             logging.error('Abort! Abort!')
             logging.info('MADE settings: n_inputs = %s, n_conditionals = %s', self.n_inputs, self.n_conditionals)
             logging.info('Shapes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
-                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
-            raise()
+                         theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
+            raise ()
 
         # feedforward propagation
         for M, W, b in zip(self.Ms[1:], self.Ws[1:], self.bs[1:]):
-            h = F.relu(F.linear(h, torch.t(M * W), b))
+            h = self.activation_function(F.linear(h, torch.t(M * W), b))
 
         # output means
         self.m = F.linear(h, torch.t(self.Mmp * self.Wm), self.bm)
