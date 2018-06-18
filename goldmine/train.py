@@ -56,15 +56,14 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    sample_filename = simulator_name + '_train'
-    output_filename = simulator_name + '_' + inference_name
+    output_filename = ''
     if training_sample_size is not None:
         output_filename += '_trainingsamplesize_' + str(training_sample_size)
 
     # Load training data and creating model
-    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/' + sample_filename + '_*.npy')
-    thetas = np.load(sample_folder + '/' + sample_filename + '_theta0.npy')
-    xs = np.load(sample_folder + '/' + sample_filename + '_x.npy')
+    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_train.npy')
+    thetas = np.load(sample_folder + '/theta0_train.npy')
+    xs = np.load(sample_folder + '/x_train.npy')
 
     n_samples = thetas.shape[0]
     n_parameters = thetas.shape[1]
@@ -83,17 +82,17 @@ def train(simulator_name,
     )
 
     if inference.requires_class_label():
-        ys = np.load(sample_folder + '/' + sample_filename + '_y.npy')
+        ys = np.load(sample_folder + '/y_train.npy')
     else:
         ys = None
 
     if inference.requires_joint_ratio():
-        r_xz = np.load(sample_folder + '/' + sample_filename + '_r_xz.npy')
+        r_xz = np.load(sample_folder + '/r_xz_train.npy')
     else:
         r_xz = None
 
     if inference.requires_joint_score():
-        t_xz = np.load(sample_folder + '/' + sample_filename + '_t_xz.npy')
+        t_xz = np.load(sample_folder + '/t_xz_train.npy')
     else:
         t_xz = None
 
@@ -128,8 +127,8 @@ def train(simulator_name,
     )
 
     # Save models
-    logging.info('Saving learned model to %s', model_folder + '/' + output_filename + '.pt')
-    inference.save(model_folder + '/' + output_filename + '.pt')
+    logging.info('Saving learned model to %s', model_folder + '/model' + output_filename + '.pt')
+    inference.save(model_folder + '/model' + output_filename + '.pt')
 
 
 def main():

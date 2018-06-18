@@ -73,7 +73,7 @@ def simulate(simulator_name,
 
     # Filenames
     folder = base_dir + '/goldmine/data/samples/' + simulator_name
-    filename = simulator_name + '_' + sample_label
+    filename = sample_label
     if single_theta:
         filename += '_singletheta'
 
@@ -165,14 +165,14 @@ def simulate(simulator_name,
     logging.info('Saving results')
 
     # Save results
-    np.save(folder + '/' + filename + '_theta0' + '.npy', all_theta0)
-    np.save(folder + '/' + filename + '_theta1' + '.npy', all_theta1)
-    np.save(folder + '/' + filename + '_x' + '.npy', all_x)
-    np.save(folder + '/' + filename + '_y' + '.npy', all_y)
+    np.save(folder + '/theta0_' + filename + '.npy', all_theta0)
+    np.save(folder + '/theta1_' + '.npy', all_theta1)
+    np.save(folder + '/x_' + '.npy', all_x)
+    np.save(folder + '/y_' + '.npy', all_y)
     if generate_joint_ratio:
-        np.save(folder + '/' + filename + '_r_xz' + '.npy', all_r_xz)
+        np.save(folder + '/r_xz_' + filename + '.npy', all_r_xz)
     if generate_joint_score:
-        np.save(folder + '/' + filename + '_t_xz' + '.npy', all_t_xz)
+        np.save(folder + '/t_xz_'  + filename +  '.npy', all_t_xz)
 
 
 def main():

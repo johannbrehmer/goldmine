@@ -47,19 +47,18 @@ def test(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    sample_filename = simulator_name
-    model_filename = simulator_name + '_' + inference_name
+    model_filename = ''
     if training_sample_size is not None:
         model_filename += '_trainingsamplesize_' + str(training_sample_size)
 
     # Load train data
     logging.info('Loading train sample')
-    thetas_train = np.load(sample_folder + '/' + sample_filename + '_train' + '_theta0.npy')
-    xs_train = np.load(sample_folder + '/' + sample_filename + '_train' + '_x.npy')
+    thetas_train = np.load(sample_folder + '/theta0_train.npy')
+    xs_train = np.load(sample_folder + '/x_train.npy')
 
     n_samples_train = xs_train.shape[0]
     n_observables_train = xs_train.shape[1]
-    n_parameters_train= thetas_train.shape[1]
+    n_parameters_train = thetas_train.shape[1]
     assert thetas_train.shape[0] == n_samples_train
 
     logging.info('Found %s samples with %s parameters and %s observables',
@@ -67,20 +66,20 @@ def test(simulator_name,
 
     # Load test data
     logging.info('Loading many-theta test sample')
-    thetas = np.load(sample_folder + '/' + sample_filename + '_test' + '_theta0.npy')
-    xs = np.load(sample_folder + '/' + sample_filename + '_test' + '_x.npy')
+    thetas_test = np.load(sample_folder + '/theta0_test.npy')
+    xs_test = np.load(sample_folder + '/x_test.npy')
 
-    n_samples = xs.shape[0]
-    n_observables = xs.shape[1]
-    n_parameters = thetas.shape[1]
-    assert thetas.shape[0] == n_samples
+    n_samples = xs_test.shape[0]
+    n_observables = xs_test.shape[1]
+    n_parameters = thetas_test.shape[1]
+    assert thetas_test.shape[0] == n_samples
 
     logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
 
     # Load test data (single theta)
     logging.info('Loading single-theta test sample')
-    thetas_singletheta = np.load(sample_folder + '/' + sample_filename + '_test_singletheta_theta0.npy')
-    xs_singletheta = np.load(sample_folder + '/' + sample_filename + '_test_singletheta_x.npy')
+    thetas_singletheta = np.load(sample_folder + '/theta0_test_singletheta.npy')
+    xs_singletheta = np.load(sample_folder + '/x_test_singletheta.npy')
 
     n_samples_singletheta = xs_singletheta.shape[0]
     n_observables_singletheta = xs_singletheta.shape[1]
@@ -91,10 +90,10 @@ def test(simulator_name,
                  n_samples_singletheta, n_parameters_singletheta, n_observables_singletheta)
 
     # Load inference model
-    logging.info('Loading trained model from %s', model_folder + '/' + model_filename + '.pt')
+    logging.info('Loading trained model from %s', model_folder + '/model' + model_filename + '.pt')
     inference = create_inference(
         inference_name,
-        filename=model_folder + '/' + model_filename + '.pt'
+        filename=model_folder + '/model' + model_filename + '.pt'
     )
 
     # Evaluate density on test sample
@@ -102,15 +101,24 @@ def test(simulator_name,
         try:
             logging.info('Estimating densities on train sample')
             log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
-            np.save(result_folder + '/' + model_filename + '_train_log_p_hat.npy', log_p_hat)
+            np.save(
+                result_folder + '/log_p_hat_train' + model_filename + '.npy',
+                log_p_hat
+            )
 
             logging.info('Estimating densities on many-theta test sample')
-            log_p_hat = inference.predict_density(thetas, xs, log=True)
-            np.save(result_folder + '/' + model_filename + '_test_log_p_hat.npy', log_p_hat)
+            log_p_hat = inference.predict_density(thetas_test, xs_test, log=True)
+            np.save(
+                result_folder + '/log_p_hat_test' + model_filename + '.npy',
+                log_p_hat
+            )
 
             logging.info('Estimating densities on single-theta test sample')
             log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
-            np.save(result_folder + '/' + model_filename + '_test_singletheta_log_p_hat.npy', log_p_hat)
+            np.save(
+                result_folder + '/log_p_hat_singletheta' + model_filename + '.npy',
+                log_p_hat
+            )
 
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
@@ -120,18 +128,32 @@ def test(simulator_name,
         logging.info('Generating samples according to learned density')
         try:
             xs_surrogate = inference.generate_samples(thetas_singletheta)
-            np.save(result_folder + '/' + model_filename + '_samples_from_p_hat.npy', xs_surrogate)
+            np.save(
+                result_folder + '/samples_from_p_hat' + model_filename + '.npy',
+                xs_surrogate
+            )
         except NotImplementedError:
             logging.warning('Inference method %s does not support sample generation', inference_name)
 
     # Train classifier to distinguish samples from surrogate from samples from simulator
     if classify_surrogate_vs_true_samples:
         logging.info('Training classifier to discriminate surrogate samples from simulator samples')
-        xs_surrogate = np.load(result_folder + '/' + model_filename + '_samples_from_p_hat.npy')
-        roc_auc, tpr, fpr = discriminate_samples(xs, xs_surrogate)
-        np.save(result_folder + '/' + model_filename + '_roc_auc_surrogate_vs_simulator.npy', [roc_auc])
-        np.save(result_folder + '/' + model_filename + '_fpr_surrogate_vs_simulator.npy', [fpr])
-        np.save(result_folder + '/' + model_filename + '_tpr_surrogate_vs_simulator.npy', [tpr])
+        xs_surrogate = np.load(
+            result_folder + '/samples_from_p_hat' + model_filename + '.npy'
+        )
+        roc_auc, tpr, fpr = discriminate_samples(xs_test, xs_surrogate)
+        np.save(
+            result_folder + '/roc_auc_surrogate_vs_simulator' + model_filename + '.npy',
+            [roc_auc]
+        )
+        np.save(
+            result_folder + '/fpr_surrogate_vs_simulator' + model_filename + '.npy',
+            [fpr]
+        )
+        np.save(
+            result_folder + '/tpr_surrogate_vs_simulator' + model_filename + '.npy',
+            [tpr]
+        )
 
 
 def main():
