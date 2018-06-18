@@ -186,9 +186,18 @@ def train(model,
                 individual_train_loss[i] += individual_loss.item()
             total_train_loss += loss.item()
 
+            # # Debug output
+            # logging.debug('Epoch %s, batch %s:', epoch, i_batch)
+            # logging.debug('  theta = %s +/- %s', torch.mean(theta).detach().numpy(), torch.std(theta).detach().numpy())
+            # logging.debug('  x     = %s +/- %s', torch.mean(x).detach().numpy(), torch.std(x).detach().numpy())
+            # logging.debug('  loss  = %s', loss.item())
+            # logging.debug('        -> %s', total_train_loss)
+
             # Calculate gradient and update optimizer
             loss.backward()
             optimizer.step()
+
+            # TODO: Avoid NaNs (-> clip gradient?)
 
         individual_train_loss /= len(train_loader)
         total_train_loss /= len(train_loader)

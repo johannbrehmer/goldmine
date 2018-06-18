@@ -11,7 +11,7 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
     from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init
+    from goldmine.various.utils import general_init, load_and_check
     from goldmine.various.discriminate_samples import discriminate_samples
 except ImportError:
     if base_dir in sys.path:
@@ -19,7 +19,7 @@ except ImportError:
     sys.path.append(base_dir)
     print(sys.path)
     from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init
+    from goldmine.various.utils import general_init, load_and_check
     from goldmine.various.discriminate_samples import discriminate_samples
 
 
@@ -53,8 +53,8 @@ def test(simulator_name,
 
     # Load train data
     logging.info('Loading train sample')
-    thetas_train = np.load(sample_folder + '/theta0_train.npy')
-    xs_train = np.load(sample_folder + '/x_train.npy')
+    thetas_train = load_and_check(sample_folder + '/theta0_train.npy')
+    xs_train = load_and_check(sample_folder + '/x_train.npy')
 
     n_samples_train = xs_train.shape[0]
     n_observables_train = xs_train.shape[1]
@@ -66,8 +66,8 @@ def test(simulator_name,
 
     # Load test data
     logging.info('Loading many-theta test sample')
-    thetas_test = np.load(sample_folder + '/theta0_test.npy')
-    xs_test = np.load(sample_folder + '/x_test.npy')
+    thetas_test = load_and_check(sample_folder + '/theta0_test.npy')
+    xs_test = load_and_check(sample_folder + '/x_test.npy')
 
     n_samples = xs_test.shape[0]
     n_observables = xs_test.shape[1]
@@ -78,8 +78,8 @@ def test(simulator_name,
 
     # Load test data (single theta)
     logging.info('Loading single-theta test sample')
-    thetas_singletheta = np.load(sample_folder + '/theta0_test_singletheta.npy')
-    xs_singletheta = np.load(sample_folder + '/x_test_singletheta.npy')
+    thetas_singletheta = load_and_check(sample_folder + '/theta0_test_singletheta.npy')
+    xs_singletheta = load_and_check(sample_folder + '/x_test_singletheta.npy')
 
     n_samples_singletheta = xs_singletheta.shape[0]
     n_observables_singletheta = xs_singletheta.shape[1]
@@ -140,7 +140,7 @@ def test(simulator_name,
     # Train classifier to distinguish samples from surrogate from samples from simulator
     if classify_surrogate_vs_true_samples:
         logging.info('Training classifier to discriminate surrogate samples from simulator samples')
-        xs_surrogate = np.load(
+        xs_surrogate = load_and_check(
             result_folder + '/samples_from_p_hat' + model_filename + '.npy'
         )
         roc_auc, tpr, fpr = discriminate_samples(xs_test, xs_surrogate)

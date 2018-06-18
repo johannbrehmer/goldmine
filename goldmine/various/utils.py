@@ -48,3 +48,24 @@ def shuffle(*arrays):
         shuffled_arrays.append(shuffled_a)
 
     return shuffled_arrays
+
+
+def load_and_check(filename, warning_threshold=1.e12):
+    data = np.load(filename)
+
+    n_nans = np.sum(np.isnan(data))
+    n_infs = np.sum(np.isinf(data))
+    n_finite = np.sum(np.isfinite(data))
+
+    if n_nans + n_infs > 0:
+        logging.warning('Warning: file %s contains %s NaNs and %s Infs, compared to %s finite numbers!',
+                        filename, n_nans, n_infs, n_finite)
+
+    smallest = np.nanmin(data)
+    largest = np.nanmax(data)
+
+    if np.abs(smallest) > warning_threshold or np.abs(largest) > warning_threshold:
+        logging.warning('Warning: file %s has very large numbers from %s to %s',
+                        filename, smallest, largest)
+
+    return data

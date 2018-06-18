@@ -11,14 +11,14 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
     from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init, shuffle
+    from goldmine.various.utils import general_init, shuffle, load_and_check
 except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
     print(sys.path)
     from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init, shuffle
+    from goldmine.various.utils import general_init, shuffle, load_and_check
 
 
 def train(simulator_name,
@@ -62,8 +62,8 @@ def train(simulator_name,
 
     # Load training data and creating model
     logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_train.npy')
-    thetas = np.load(sample_folder + '/theta0_train.npy')
-    xs = np.load(sample_folder + '/x_train.npy')
+    thetas = load_and_check(sample_folder + '/theta0_train.npy')
+    xs = load_and_check(sample_folder + '/x_train.npy')
 
     n_samples = thetas.shape[0]
     n_parameters = thetas.shape[1]
@@ -82,17 +82,17 @@ def train(simulator_name,
     )
 
     if inference.requires_class_label():
-        ys = np.load(sample_folder + '/y_train.npy')
+        ys = load_and_check(sample_folder + '/y_train.npy')
     else:
         ys = None
 
     if inference.requires_joint_ratio():
-        r_xz = np.load(sample_folder + '/r_xz_train.npy')
+        r_xz = load_and_check(sample_folder + '/r_xz_train.npy')
     else:
         r_xz = None
 
     if inference.requires_joint_score():
-        t_xz = np.load(sample_folder + '/t_xz_train.npy')
+        t_xz = load_and_check(sample_folder + '/t_xz_train.npy')
     else:
         t_xz = None
 
@@ -144,8 +144,8 @@ def main():
     parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
     parser.add_argument('--alpha', type=float, default=0.01,
                         help='alpha parameter for SCANDAL. Default: 0.01.')
-    parser.add_argument('--nades', type=int, default=5,
-                        help='Number of NADEs in a MAF. Default: 5.')
+    parser.add_argument('--nades', type=int, default=3,
+                        help='Number of NADEs in a MAF. Default: 3.')
     parser.add_argument('--hidden', type=int, default=2,
                         help='Number of hidden layers. Default: 2.')
     parser.add_argument('--units', type=int, default=20,
@@ -165,6 +165,7 @@ def main():
 
     # TODO: Add option for multiple runs
     # TODO: Add option for custom filename parts
+    # TODO: Better treatment of non-existent files and folders
 
     args = parser.parse_args()
 
