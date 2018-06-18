@@ -123,6 +123,8 @@ def test(simulator_name,
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
 
+    # TODO: Implement ratio estimation
+
     # Generate samples
     if generate_samples:
         logging.info('Generating samples according to learned density')

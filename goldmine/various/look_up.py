@@ -1,6 +1,7 @@
 from goldmine.simulators.epidemiology import Epidemiology
 from goldmine.simulators.galton import GeneralizedGaltonBoard
 from goldmine.simulators.gaussian import GaussianSimulator
+from goldmine.inference.histograms import HistogramInference
 from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
 
@@ -17,7 +18,9 @@ def create_simulator(simulator_name):
 
 
 def create_inference(inference_name, **params):
-    if inference_name == 'maf':
+    if inference_name == 'histogram':
+        return HistogramInference(**params)
+    elif inference_name == 'maf':
         return MAFInference(**params)
     elif inference_name == 'scandal':
         return SCANDALInference(**params)

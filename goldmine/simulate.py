@@ -166,13 +166,13 @@ def simulate(simulator_name,
 
     # Save results
     np.save(folder + '/theta0_' + filename + '.npy', all_theta0)
-    np.save(folder + '/theta1_' + '.npy', all_theta1)
-    np.save(folder + '/x_' + '.npy', all_x)
-    np.save(folder + '/y_' + '.npy', all_y)
+    np.save(folder + '/theta1_' + filename + '.npy', all_theta1)
+    np.save(folder + '/x_' + filename + '.npy', all_x)
+    np.save(folder + '/y_' + filename + '.npy', all_y)
     if generate_joint_ratio:
         np.save(folder + '/r_xz_' + filename + '.npy', all_r_xz)
     if generate_joint_score:
-        np.save(folder + '/t_xz_'  + filename +  '.npy', all_t_xz)
+        np.save(folder + '/t_xz_' + filename + '.npy', all_t_xz)
 
 
 def main():
