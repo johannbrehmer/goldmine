@@ -23,23 +23,33 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          n_mades=5,
+          n_made_hidden_layers=2,
+          n_made_units_per_layer=20,
+          batch_norm=False,
           alpha=1.,
           training_sample_size=None,
           n_epochs=50,
           batch_size=64,
           initial_lr=0.001,
-          final_lr=0.0001):
+          final_lr=0.0001,
+          early_stopping=True):
     """ Main training function """
 
     logging.info('Starting training')
     logging.info('  Simulator:            %s', simulator_name)
     logging.info('  Inference method:     %s', inference_name)
-    logging.info('  alpha:                %s', alpha)
+    logging.info('  MADEs:                %s', n_mades)
+    logging.info('  MADE hidden layers:   %s', n_made_hidden_layers)
+    logging.info('  MADE units / layer:   %s', n_made_units_per_layer)
+    logging.info('  Batch norm:           %s', batch_norm)
+    logging.info('  SCANDAL alpha:        %s', alpha)
     logging.info('  Training sample size: %s',
                  'maximal' if training_sample_size is None else training_sample_size)
     logging.info('  Epochs:               %s', n_epochs)
     logging.info('  Batch size:           %s', batch_size)
     logging.info('  Learning rate:        %s initially, decaying to %s', initial_lr, final_lr)
+    logging.info('  Early stopping:       %s', early_stopping)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
@@ -64,6 +74,10 @@ def train(simulator_name,
 
     inference = create_inference(
         inference_name,
+        n_mades=n_mades,
+        n_made_hidden_layers=n_made_hidden_layers,
+        n_made_units_per_layer=n_made_units_per_layer,
+        batch_norm=batch_norm,
         n_parameters=n_parameters,
         n_observables=n_observables
     )
@@ -109,7 +123,8 @@ def train(simulator_name,
         final_learning_rate=final_lr,
         alpha=alpha,
         learning_curve_folder=result_folder,
-        learning_curve_filename=output_filename
+        learning_curve_filename=output_filename,
+        early_stopping=early_stopping
     )
 
     # Save models
@@ -129,15 +144,25 @@ def main():
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "maf" or "scandal"')
     parser.add_argument('--alpha', type=float, default=0.01,
-                        help='alpha parameter for SCANDAL')
+                        help='alpha parameter for SCANDAL. Default: 0.01.')
+    parser.add_argument('--nades', type=int, default=5,
+                        help='Number of NADEs in a MAF. Default: 5.')
+    parser.add_argument('--hidden', type=int, default=2,
+                        help='Number of hidden layers. Default: 2.')
+    parser.add_argument('--units', type=int, default=20,
+                        help='Number of units per hidden layer. Default: 20.')
+    parser.add_argument('--batchnorm', action='store_true',
+                        help='Use batch normalization.')
     parser.add_argument('--samplesize', type=int, default=None,
-                        help='Number of (training + validation) samples considered')
+                        help='Number of (training + validation) samples considered. Default: use all available samples.')
     parser.add_argument('--epochs', type=int, default=50,
-                        help='Number of epochs')
+                        help='Number of epochs. Default: 50.')
     parser.add_argument('--lr', type=float, default=0.001,
-                        help='Initial learning rate')
+                        help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
-                        help='Factor of learning rate decay over the whole training')
+                        help='Factor of learning rate decay over the whole training. Default: 0.1.')
+    parser.add_argument('--noearlystopping', action='store_true',
+                        help='Deactivate early stopping.')
 
     args = parser.parse_args()
 
@@ -145,11 +170,16 @@ def main():
     train(
         args.simulator,
         args.inference,
+        n_mades=args.nades,
+        n_made_hidden_layers=args.hidden,
+        n_made_units_per_layer=args.units,
+        batch_norm=args.batchnorm,
         alpha=args.alpha,
         training_sample_size=args.samplesize,
         n_epochs=args.epochs,
         initial_lr=args.lr,
-        final_lr=args.lr*args.lrdecay
+        final_lr=args.lr*args.lrdecay,
+        early_stopping=not args.noearlystopping
     )
 
     logging.info("That's all for now, have a nice day!")
