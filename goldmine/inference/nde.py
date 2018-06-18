@@ -47,7 +47,7 @@ class MAFInference(Inference):
             )
 
         else:
-            self.maf = torch.load(filename)
+            self.maf = torch.load(filename + '.pt')
 
             logging.info('Loaded NDE (MAF) from file:')
             logging.info('  Filename:      %s', filename)
@@ -76,23 +76,26 @@ class MAFInference(Inference):
             initial_learning_rate=0.001,
             final_learning_rate=0.0001,
             n_epochs=50,
+            early_stopping=True,
             alpha=None,
             learning_curve_folder=None,
-            learning_curve_filename=None):
+            learning_curve_filename=None,
+            **params):
         """ Trains MAF """
 
         logging.info('Training NDE (MAF) with settings:')
-        logging.info('  theta given:   %s', theta is not None)
-        logging.info('  x given:       %s', x is not None)
-        logging.info('  y given:       %s', y is not None)
-        logging.info('  r_xz given:    %s', r_xz is not None)
-        logging.info('  t_xz given:    %s', t_xz is not None)
-        logging.info('  Samples:       %s', x.shape[0])
-        logging.info('  Parameters:    %s', theta.shape[1])
-        logging.info('  Obserables:    %s', x.shape[1])
-        logging.info('  Batch size:    %s', batch_size)
-        logging.info('  Learning rate: %s -> %s', initial_learning_rate, final_learning_rate)
-        logging.info('  Epochs:        %s', n_epochs)
+        logging.info('  theta given:    %s', theta is not None)
+        logging.info('  x given:        %s', x is not None)
+        logging.info('  y given:        %s', y is not None)
+        logging.info('  r_xz given:     %s', r_xz is not None)
+        logging.info('  t_xz given:     %s', t_xz is not None)
+        logging.info('  Samples:        %s', x.shape[0])
+        logging.info('  Parameters:     %s', theta.shape[1])
+        logging.info('  Obserables:     %s', x.shape[1])
+        logging.info('  Batch size:     %s', batch_size)
+        logging.info('  Learning rate:  %s initially, decaying to %s', initial_learning_rate, final_learning_rate)
+        logging.info('  Early stopping: %s', early_stopping)
+        logging.info('  Epochs:         %s', n_epochs)
 
         train(
             model=self.maf,
@@ -104,12 +107,13 @@ class MAFInference(Inference):
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
             n_epochs=n_epochs,
+            early_stopping=early_stopping,
             learning_curve_folder=learning_curve_folder,
             learning_curve_filename=learning_curve_filename
         )
 
     def save(self, filename):
-        torch.save(self.maf, filename)
+        torch.save(self.maf, filename + '.pt')
 
     def predict_density(self, theta, x, log=False):
         log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()

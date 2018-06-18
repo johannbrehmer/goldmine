@@ -49,7 +49,7 @@ class SCANDALInference(Inference):
 
         # Load trained model from file
         else:
-            self.maf = torch.load(filename)
+            self.maf = torch.load(filename + '.pt')
 
             logging.info('Loaded NDE (MAF) from file:')
             logging.info('  Filename:      %s', filename)
@@ -119,7 +119,7 @@ class SCANDALInference(Inference):
         )
 
     def save(self, filename):
-        torch.save(self.maf, filename)
+        torch.save(self.maf, filename + '.pt')
 
     def predict_density(self, theta, x, log=False):
         log_likelihood = self.maf.predict_log_likelihood(tensor(theta), tensor(x)).detach().numpy()

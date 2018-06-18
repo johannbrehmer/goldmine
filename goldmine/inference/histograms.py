@@ -21,10 +21,25 @@ class HistogramInference(Inference):
             logging.info('  Bins per parameter:  %s', self.n_bins_theta)
             logging.info('  Bins per observable: %s', self.n_bins_x)
 
-
+            # Not yet trained
+            self.n_parameters = None
+            self.n_observables = None
+            self.n_bins = None
+            self.edges = None
+            self.histo = None
 
         else:
-            raise NotImplementedError()
+            self.n_parameters = None
+            self.n_observables = None
+            self.edges = np.load(filename + '_edges.npy')
+            self.histo = np.load(filename + '_histo.npy')
+            self.n_bins = self.histo.shape
+
+            logging.info('Loaded histogram:')
+            logging.info('  Filename:            %s', filename + '_*.npy')
+            logging.info('  Number of bins:      %s', self.n_bins)
+
+            # TODO: change self.edges from numpy to list (for saving + loading)
 
     def _calculate_binning(self, theta, x):
 
@@ -39,12 +54,12 @@ class HistogramInference(Inference):
         if n_bins_per_theta == 'auto':
             total_bins = 10 + int(round(n_samples ** (1. / 3.), 0))
             logging.debug(total_bins)
-            n_bins_per_theta = max(5, int(round(total_bins**(1. / (n_parameters + n_observables)))))
+            n_bins_per_theta = max(5, int(round(total_bins ** (1. / (n_parameters + n_observables)))))
 
         n_bins_per_x = self.n_bins_x
         if n_bins_per_x == 'auto':
             total_bins = 10 + int(round(n_samples ** (1. / 3.), 0))
-            n_bins_per_x = max(5, int(round(total_bins**(1. / (n_parameters + n_observables)))))
+            n_bins_per_x = max(5, int(round(total_bins ** (1. / (n_parameters + n_observables)))))
 
         all_n_bins = [n_bins_per_theta] * n_parameters + [n_bins_per_x] * n_observables
 
@@ -54,11 +69,11 @@ class HistogramInference(Inference):
 
         for data, n_bins in zip(all_theta_x, all_n_bins):
             edges = np.percentile(data, np.linspace(0., 100., n_bins + 1))
-            range = (np.nanmin(data) - 0.01, np.nanmax(data) + 0.01)
-            edges[0], edges[-1] = range
+            range_ = (np.nanmin(data) - 0.01, np.nanmax(data) + 0.01)
+            edges[0], edges[-1] = range_
 
             all_edges.append(edges)
-            all_ranges.append(range)
+            all_ranges.append(range_)
 
         all_edges = np.array(all_edges)
         all_ranges = np.array(all_ranges)
@@ -93,10 +108,10 @@ class HistogramInference(Inference):
 
         # Find bins
         logging.info('Calculating binning')
-        self.n_bins, self.edges, self.ranges = self._calculate_binning(theta, x)
+        self.n_bins, self.edges, ranges = self._calculate_binning(theta, x)
 
         logging.info('Bin edges:')
-        for i, (this_bins, this_range, this_edges) in enumerate(zip(self.n_bins, self.ranges, self.edges)):
+        for i, (this_bins, this_range, this_edges) in enumerate(zip(self.n_bins, ranges, self.edges)):
             if i < theta.shape[1]:
                 logging.info(
                     '  theta %s: %s bins, range %s, edges %s',
@@ -112,14 +127,13 @@ class HistogramInference(Inference):
         logging.info('Filling histograms')
         theta_x = np.hstack([theta, x])
 
-        histo, _ = np.histogramdd(theta_x, bins=self.edges, range=self.ranges, normed=False, weights=None)
+        histo, _ = np.histogramdd(theta_x, bins=self.edges, range=ranges, normed=False, weights=None)
 
         # Calculate cell volumes
         original_shape = tuple(self.n_bins)
         flat_shape = tuple([-1] + list(self.n_bins[self.n_parameters:]))
 
         bin_widths = [this_edges[1:] - this_edges[:-1] for this_edges in self.edges[self.n_parameters:]]
-
 
         ################################################################################################################
         # TODO: Calculate nd volumes from the 1d widths
@@ -132,10 +146,10 @@ class HistogramInference(Inference):
         # volume[i0 ... in] = bin_widths[0, i0] * bin_widths[1, i1] * ... * bin_widths[n, in]
 
         volumes = np.ones(flat_shape[1:])
-        for i in range(self.n_parameters):
-            volumes[] *= np.broadcast(bin_widths[i], flat_shape[1:])  # TODO: Figure out how to broadcast along a given axis
+        # for i in range(self.n_parameters):
+        #     volumes[] *= np.broadcast(bin_widths[i], flat_shape[1:])
+        #  TODO: Figure out how to broadcast along a given axis
         ################################################################################################################
-
 
         # Normalize histograms (for each theta bin)
         histo = histo.reshape(flat_shape)
@@ -148,10 +162,30 @@ class HistogramInference(Inference):
         self.histo = histo
 
     def save(self, filename):
-        raise NotImplementedError()
+        if self.histo is None:
+            raise ValueError('Histogram has to be trained (filled) before being saved!')
 
-    def predict_density(self, theta, x):
-        raise NotImplementedError()
+        np.save(filename + '_edges.npy', self.edges)
+        np.save(filename + '_histo.npy', self.histo)
+
+    def predict_density(self, theta, x, log=False):
+        theta_x = np.hstack([theta, x])
+
+        all_indices = []
+
+        for j in range(theta_x.shape[1]):
+            indices = np.searchsorted(self.edges[j],
+                                      theta_x[:, j],
+                                      side="right") - 1
+
+            indices[indices < 0] = 0
+            indices[indices >= self.n_bins[j]] = self.n_bins[j] - 1
+
+            all_indices.append(indices)
+
+        if log:
+            return np.log(self.histo[all_indices])
+        return self.histo[all_indices]
 
     def predict_ratio(self, theta0, theta1, x):
         raise NotImplementedError()

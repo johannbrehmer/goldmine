@@ -90,10 +90,10 @@ def test(simulator_name,
                  n_samples_singletheta, n_parameters_singletheta, n_observables_singletheta)
 
     # Load inference model
-    logging.info('Loading trained model from %s', model_folder + '/model' + model_filename + '.pt')
+    logging.info('Loading trained model from %s', model_folder + '/model' + model_filename + '.*')
     inference = create_inference(
         inference_name,
-        filename=model_folder + '/model' + model_filename + '.pt'
+        filename=model_folder + '/model' + model_filename
     )
 
     # Evaluate density on test sample

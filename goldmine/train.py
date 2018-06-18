@@ -127,8 +127,8 @@ def train(simulator_name,
     )
 
     # Save models
-    logging.info('Saving learned model to %s', model_folder + '/model' + output_filename + '.pt')
-    inference.save(model_folder + '/model' + output_filename + '.pt')
+    logging.info('Saving learned model to %s', model_folder + '/model' + output_filename + '.*')
+    inference.save(model_folder + '/model' + output_filename)
 
 
 def main():
@@ -162,6 +162,9 @@ def main():
                         help='Factor of learning rate decay over the whole training. Default: 0.1.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
+
+    # TODO: Add option for multiple runs
+    # TODO: Add option for custom filename parts
 
     args = parser.parse_args()
 

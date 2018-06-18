@@ -14,7 +14,8 @@ class Inference:
         raise NotImplementedError()
 
     def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None,
-            batch_size=64, initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50):
+            batch_size=64, initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
+            early_stopping=True, **params):
         raise NotImplementedError()
 
     def save(self, filename):
