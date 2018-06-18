@@ -24,6 +24,7 @@ class MAFInference(Inference):
             n_mades = params.get('n_mades', 2)
             n_made_hidden_layers = params.get('n_made_hidden_layers', 2)
             n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
+            activation = params.get('activation', 'relu')
             batch_norm = params.get('batch_norm', False)
 
             logging.info('Initialized NDE (MAF) with the following settings:')
@@ -32,6 +33,7 @@ class MAFInference(Inference):
             logging.info('  MADEs:         %s', n_mades)
             logging.info('  Hidden layers: %s', n_made_hidden_layers)
             logging.info('  Units:         %s', n_made_units_per_layer)
+            logging.info('  Activation:    %s', activation)
             logging.info('  Batch norm:    %s', batch_norm)
 
             # MAF
@@ -40,6 +42,7 @@ class MAFInference(Inference):
                 n_inputs=n_observables,
                 n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
                 n_mades=n_mades,
+                activation=activation,
                 batch_norm=batch_norm,
                 input_order='sequential',
                 mode='sequential',
@@ -55,6 +58,7 @@ class MAFInference(Inference):
             logging.info('  Observables:   %s', self.maf.n_inputs)
             logging.info('  MADEs:         %s', self.maf.n_mades)
             logging.info('  Hidden layers: %s', self.maf.n_hiddens)
+            logging.info('  Activation:    %s', self.maf.activation)
             logging.info('  Batch norm:    %s', self.maf.batch_norm)
 
     def requires_class_label(self):

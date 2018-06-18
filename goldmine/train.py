@@ -23,10 +23,12 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
-          n_mades=5,
+          n_mades=3,
           n_made_hidden_layers=2,
           n_made_units_per_layer=20,
           batch_norm=False,
+          activation='relu',
+          n_bins='auto',
           alpha=1.,
           training_sample_size=None,
           n_epochs=20,
@@ -44,7 +46,10 @@ def train(simulator_name,
     logging.info('  MADE hidden layers:   %s', n_made_hidden_layers)
     logging.info('  MADE units / layer:   %s', n_made_units_per_layer)
     logging.info('  Batch norm:           %s', batch_norm)
+    logging.info('  Activation function:  %s', activation)
+    logging.info('  Histogram bins:       %s', n_bins)
     logging.info('  SCANDAL alpha:        %s', alpha)
+
     logging.info('  Training sample size: %s',
                  'maximal' if training_sample_size is None else training_sample_size)
     if compensate_sample_size and training_sample_size is not None:
@@ -81,8 +86,11 @@ def train(simulator_name,
         n_made_hidden_layers=n_made_hidden_layers,
         n_made_units_per_layer=n_made_units_per_layer,
         batch_norm=batch_norm,
+        activation=activation,
         n_parameters=n_parameters,
-        n_observables=n_observables
+        n_observables=n_observables,
+        n_bins_theta=n_bins,
+        n_bins_x=n_bins
     )
 
     if inference.requires_class_label():
@@ -151,8 +159,6 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
-    parser.add_argument('--alpha', type=float, default=0.01,
-                        help='alpha parameter for SCANDAL. Default: 0.01.')
     parser.add_argument('--nades', type=int, default=3,
                         help='Number of NADEs in a MAF. Default: 3.')
     parser.add_argument('--hidden', type=int, default=2,
@@ -161,6 +167,10 @@ def main():
                         help='Number of units per hidden layer. Default: 20.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
+    parser.add_argument('--activation', type=str, default='relu',
+                        help='Activation function: "rely", "tanh", "sigmoid"')
+    parser.add_argument('--bins', default='auto',
+                        help='Number of bins per parameter and observable for histogram-based inference.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
                              + 'samples.')
@@ -169,6 +179,8 @@ def main():
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
+    parser.add_argument('--alpha', type=float, default=0.01,
+                        help='alpha parameter for SCANDAL. Default: 0.01.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
@@ -191,6 +203,8 @@ def main():
         n_mades=args.nades,
         n_made_hidden_layers=args.hidden,
         n_made_units_per_layer=args.units,
+        activation=args.activation,
+        n_bins=args.bins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
         training_sample_size=args.samplesize,

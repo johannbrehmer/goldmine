@@ -12,7 +12,7 @@ from .masks import create_degrees, create_masks, create_weights, create_weights_
 
 class GaussianMADE(nn.Module):
 
-    def __init__(self, n_inputs, n_hiddens, input_order='sequential', mode='sequential'):
+    def __init__(self, n_inputs, n_hiddens, activation='relu', input_order='sequential', mode='sequential'):
 
         """
         Constructor.
@@ -24,6 +24,7 @@ class GaussianMADE(nn.Module):
 
         super(GaussianMADE, self).__init__()
 
+        self.activation = activation
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
         self.mode = mode
@@ -33,6 +34,16 @@ class GaussianMADE(nn.Module):
         self.Ms, self.Mmp = create_masks(self.degrees)
         self.Ws, self.bs, self.Wm, self.bm, self.Wp, self.bp = create_weights(n_inputs, n_hiddens, None)
         self.input_order = self.degrees[0]
+
+        # Activation function
+        if activation == 'relu':
+            self.activation_function = F.relu
+        elif activation == 'tanh':
+            self.activation_function = F.tanh
+        elif activation == 'sigmoid':
+            self.activation_function = F.sigmoid
+        else:
+            raise ValueError('Activation function %s unknown', activation)
 
         # Output info
         self.m = None
@@ -47,7 +58,7 @@ class GaussianMADE(nn.Module):
 
         # feedforward propagation
         for M, W, b in zip(self.Ms, self.Ws, self.bs):
-            h = F.relu(F.linear(h, torch.t(M * W), b))
+            h = self.activation_function(F.linear(h, torch.t(M * W), b))
 
         # output means
         self.m = F.linear(h, torch.t(self.Mmp * self.Wm), self.bm)

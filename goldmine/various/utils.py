@@ -50,7 +50,7 @@ def shuffle(*arrays):
     return shuffled_arrays
 
 
-def load_and_check(filename, warning_threshold=1.e12):
+def load_and_check(filename, warning_threshold=1.e9):
     data = np.load(filename)
 
     n_nans = np.sum(np.isnan(data))
@@ -65,7 +65,7 @@ def load_and_check(filename, warning_threshold=1.e12):
     largest = np.nanmax(data)
 
     if np.abs(smallest) > warning_threshold or np.abs(largest) > warning_threshold:
-        logging.warning('Warning: file %s has very large numbers from %s to %s',
+        logging.warning('Warning: file %s has some large numbers, rangin from %s to %s',
                         filename, smallest, largest)
 
     return data

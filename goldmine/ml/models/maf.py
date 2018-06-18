@@ -18,7 +18,7 @@ class MaskedAutoregressiveFlow(nn.Module):
     mades are of the same type. If there is only one made in the stack, then it's equivalent to a single made.
     """
 
-    def __init__(self, n_inputs, n_hiddens, n_mades, batch_norm=True,
+    def __init__(self, n_inputs, n_hiddens, n_mades, activation='relu', batch_norm=True,
                  input_order='sequential', mode='sequential', alpha=0.1):
 
         super(MaskedAutoregressiveFlow, self).__init__()
@@ -27,6 +27,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
         self.n_mades = n_mades
+        self.activation = activation
         self.batch_norm = batch_norm
         self.mode = mode
         self.alpha = alpha
@@ -37,7 +38,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         # Build MADEs
         self.mades = nn.ModuleList()
         for i in range(n_mades):
-            made = GaussianMADE(n_inputs, n_hiddens, input_order, mode)
+            made = GaussianMADE(n_inputs, n_hiddens, activation=activation, input_order=input_order, mode=mode)
             self.mades.append(made)
             if input_order != 'random':
                 input_order = made.input_order[::-1]
