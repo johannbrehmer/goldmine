@@ -5,6 +5,9 @@ class Simulator:
     def __init__(self):
         pass
 
+    def get_discretization(self):
+        raise NotImplementedError
+
     def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
         raise NotImplementedError()
 

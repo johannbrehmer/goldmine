@@ -80,3 +80,15 @@ def get_activation_function(activation_name):
         return F.sigmoid
     else:
         raise ValueError('Activation function %s unknown', activation_name)
+
+
+def discretize(data, discretization):
+
+    for c in range(data.shape[1]):
+        if discretization[c] is None or discretization[c] <= 0.:
+            continue
+        assert discretization[c] > 0.
+
+        data[:, c] = np.round(data[:,c] / discretization[c], 0) * discretization[c]
+
+        return data

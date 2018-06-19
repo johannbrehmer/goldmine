@@ -206,6 +206,9 @@ class Epidemiology(Simulator):
 
         return summary_statistics
 
+    def get_discretization(self):
+        return (None, 1, 1. / self.n_individuals, 1. / self.n_individuals, 1. / self.n_individuals, 1)
+
     def rvs(self, theta, n, random_state=None, return_histories=False):
 
         logging.info('Simulating %s epidemic evolutions for theta = %s', n, theta)

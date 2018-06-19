@@ -10,16 +10,16 @@ import numpy as np
 base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
-    from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init, load_and_check
+    from goldmine.various.look_up import create_inference, create_simulator
+    from goldmine.various.utils import general_init, load_and_check, discretize
     from goldmine.various.discriminate_samples import discriminate_samples
 except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
     print(sys.path)
-    from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init, load_and_check
+    from goldmine.various.look_up import create_inference, create_simulator
+    from goldmine.various.utils import general_init, load_and_check, discretize
     from goldmine.various.discriminate_samples import discriminate_samples
 
 
@@ -29,6 +29,7 @@ def test(simulator_name,
          training_sample_size=None,
          evaluate_densities=True,
          generate_samples=True,
+         discretize_generated_samples=True,
          classify_surrogate_vs_true_samples=True):
     """ Main evaluation function """
 
@@ -40,6 +41,7 @@ def test(simulator_name,
                  'maximal' if training_sample_size is None else training_sample_size)
     logging.info('  Evaluate densities:       %s', evaluate_densities)
     logging.info('  Generate samples:         %s', generate_samples)
+    logging.info('  Discretize samples        %s', discretize_generated_samples)
     logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
 
     # Folders and filenames
@@ -130,6 +132,12 @@ def test(simulator_name,
         logging.info('Generating samples according to learned density')
         try:
             xs_surrogate = inference.generate_samples(thetas_singletheta)
+
+            if discretize_generated_samples:
+                discretization = create_simulator(simulator_name).get_discretization()
+
+                logging.info('Discretizing data with scheme %s', discretization)
+                xs_surrogate = discretize(xs_surrogate, discretization)
 
             np.save(
                 result_folder + '/samples_from_p_hat' + model_filename + '.npy',
