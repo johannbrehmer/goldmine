@@ -26,6 +26,7 @@ def simulate(simulator_name,
              theta0=None,
              theta1=None,
              draw_from=None,
+             single_theta=False,
              grid_sampling=False,
              generate_joint_ratio=True,
              generate_joint_score=True,
@@ -34,6 +35,8 @@ def simulate(simulator_name,
     """
     Draws sample from a simulator.
 
+    :param grid_sampling:
+    :param sample_label:
     :param simulator_name: Specifies the simulator. Currently supported are 'galton' and 'epidemiology'.
     :param theta0: None or ndarray that provides a list of theta0 values (the numerator of the likelihood ratio as well
                    as the score reference point). If None, load simulator defaults.
@@ -44,8 +47,6 @@ def simulate(simulator_name,
     :param generate_joint_ratio: bool, whether to ask the simulator for the joint ratio (only if theta1 is given).
     :param generate_joint_score: bool, whether to ask the simulator for the joint score.
     :param n_samples_per_theta: Number of samples per combination of theta0 and theta1.
-    :param filename_prefix:
-    :param folder:
     :param random_state: Numpy random state.
     """
 
@@ -55,7 +56,8 @@ def simulate(simulator_name,
     logging.info('  theta0:               %s', 'default' if theta0 is None else theta0)
     logging.info('  theta1:               %s', 'default' if theta1 is None else theta1)
     if theta0 is None:
-        logging.info('  theta sampling:       %s', 'grid' if grid_sampling else 'random')
+        logging.info('  theta sampling:       %s', 'single theta' if single_theta
+        else ('grid' if grid_sampling else 'random'))
     logging.info('  Samples / theta:      %s', n_samples_per_theta)
     logging.info('  Generate joint ratio: %s', generate_joint_ratio)
     logging.info('  Generate joint score: %s', generate_joint_score)
@@ -71,11 +73,14 @@ def simulate(simulator_name,
 
     # Filenames
     folder = base_dir + '/goldmine/data/samples/' + simulator_name
-    filename = simulator_name + '_' + sample_label
+    filename = sample_label
+    if single_theta:
+        filename += '_singletheta'
 
     # Default thetas
     if theta0 is None:
-        theta0, theta1 = simulator.theta_defaults(random=not grid_sampling)
+        theta0, theta1 = simulator.theta_defaults(single_theta=single_theta,
+                                                  random=not grid_sampling)
 
     # Check thetas
     has_theta1 = (theta1 is not None)
@@ -160,14 +165,14 @@ def simulate(simulator_name,
     logging.info('Saving results')
 
     # Save results
-    np.save(folder + '/' + filename + '_theta0' + '.npy', all_theta0)
-    np.save(folder + '/' + filename + '_theta1' + '.npy', all_theta1)
-    np.save(folder + '/' + filename + '_x' + '.npy', all_x)
-    np.save(folder + '/' + filename + '_y' + '.npy', all_y)
+    np.save(folder + '/theta0_' + filename + '.npy', all_theta0)
+    np.save(folder + '/theta1_' + filename + '.npy', all_theta1)
+    np.save(folder + '/x_' + filename + '.npy', all_x)
+    np.save(folder + '/y_' + filename + '.npy', all_y)
     if generate_joint_ratio:
-        np.save(folder + '/' + filename + '_r_xz' + '.npy', all_r_xz)
+        np.save(folder + '/r_xz_' + filename + '.npy', all_r_xz)
     if generate_joint_score:
-        np.save(folder + '/' + filename + '_t_xz' + '.npy', all_t_xz)
+        np.save(folder + '/t_xz_' + filename + '.npy', all_t_xz)
 
 
 def main():
@@ -179,10 +184,12 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
-    parser.add_argument('simulator', help='Simulator: "galton" or "epidemiology"')
+    parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('sample', help='Sample name ("train" or "test")')
     parser.add_argument('--theta0', default=None, help='Theta0 file, defaults to standard parameters')
     parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to no theta1')
+    parser.add_argument('--singletheta', action='store_true', help='If argument theta0 is not set, generates sample'
+                                                                   + ' for one reference theta rather than a set')
     parser.add_argument('--gridsampling', action='store_true', help='If argument theta0 is not set, samples theta0 on a'
                                                                     + ' grid rather than randomly')
     parser.add_argument('--nsamples', type=int, default=100, help='Number of samples per theta value')
@@ -197,6 +204,7 @@ def main():
         args.sample,
         theta0=args.theta0,
         theta1=args.theta1,
+        single_theta=args.singletheta,
         n_samples_per_theta=args.nsamples,
         generate_joint_ratio=not args.noratio,
         generate_joint_score=not args.noscore,

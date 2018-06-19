@@ -5,7 +5,7 @@ class Simulator:
     def __init__(self):
         pass
 
-    def theta_defaults(self, n_thetas=100, random=True):
+    def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
         raise NotImplementedError()
 
     def rvs(self, theta, n, random_state=None):

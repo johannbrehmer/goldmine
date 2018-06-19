@@ -18,7 +18,7 @@ class MaskedAutoregressiveFlow(nn.Module):
     mades are of the same type. If there is only one made in the stack, then it's equivalent to a single made.
     """
 
-    def __init__(self, n_inputs, n_hiddens, n_mades, batch_norm=True,
+    def __init__(self, n_inputs, n_hiddens, n_mades, activation='relu', batch_norm=True,
                  input_order='sequential', mode='sequential', alpha=0.1):
 
         super(MaskedAutoregressiveFlow, self).__init__()
@@ -27,6 +27,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
         self.n_mades = n_mades
+        self.activation = activation
         self.batch_norm = batch_norm
         self.mode = mode
         self.alpha = alpha
@@ -37,7 +38,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         # Build MADEs
         self.mades = nn.ModuleList()
         for i in range(n_mades):
-            made = GaussianMADE(n_inputs, n_hiddens, input_order, mode)
+            made = GaussianMADE(n_inputs, n_hiddens, activation=activation, input_order=input_order, mode=mode)
             self.mades.append(made)
             if input_order != 'random':
                 input_order = made.input_order[::-1]
@@ -64,6 +65,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         for i, made in enumerate(self.mades):
             # inverse autoregressive transform
             u = made(u)
+
             logdet_dudx += 0.5 * torch.sum(made.logp, dim=1)
 
             # batch normalization
@@ -118,7 +120,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
     mades are of the same type. If there is only one made in the stack, then it's equivalent to a single made.
     """
 
-    def __init__(self, n_conditionals, n_inputs, n_hiddens, n_mades, batch_norm=True,
+    def __init__(self, n_conditionals, n_inputs, n_hiddens, n_mades, activation='relu', batch_norm=True,
                  input_order='sequential', mode='sequential', alpha=0.1):
 
         super(ConditionalMaskedAutoregressiveFlow, self).__init__()
@@ -128,6 +130,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
         self.n_mades = n_mades
+        self.activation = activation
         self.batch_norm = batch_norm
         self.mode = mode
         self.alpha = alpha
@@ -139,7 +142,8 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
         # Build MADEs
         self.mades = nn.ModuleList()
         for i in range(n_mades):
-            made = ConditionalGaussianMADE(n_conditionals, n_inputs, n_hiddens, input_order, mode)
+            made = ConditionalGaussianMADE(n_conditionals, n_inputs, n_hiddens, activation=activation,
+                                           input_order=input_order, mode=mode)
             self.mades.append(made)
             if input_order != 'random':
                 input_order = made.input_order[::-1]
@@ -155,6 +159,14 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
     def forward(self, theta, x, fix_batch_norm=None, track_score=True):
 
         """ Transforms x into u = f^-1(x) """
+
+        if x.shape[1] != self.n_inputs:
+            logging.error('x has wrong shape: %s', x.shape)
+            logging.debug('theta shape: %s', theta.shape)
+            logging.debug('theta content: %s', theta)
+            logging.debug('x content: %s', x)
+
+            raise ValueError('Wrong x shape')
 
         # Change batch norm means only while training
         if fix_batch_norm is None:
@@ -194,7 +206,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         """ Calculates log p(x) """
 
-        _ = self.forward(theta, x)
+        _ = self.forward(theta, x, fix_batch_norm=True)
 
         return self.log_likelihood
 
@@ -202,17 +214,19 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         """ Calculates log p(x) """
 
-        _ = self.forward(theta, x)
+        _ = self.forward(theta, x, fix_batch_norm=True)
 
         return self.score
 
-    def generate_samples(self, theta, n_samples=1, u=None):
+    def generate_samples(self, theta, u=None):
         """
         Generate samples, by propagating random numbers through each made.
         :param n_samples: number of samples
         :param u: random numbers to use in generating samples; if None, new random numbers are drawn
         :return: samples
         """
+
+        n_samples = theta.shape[0]
 
         x = tensor(rng.randn(n_samples, self.n_inputs)) if u is None else u
 
@@ -222,10 +236,10 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
             for i, (made, bn) in enumerate(zip(mades[::-1], bns[::-1])):
                 x = bn.inverse(x)
-                x = made.generate_samples(theta, n_samples, x)
+                x = made.generate_samples(theta, x)
         else:
             mades = [made for made in self.mades]
             for made in mades[::-1]:
-                x = made.generate_samples(theta, n_samples, x)
+                x = made.generate_samples(theta, x)
 
         return x

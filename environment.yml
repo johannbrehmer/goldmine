@@ -1,0 +1,12 @@
+name: goldmine
+
+dependencies:
+  - python=3
+  - numpy
+  - scipy
+  - matplotlib
+  - jupyter
+  - scikit-learn
+  - torch
+  - pip:
+    - autograd
