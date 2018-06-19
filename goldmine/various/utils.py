@@ -91,4 +91,4 @@ def discretize(data, discretization):
 
         data[:, c] = np.round(data[:,c] / discretization[c], 0) * discretization[c]
 
-        return data
+    return data
