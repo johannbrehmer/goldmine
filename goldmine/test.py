@@ -130,6 +130,7 @@ def test(simulator_name,
         logging.info('Generating samples according to learned density')
         try:
             xs_surrogate = inference.generate_samples(thetas_singletheta)
+
             np.save(
                 result_folder + '/samples_from_p_hat' + model_filename + '.npy',
                 xs_surrogate

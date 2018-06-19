@@ -179,8 +179,8 @@ def main():
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
-    parser.add_argument('--alpha', type=float, default=0.01,
-                        help='alpha parameter for SCANDAL. Default: 0.01.')
+    parser.add_argument('--alpha', type=float, default=0.001,
+                        help='alpha parameter for SCANDAL. Default: 0.001.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
