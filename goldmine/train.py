@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import logging
 from os import sys, path
-import numpy as np
 
 base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
@@ -16,7 +15,6 @@ except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
-    print(sys.path)
     from goldmine.various.look_up import create_inference
     from goldmine.various.utils import general_init, shuffle, load_and_check
 
@@ -30,6 +28,7 @@ def train(simulator_name,
           activation='relu',
           n_bins='auto',
           alpha=1.,
+          single_theta=False,
           training_sample_size=None,
           n_epochs=20,
           compensate_sample_size=False,
@@ -49,7 +48,7 @@ def train(simulator_name,
     logging.info('  Activation function:  %s', activation)
     logging.info('  Histogram bins:       %s', n_bins)
     logging.info('  SCANDAL alpha:        %s', alpha)
-
+    logging.info('  Single-theta sample:  %s', single_theta)
     logging.info('  Training sample size: %s',
                  'maximal' if training_sample_size is None else training_sample_size)
     if compensate_sample_size and training_sample_size is not None:
@@ -65,14 +64,18 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
+    sample_filename = 'train'
     output_filename = ''
+    if single_theta:
+        output_filename += '_singletheta'
+        sample_filename += '_singletheta'
     if training_sample_size is not None:
         output_filename += '_trainingsamplesize_' + str(training_sample_size)
 
     # Load training data and creating model
-    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_train.npy')
-    thetas = load_and_check(sample_folder + '/theta0_train.npy')
-    xs = load_and_check(sample_folder + '/x_train.npy')
+    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_' + sample_filename + '.npy')
+    thetas = load_and_check(sample_folder + '/theta0_' + sample_filename + '.npy')
+    xs = load_and_check(sample_folder + '/x_' + sample_filename + '.npy')
 
     n_samples = thetas.shape[0]
     n_parameters = thetas.shape[1]
@@ -171,6 +174,7 @@ def main():
                         help='Activation function: "rely", "tanh", "sigmoid"')
     parser.add_argument('--bins', default='auto',
                         help='Number of bins per parameter and observable for histogram-based inference.')
+    parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
                              + 'samples.')
@@ -207,6 +211,7 @@ def main():
         n_bins=args.bins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
+        single_theta=args.singletheta,
         training_sample_size=args.samplesize,
         n_epochs=args.epochs,
         compensate_sample_size=args.compensate_samplesize,

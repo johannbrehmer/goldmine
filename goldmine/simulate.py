@@ -16,7 +16,6 @@ except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
-    print(sys.path)
     from goldmine.various.look_up import create_simulator
     from goldmine.various.utils import general_init
 
