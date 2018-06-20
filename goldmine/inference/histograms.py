@@ -50,16 +50,15 @@ class HistogramInference(Inference):
         n_parameters = theta.shape[1]
         n_observables = x.shape[1]
 
+        # TODO: better automatic bin number determination (solve eqn)
+
         n_bins_per_theta = self.n_bins_theta
         if n_bins_per_theta == 'auto':
-            total_bins = 10 + int(round(n_samples ** (1. / 3.), 0))
-            logging.debug(total_bins)
-            n_bins_per_theta = max(5, int(round(total_bins ** (1. / (n_parameters + n_observables)))))
+            n_bins_per_theta = 10
 
         n_bins_per_x = self.n_bins_x
         if n_bins_per_x == 'auto':
-            total_bins = 10 + int(round(n_samples ** (1. / 3.), 0))
-            n_bins_per_x = max(5, int(round(total_bins ** (1. / (n_parameters + n_observables)))))
+            n_bins_per_x = 10
 
         all_n_bins = [n_bins_per_theta] * n_parameters + [n_bins_per_x] * n_observables
 
@@ -136,8 +135,6 @@ class HistogramInference(Inference):
         bin_widths = [this_edges[1:] - this_edges[:-1] for this_edges in self.edges[self.n_parameters:]]
 
         ################################################################################################################
-        # TODO: Calculate nd volumes from the 1d widths
-
         # bin_widths: (n_observables, n_bins) -> 1d widths
         # self.n_bins: (n_parameters + n_observables,) -> n_bins
 
@@ -146,9 +143,24 @@ class HistogramInference(Inference):
         # volume[i0 ... in] = bin_widths[0, i0] * bin_widths[1, i1] * ... * bin_widths[n, in]
 
         volumes = np.ones(flat_shape[1:])
-        # for i in range(self.n_parameters):
-        #     volumes[] *= np.broadcast(bin_widths[i], flat_shape[1:])
-        #  TODO: Figure out how to broadcast along a given axis
+        for obs in range(self.n_observables):
+            logging.debug('Observable %s', obs)
+
+            # Broadcast bin widths to array with shape like volumes
+            bin_widths_broadcasted = np.ones(flat_shape[1:])
+
+            logging.debug('Shape: %s', flat_shape[1:])
+            for indices in np.ndindex(flat_shape[1:]):
+                logging.debug('Indices: %s', indices)
+                bin_widths_broadcasted[indices] = bin_widths[obs][indices[obs]]
+
+            # Check
+            logging.debug('1-d bin width: %s', bin_widths[obs])
+            logging.debug('Broadcasted bin width:\n%s', bin_widths_broadcasted)
+
+            volumes[:] *= bin_widths_broadcasted
+
+            logging.debug('Volumes:\n%s', volumes)
         ################################################################################################################
 
         # Normalize histograms (for each theta bin)

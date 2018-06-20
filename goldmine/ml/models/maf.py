@@ -40,7 +40,7 @@ class MaskedAutoregressiveFlow(nn.Module):
         for i in range(n_mades):
             made = GaussianMADE(n_inputs, n_hiddens, activation=activation, input_order=input_order, mode=mode)
             self.mades.append(made)
-            if input_order != 'random':
+            if not (isinstance(input_order, str) and input_order != 'random'):
                 input_order = made.input_order[::-1]
 
         # Batch normalizatino
@@ -145,7 +145,7 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
             made = ConditionalGaussianMADE(n_conditionals, n_inputs, n_hiddens, activation=activation,
                                            input_order=input_order, mode=mode)
             self.mades.append(made)
-            if input_order != 'random':
+            if not (isinstance(input_order, str) and input_order != 'random'):
                 input_order = made.input_order[::-1]
 
         # Batch normalizatino
