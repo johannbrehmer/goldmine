@@ -159,12 +159,12 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
-    parser.add_argument('--nades', type=int, default=3,
-                        help='Number of NADEs in a MAF. Default: 3.')
-    parser.add_argument('--hidden', type=int, default=2,
-                        help='Number of hidden layers. Default: 2.')
-    parser.add_argument('--units', type=int, default=20,
-                        help='Number of units per hidden layer. Default: 20.')
+    parser.add_argument('--nades', type=int, default=5,
+                        help='Number of NADEs in a MAF. Default: 5.')
+    parser.add_argument('--hidden', type=int, default=1,
+                        help='Number of hidden layers. Default: 1.')
+    parser.add_argument('--units', type=int, default=100,
+                        help='Number of units per hidden layer. Default: 100.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
     parser.add_argument('--activation', type=str, default='tanh',

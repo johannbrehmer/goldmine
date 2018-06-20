@@ -66,8 +66,10 @@ class Epidemiology(Simulator):
             return [np.array([3.589, 0.593, 0.097, 1.])], None
 
         # Ranges
-        theta_min = np.array([0., 0., 0., 1.])
-        theta_max = np.array([11., 2., 1., 1.])
+        #theta_min = np.array([0., 0., 0., 1.])
+        #theta_max = np.array([11., 2., 1., 1.])
+        theta_min = np.array([2, 0.3, 0.05, 0.5])
+        theta_max = np.array([6., 1., 0.2, 2.])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
