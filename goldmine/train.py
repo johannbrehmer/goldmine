@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import logging
 from os import sys, path
-import numpy as np
 
 base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
@@ -16,7 +15,6 @@ except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
-    print(sys.path)
     from goldmine.various.look_up import create_inference
     from goldmine.various.utils import general_init, shuffle, load_and_check
 
@@ -30,6 +28,7 @@ def train(simulator_name,
           activation='relu',
           n_bins='auto',
           alpha=1.,
+          single_theta=False,
           training_sample_size=None,
           n_epochs=20,
           compensate_sample_size=False,
@@ -49,7 +48,7 @@ def train(simulator_name,
     logging.info('  Activation function:  %s', activation)
     logging.info('  Histogram bins:       %s', n_bins)
     logging.info('  SCANDAL alpha:        %s', alpha)
-
+    logging.info('  Single-theta sample:  %s', single_theta)
     logging.info('  Training sample size: %s',
                  'maximal' if training_sample_size is None else training_sample_size)
     if compensate_sample_size and training_sample_size is not None:
@@ -65,14 +64,18 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
+    sample_filename = 'train'
     output_filename = ''
+    if single_theta:
+        output_filename += '_singletheta'
+        sample_filename += '_singletheta'
     if training_sample_size is not None:
         output_filename += '_trainingsamplesize_' + str(training_sample_size)
 
     # Load training data and creating model
-    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_train.npy')
-    thetas = load_and_check(sample_folder + '/theta0_train.npy')
-    xs = load_and_check(sample_folder + '/x_train.npy')
+    logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_' + sample_filename + '.npy')
+    thetas = load_and_check(sample_folder + '/theta0_' + sample_filename + '.npy')
+    xs = load_and_check(sample_folder + '/x_' + sample_filename + '.npy')
 
     n_samples = thetas.shape[0]
     n_parameters = thetas.shape[1]
@@ -159,18 +162,19 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
-    parser.add_argument('--nades', type=int, default=3,
-                        help='Number of NADEs in a MAF. Default: 3.')
-    parser.add_argument('--hidden', type=int, default=2,
-                        help='Number of hidden layers. Default: 2.')
-    parser.add_argument('--units', type=int, default=20,
-                        help='Number of units per hidden layer. Default: 20.')
+    parser.add_argument('--nades', type=int, default=5,
+                        help='Number of NADEs in a MAF. Default: 5.')
+    parser.add_argument('--hidden', type=int, default=1,
+                        help='Number of hidden layers. Default: 1.')
+    parser.add_argument('--units', type=int, default=100,
+                        help='Number of units per hidden layer. Default: 100.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
     parser.add_argument('--activation', type=str, default='tanh',
                         help='Activation function: "rely", "tanh", "sigmoid"')
     parser.add_argument('--bins', default='auto',
                         help='Number of bins per parameter and observable for histogram-based inference.')
+    parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
                              + 'samples.')
@@ -179,8 +183,8 @@ def main():
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
-    parser.add_argument('--alpha', type=float, default=0.01,
-                        help='alpha parameter for SCANDAL. Default: 0.01.')
+    parser.add_argument('--alpha', type=float, default=0.001,
+                        help='alpha parameter for SCANDAL. Default: 0.001.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
@@ -207,6 +211,7 @@ def main():
         n_bins=args.bins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
+        single_theta=args.singletheta,
         training_sample_size=args.samplesize,
         n_epochs=args.epochs,
         compensate_sample_size=args.compensate_samplesize,

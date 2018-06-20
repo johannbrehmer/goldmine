@@ -59,15 +59,17 @@ class Epidemiology(Simulator):
         # Autograd
         self._d_simulate_transmission = ag.grad_and_aux(self._simulate_transmission)
 
-    def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
+    def theta_defaults(self, n_thetas=1000, single_theta=False, random=True):
 
         # Single benchmark point
         if single_theta:
             return [np.array([3.589, 0.593, 0.097, 1.])], None
 
         # Ranges
-        theta_min = np.array([0., 0., 0., 1.])
-        theta_max = np.array([11., 2., 1., 1.])
+        #theta_min = np.array([0., 0., 0., 1.])
+        #theta_max = np.array([11., 2., 1., 1.])
+        theta_min = np.array([2, 0.3, 0.05, 0.5])
+        theta_max = np.array([6., 1., 0.2, 2.])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
@@ -205,6 +207,9 @@ class Epidemiology(Simulator):
         ])
 
         return summary_statistics
+
+    def get_discretization(self):
+        return (None, 1, 1. / self.n_individuals, 1. / self.n_individuals, 1. / self.n_individuals, 1)
 
     def rvs(self, theta, n, random_state=None, return_histories=False):
 

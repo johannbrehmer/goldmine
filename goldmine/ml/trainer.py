@@ -48,7 +48,7 @@ def train(model,
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           clip_gradient=1.,
           run_on_gpu=True,
-          validation_split=0.2, early_stopping=True,
+          validation_split=0.2, early_stopping=True, early_stopping_patience=20,
           learning_curve_folder=None, learning_curve_filename=None,
           verbose='some'):
     """
@@ -254,6 +254,12 @@ def train(model,
                 logging.info('  Epoch %d: train loss %s (%s), validation loss %s (%s)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
                                 total_losses_val[-1], individual_losses_val[-1]))
+
+        # Early stopping
+        if early_stopping and early_stopping_patience is not None:
+            if epoch - early_stopping_epoch >= early_stopping_patience and early_stopping_patience > 0:
+                logging.info('No improvement for %s epochs, stopping training', epoch - early_stopping_epoch)
+                break
 
     # Early stopping
     if early_stopping:
