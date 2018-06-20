@@ -50,7 +50,7 @@ class HistogramInference(Inference):
         n_parameters = theta.shape[1]
         n_observables = x.shape[1]
 
-        # TODO: better automatic bin number determination (solve eqn)
+        # TODO: better automatic bin number determination
 
         n_bins_per_theta = self.n_bins_theta
         if n_bins_per_theta == 'auto':
@@ -134,14 +134,6 @@ class HistogramInference(Inference):
 
         bin_widths = [this_edges[1:] - this_edges[:-1] for this_edges in self.edges[self.n_parameters:]]
 
-        ################################################################################################################
-        # bin_widths: (n_observables, n_bins) -> 1d widths
-        # self.n_bins: (n_parameters + n_observables,) -> n_bins
-
-        # volume: (n_bins0, ..., n_binsn) -> 1.
-        # Loop over all observable bins (i0 ... in)
-        # volume[i0 ... in] = bin_widths[0, i0] * bin_widths[1, i1] * ... * bin_widths[n, in]
-
         volumes = np.ones(flat_shape[1:])
         for obs in range(self.n_observables):
             logging.debug('Observable %s', obs)
@@ -161,14 +153,13 @@ class HistogramInference(Inference):
             volumes[:] *= bin_widths_broadcasted
 
             logging.debug('Volumes:\n%s', volumes)
-        ################################################################################################################
 
         # Normalize histograms (for each theta bin)
         histo = histo.reshape(flat_shape)
 
         for i in range(histo.shape[0]):
             histo[i] /= volumes
-            histo[i] /= np.sum(histo[i])
+            histo[i] = histo[i] / np.sum(histo[i] * volumes)
 
         histo = histo.reshape(original_shape)
         self.histo = histo
