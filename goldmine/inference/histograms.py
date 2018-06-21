@@ -98,16 +98,18 @@ class HistogramInference(Inference):
         n_samples = x.shape[0]
         self.n_parameters = theta.shape[1]
         self.n_observables = x.shape[1]
+        fill_empty_bins = params.get('fill_empty_bins', False)
 
         logging.info('Filling histogram with settings:')
-        logging.info('  theta given: %s', theta is not None)
-        logging.info('  x given:     %s', x is not None)
-        logging.info('  y given:     %s', y is not None)
-        logging.info('  r_xz given:  %s', r_xz is not None)
-        logging.info('  t_xz given:  %s', t_xz is not None)
-        logging.info('  Samples:     %s', n_samples)
-        logging.info('  Parameters:  %s', self.n_parameters)
-        logging.info('  Obserables:  %s', self.n_observables)
+        logging.info('  theta given:   %s', theta is not None)
+        logging.info('  x given:       %s', x is not None)
+        logging.info('  y given:       %s', y is not None)
+        logging.info('  r_xz given:    %s', r_xz is not None)
+        logging.info('  t_xz given:    %s', t_xz is not None)
+        logging.info('  Samples:       %s', n_samples)
+        logging.info('  Parameters:    %s', self.n_parameters)
+        logging.info('  Obserables:    %s', self.n_observables)
+        logging.info('  No empty bins: %s', fill_empty_bins)
 
         # Find bins
         logging.info('Calculating binning')
@@ -132,6 +134,10 @@ class HistogramInference(Inference):
 
         histo, _ = np.histogramdd(theta_x, bins=self.edges, range=ranges, normed=False, weights=None)
 
+        # Avoid empty bins
+        if fill_empty_bins:
+            histo[histo<=1.] = 1.
+
         # Calculate cell volumes
         original_shape = tuple(self.n_bins)
         flat_shape = tuple([-1] + list(self.n_bins[self.n_parameters:]))
@@ -154,6 +160,10 @@ class HistogramInference(Inference):
             histo[i] = histo[i] / np.sum(histo[i] * volumes)
 
         histo = histo.reshape(original_shape)
+
+        # Avoid NaNs
+        histo[np.invert(np.isfinite(histo))] = 0.
+
         self.histo = histo
 
     def save(self, filename):
@@ -176,6 +186,8 @@ class HistogramInference(Inference):
 
             indices[indices < 0] = 0
             indices[indices >= self.n_bins[j]] = self.n_bins[j] - 1
+
+            # logging.debug('Obs %s, bins %s, indices %s', j,self.n_bins[j], indices)
 
             all_indices.append(indices)
 

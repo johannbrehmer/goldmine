@@ -28,6 +28,7 @@ def train(simulator_name,
           activation='relu',
           n_bins_theta='auto',
           n_bins_x='auto',
+          fill_empty_bins=False,
           alpha=1.,
           single_theta=False,
           training_sample_size=None,
@@ -49,6 +50,7 @@ def train(simulator_name,
     logging.info('  Activation function:  %s', activation)
     logging.info('  Histogram theta bins: %s', n_bins_theta)
     logging.info('  Histogram x bins:     %s', n_bins_x)
+    logging.info('  No empty bins:        %s', fill_empty_bins)
     logging.info('  SCANDAL alpha:        %s', alpha)
     logging.info('  Single-theta sample:  %s', single_theta)
     logging.info('  Training sample size: %s',
@@ -148,7 +150,8 @@ def train(simulator_name,
         alpha=alpha,
         learning_curve_folder=result_folder,
         learning_curve_filename=output_filename,
-        early_stopping=early_stopping
+        early_stopping=early_stopping,
+        fill_empty_bins=fill_empty_bins
     )
 
     # Save models
@@ -177,10 +180,12 @@ def main():
                         help='Use batch normalization.')
     parser.add_argument('--activation', type=str, default='tanh',
                         help='Activation function: "rely", "tanh", "sigmoid"')
-    parser.add_argument('--thetabins', type=int, default=4,
+    parser.add_argument('--thetabins', type=int, default=3,
                         help='Number of bins per parameter for histogram-based inference.')
-    parser.add_argument('--xbins', type=int, default=4,
+    parser.add_argument('--xbins', type=int, default=3,
                         help='Number of bins per observable for histogram-based inference.')
+    parser.add_argument('--fillemptybins', action='store_true',
+                        help='Fill empty histogram bins with 1s.')
     parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
@@ -217,6 +222,7 @@ def main():
         activation=args.activation,
         n_bins_theta=args.thetabins,
         n_bins_x=args.xbins,
+        fill_empty_bins=args.fillemptybins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
         single_theta=args.singletheta,
