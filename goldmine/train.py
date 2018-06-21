@@ -10,13 +10,13 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
     from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init, shuffle, load_and_check
+    from goldmine.various.utils import general_init, shuffle, load_and_check, create_missing_folders
 except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
     from goldmine.various.look_up import create_inference
-    from goldmine.various.utils import general_init, shuffle, load_and_check
+    from goldmine.various.utils import general_init, shuffle, load_and_check, create_missing_folders
 
 
 def train(simulator_name,
@@ -26,7 +26,8 @@ def train(simulator_name,
           n_made_units_per_layer=20,
           batch_norm=False,
           activation='relu',
-          n_bins='auto',
+          n_bins_theta='auto',
+          n_bins_x='auto',
           alpha=1.,
           single_theta=False,
           training_sample_size=None,
@@ -46,7 +47,8 @@ def train(simulator_name,
     logging.info('  MADE units / layer:   %s', n_made_units_per_layer)
     logging.info('  Batch norm:           %s', batch_norm)
     logging.info('  Activation function:  %s', activation)
-    logging.info('  Histogram bins:       %s', n_bins)
+    logging.info('  Histogram theta bins: %s', n_bins_theta)
+    logging.info('  Histogram x bins:     %s', n_bins_x)
     logging.info('  SCANDAL alpha:        %s', alpha)
     logging.info('  Single-theta sample:  %s', single_theta)
     logging.info('  Training sample size: %s',
@@ -58,6 +60,9 @@ def train(simulator_name,
     logging.info('  Batch size:           %s', batch_size)
     logging.info('  Learning rate:        %s initially, decaying to %s', initial_lr, final_lr)
     logging.info('  Early stopping:       %s', early_stopping)
+
+    # Check paths
+    create_missing_folders(base_dir, simulator_name, inference_name)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
@@ -92,8 +97,8 @@ def train(simulator_name,
         activation=activation,
         n_parameters=n_parameters,
         n_observables=n_observables,
-        n_bins_theta=n_bins,
-        n_bins_x=n_bins
+        n_bins_theta=n_bins_theta,
+        n_bins_x=n_bins_x
     )
 
     if inference.requires_class_label():
@@ -172,8 +177,10 @@ def main():
                         help='Use batch normalization.')
     parser.add_argument('--activation', type=str, default='tanh',
                         help='Activation function: "rely", "tanh", "sigmoid"')
-    parser.add_argument('--bins', default='auto',
-                        help='Number of bins per parameter and observable for histogram-based inference.')
+    parser.add_argument('--thetabins', type=int, default=4,
+                        help='Number of bins per parameter for histogram-based inference.')
+    parser.add_argument('--xbins', type=int, default=4,
+                        help='Number of bins per observable for histogram-based inference.')
     parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
@@ -208,7 +215,8 @@ def main():
         n_made_hidden_layers=args.hidden,
         n_made_units_per_layer=args.units,
         activation=args.activation,
-        n_bins=args.bins,
+        n_bins_theta=args.thetabins,
+        n_bins_x=args.xbins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
         single_theta=args.singletheta,

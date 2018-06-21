@@ -206,7 +206,7 @@ def train(model,
         # Validation
         if validation_split is None:
             if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
-                logging.info('  Epoch %d: train loss %s (%s)'
+                logging.info('  Epoch %d: train loss %.2f (%s)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1]))
             continue
 
@@ -247,11 +247,11 @@ def train(model,
 
         if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
             if early_stopping and epoch == early_stopping_epoch:
-                logging.info('  Epoch %d: train loss %s (%s), validation loss %s (%s) (*)'
+                logging.info('  Epoch %d: train loss %.2f (%s), validation loss %.2f (%s) (*)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
                                 total_losses_val[-1], individual_losses_val[-1]))
             else:
-                logging.info('  Epoch %d: train loss %s (%s), validation loss %s (%s)'
+                logging.info('  Epoch %d: train loss %.2f (%s), validation loss %.2f (%s)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
                                 total_losses_val[-1], individual_losses_val[-1]))
 
@@ -264,7 +264,7 @@ def train(model,
     # Early stopping
     if early_stopping:
         if early_stopping_best_val_loss < total_val_loss:
-            logging.info('Early stopping after epoch %s, with loss %s compared to final loss %s',
+            logging.info('Early stopping after epoch %s, with loss %.2f compared to final loss %.2f',
                          early_stopping_epoch + 1, early_stopping_best_val_loss, total_val_loss)
             model.load_state_dict(early_stopping_best_model)
         else:

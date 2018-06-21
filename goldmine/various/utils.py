@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import logging
 import torch.nn.functional as F
 
@@ -26,6 +27,27 @@ def general_init():
     logging.info('Hi! How are you today?')
 
     np.seterr(divide='ignore', invalid='ignore')
+
+    np.set_printoptions(formatter={'float_kind': lambda x: "%.2f" % x})
+
+
+def create_missing_folders(base_dir, simulator_name, inference_name=None):
+
+    required_subfolders = ['thetas/' + simulator_name,
+                           'samples/' + simulator_name]
+    if inference_name is not None:
+        required_subfolders += ['models/' + simulator_name + '/' + inference_name,
+                                'results/' + simulator_name + '/' + inference_name]
+
+    for subfolder in required_subfolders:
+        folder = base_dir + '/goldmine/data/' + subfolder
+
+        if not os.path.exists(folder):
+            logging.info('Folder %s does not exist, will be created', folder)
+            os.makedirs(folder)
+
+        elif not os.path.isdir(folder):
+            raise OSError('Path {} exists, but is no folder!'.format(folder))
 
 
 def shuffle(*arrays):
