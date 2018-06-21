@@ -62,7 +62,7 @@ def train(simulator_name,
     logging.info('  Early stopping:       %s', early_stopping)
 
     # Check paths
-    create_missing_folders(base_dir, simulator_name)
+    create_missing_folders(base_dir, simulator_name, inference_name)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name

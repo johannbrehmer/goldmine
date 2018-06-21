@@ -47,7 +47,7 @@ def test(simulator_name,
     logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
 
     # Check paths
-    create_missing_folders(base_dir, simulator_name)
+    create_missing_folders(base_dir, simulator_name, inference_name)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
@@ -55,10 +55,13 @@ def test(simulator_name,
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
     model_filename = ''
+    result_filename = ''
     if trained_on_single_theta:
-        model_filename += '_trainedonsingletheta'
+        model_filename += '_singletheta'
+        result_filename += '_trainedonsingletheta'
     if training_sample_size is not None:
         model_filename += '_trainingsamplesize_' + str(training_sample_size)
+        result_filename += '_trainingsamplesize_' + str(training_sample_size)
 
     # Load train data
     logging.info('Loading many-theta  train sample')
@@ -124,28 +127,28 @@ def test(simulator_name,
             logging.info('Estimating densities on many-theta train sample')
             log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
             np.save(
-                result_folder + '/log_p_hat_train' + model_filename + '.npy',
+                result_folder + '/log_p_hat_train' + result_filename + '.npy',
                 log_p_hat
             )
 
             logging.info('Estimating densities on single-theta train sample')
             log_p_hat = inference.predict_density(thetas_train_singletheta, xs_train_singletheta, log=True)
             np.save(
-                result_folder + '/log_p_hat_train_singletheta' + model_filename + '.npy',
+                result_folder + '/log_p_hat_train_singletheta' + result_filename + '.npy',
                 log_p_hat
             )
 
             logging.info('Estimating densities on many-theta test sample')
             log_p_hat = inference.predict_density(thetas_test, xs_test, log=True)
             np.save(
-                result_folder + '/log_p_hat_test' + model_filename + '.npy',
+                result_folder + '/log_p_hat_test' + result_filename + '.npy',
                 log_p_hat
             )
 
             logging.info('Estimating densities on single-theta test sample')
             log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
             np.save(
-                result_folder + '/log_p_hat_singletheta' + model_filename + '.npy',
+                result_folder + '/log_p_hat_singletheta' + result_filename + '.npy',
                 log_p_hat
             )
 
@@ -167,7 +170,7 @@ def test(simulator_name,
                 xs_surrogate = discretize(xs_surrogate, discretization)
 
             np.save(
-                result_folder + '/samples_from_p_hat' + model_filename + '.npy',
+                result_folder + '/samples_from_p_hat' + result_filename + '.npy',
                 xs_surrogate
             )
         except NotImplementedError:
@@ -181,15 +184,15 @@ def test(simulator_name,
         )
         roc_auc, tpr, fpr = discriminate_samples(xs_test, xs_surrogate)
         np.save(
-            result_folder + '/roc_auc_surrogate_vs_simulator' + model_filename + '.npy',
+            result_folder + '/roc_auc_surrogate_vs_simulator' + result_filename + '.npy',
             [roc_auc]
         )
         np.save(
-            result_folder + '/fpr_surrogate_vs_simulator' + model_filename + '.npy',
+            result_folder + '/fpr_surrogate_vs_simulator' + result_filename + '.npy',
             [fpr]
         )
         np.save(
-            result_folder + '/tpr_surrogate_vs_simulator' + model_filename + '.npy',
+            result_folder + '/tpr_surrogate_vs_simulator' + result_filename + '.npy',
             [tpr]
         )
 

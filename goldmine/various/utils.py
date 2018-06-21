@@ -33,12 +33,12 @@ def create_missing_folders(base_dir, simulator_name, inference_name=None):
 
     required_subfolders = ['thetas/' + simulator_name,
                            'samples/' + simulator_name]
-    if simulator_name is not None:
+    if inference_name is not None:
         required_subfolders += ['models/' + simulator_name + '/' + inference_name,
                                 'results/' + simulator_name + '/' + inference_name]
 
     for subfolder in required_subfolders:
-        folder = base_dir + '/data/' + subfolder
+        folder = base_dir + '/goldmine/data/' + subfolder
 
         if not os.path.exists(folder):
             logging.info('Folder %s does not exist, will be created', folder)
