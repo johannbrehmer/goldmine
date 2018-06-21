@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import pickle
 
 from goldmine.inference.base import Inference
 
@@ -31,15 +32,14 @@ class HistogramInference(Inference):
         else:
             self.n_parameters = None
             self.n_observables = None
-            self.edges = np.load(filename + '_edges.npy')
+            with open(filename + '_edges.pickle', 'rb') as file:
+                self.edges = pickle.load(file)
             self.histo = np.load(filename + '_histo.npy')
             self.n_bins = self.histo.shape
 
             logging.info('Loaded histogram:')
             logging.info('  Filename:            %s', filename + '_*.npy')
             logging.info('  Number of bins:      %s', self.n_bins)
-
-            # TODO: change self.edges from numpy to list (for saving + loading)
 
     def _calculate_binning(self, theta, x):
 
@@ -66,16 +66,18 @@ class HistogramInference(Inference):
         all_edges = []
         all_ranges = []
 
-        for data, n_bins in zip(all_theta_x, all_n_bins):
+        for i, (data, n_bins) in enumerate(zip(all_theta_x, all_n_bins)):
             edges = np.percentile(data, np.linspace(0., 100., n_bins + 1))
             range_ = (np.nanmin(data) - 0.01, np.nanmax(data) + 0.01)
             edges[0], edges[-1] = range_
 
+            # Remove zero-width bins
+            widths = np.array(list(edges[1:] - edges[:-1]) + [1.])
+            edges = edges[widths > 1.e-9]
+
+            all_n_bins[i] = len(edges) - 1
             all_edges.append(edges)
             all_ranges.append(range_)
-
-        all_edges = np.array(all_edges)
-        all_ranges = np.array(all_ranges)
 
         return all_n_bins, all_edges, all_ranges
 
@@ -168,7 +170,8 @@ class HistogramInference(Inference):
         if self.histo is None:
             raise ValueError('Histogram has to be trained (filled) before being saved!')
 
-        np.save(filename + '_edges.npy', self.edges)
+        with open(filename + '_edges.pickle', 'wb') as file:
+            pickle.dump(self.edges, file)
         np.save(filename + '_histo.npy', self.histo)
 
     def predict_density(self, theta, x, log=False):
