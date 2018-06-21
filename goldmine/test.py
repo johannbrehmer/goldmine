@@ -11,7 +11,7 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
     from goldmine.various.look_up import create_inference, create_simulator
-    from goldmine.various.utils import general_init, load_and_check, discretize
+    from goldmine.various.utils import general_init, load_and_check, discretize, create_missing_folders
     from goldmine.various.discriminate_samples import discriminate_samples
 except ImportError:
     if base_dir in sys.path:
@@ -19,7 +19,7 @@ except ImportError:
     sys.path.append(base_dir)
 
     from goldmine.various.look_up import create_inference, create_simulator
-    from goldmine.various.utils import general_init, load_and_check, discretize
+    from goldmine.various.utils import general_init, load_and_check, discretize, create_missing_folders
     from goldmine.various.discriminate_samples import discriminate_samples
 
 
@@ -45,6 +45,9 @@ def test(simulator_name,
     logging.info('  Generate samples:         %s', generate_samples)
     logging.info('  Discretize samples        %s', discretize_generated_samples)
     logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
+
+    # Check paths
+    create_missing_folders(base_dir, simulator_name)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name

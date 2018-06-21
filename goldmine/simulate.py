@@ -11,13 +11,13 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
     from goldmine.various.look_up import create_simulator
-    from goldmine.various.utils import general_init
+    from goldmine.various.utils import general_init, create_missing_folders
 except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
     from goldmine.various.look_up import create_simulator
-    from goldmine.various.utils import general_init
+    from goldmine.various.utils import general_init, create_missing_folders
 
 
 def simulate(simulator_name,
@@ -60,6 +60,9 @@ def simulate(simulator_name,
     logging.info('  Samples / theta:      %s', n_samples_per_theta)
     logging.info('  Generate joint ratio: %s', generate_joint_ratio)
     logging.info('  Generate joint score: %s', generate_joint_score)
+
+    # Check paths
+    create_missing_folders(base_dir, simulator_name)
 
     simulator = create_simulator(simulator_name)
 
