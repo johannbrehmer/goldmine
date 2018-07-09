@@ -148,7 +148,7 @@ def test(simulator_name,
             logging.info('Estimating densities on single-theta test sample')
             log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
             np.save(
-                result_folder + '/log_p_hat_singletheta' + result_filename + '.npy',
+                result_folder + '/log_p_hat_test_singletheta' + result_filename + '.npy',
                 log_p_hat
             )
 
