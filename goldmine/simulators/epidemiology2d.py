@@ -6,7 +6,7 @@ from goldmine.simulators.base import Simulator
 from goldmine.simulators.epidemiology import Epidemiology
 
 
-class Epidemiology2D(Simulator, Epidemiology):
+class Epidemiology2D(Epidemiology):
     """
     Simplified simulator for a model of stropococcus transmission dynamics with only 2 parameters of interest
 

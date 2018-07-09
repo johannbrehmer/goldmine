@@ -273,9 +273,9 @@ def train(model,
     # Save learning curve
     if learning_curve_folder is not None and learning_curve_filename is not None:
 
-        np.save(learning_curve_folder + '/' + learning_curve_filename + '_train_loss.npy', total_losses_train)
+        np.save(learning_curve_folder + '/loss_train' + learning_curve_filename + '.npy', total_losses_train)
         if validation_split is not None:
-            np.save(learning_curve_folder + '/' + learning_curve_filename + '_validation_loss.npy', total_losses_val)
+            np.save(learning_curve_folder + '/loss_val' + learning_curve_filename + '.npy', total_losses_val)
 
         if loss_labels is not None:
             individual_losses_train = np.array(individual_losses_train)
@@ -283,12 +283,12 @@ def train(model,
 
             for i, label in enumerate(loss_labels):
                 np.save(
-                    learning_curve_folder + '/' + learning_curve_filename + '_train_loss_' + label + '.npy',
+                    learning_curve_folder + '/loss_' + label + '_train' + learning_curve_filename + '.npy',
                     individual_losses_train[:, i]
                 )
                 if validation_split is not None:
                     np.save(
-                        learning_curve_folder + '/' + learning_curve_filename + '_validation_loss_' + label + '.npy',
+                        learning_curve_folder + '/loss_' + label + '_val' + + learning_curve_filename + '.npy',
                         individual_losses_val[:, i]
                     )
 
