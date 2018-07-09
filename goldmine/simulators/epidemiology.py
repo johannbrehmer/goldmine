@@ -66,8 +66,8 @@ class Epidemiology(Simulator):
             return [np.array([3.589, 0.593, 0.097, 1.])], None
 
         # Ranges
-        #theta_min = np.array([0., 0., 0., 1.])
-        #theta_max = np.array([11., 2., 1., 1.])
+        # theta_min = np.array([0., 0., 0., 1.])
+        # theta_max = np.array([11., 2., 1., 1.])
         theta_min = np.array([2, 0.3, 0.05, 0.5])
         theta_max = np.array([6., 1., 0.2, 2.])
 
@@ -76,7 +76,7 @@ class Epidemiology(Simulator):
             benchmarks = np.random.rand(n_thetas, self.n_parameters)
 
         else:
-            n_free_parameters = 3
+            n_free_parameters = 4
             n_points_per_dimension = int(n_thetas ** (1 / n_free_parameters))
 
             if n_points_per_dimension ** n_free_parameters != n_thetas:
@@ -87,10 +87,10 @@ class Epidemiology(Simulator):
 
             benchmarks_free = list(
                 product(
-                    *[np.linspace(0., 1., n_points_per_dimension) for i in range(n_free_parameters)]
+                    *[np.linspace(0., 1., n_points_per_dimension) for _ in range(n_free_parameters)]
                 )
             )
-            benchmarks = [[b[0], b[1], b[2], 0.] for b in benchmarks_free]
+            benchmarks = [[b[0], b[1], b[2], b[3]] for b in benchmarks_free]
             benchmarks = np.array(benchmarks)
 
         # Rescale to correct ranges
@@ -120,9 +120,6 @@ class Epidemiology(Simulator):
         n_time_steps = int(round(self.end_time / self.delta_t))
 
         for i in range(n_time_steps):
-            # Time
-            t = i * self.delta_t
-
             # Random numbers
             dice = rng.rand(self.n_individuals, self.n_strains)
 
@@ -209,7 +206,7 @@ class Epidemiology(Simulator):
         return summary_statistics
 
     def get_discretization(self):
-        return (None, 1, 1. / self.n_individuals, 1. / self.n_individuals, 1. / self.n_individuals, 1)
+        return None, 1, 1. / self.n_individuals, 1. / self.n_individuals, 1. / self.n_individuals, 1
 
     def rvs(self, theta, n, random_state=None, return_histories=False):
 

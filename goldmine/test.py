@@ -148,7 +148,7 @@ def test(simulator_name,
             logging.info('Estimating densities on single-theta test sample')
             log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
             np.save(
-                result_folder + '/log_p_hat_singletheta' + result_filename + '.npy',
+                result_folder + '/log_p_hat_test_singletheta' + result_filename + '.npy',
                 log_p_hat
             )
 
@@ -180,7 +180,7 @@ def test(simulator_name,
     if classify_surrogate_vs_true_samples:
         logging.info('Training classifier to discriminate surrogate samples from simulator samples')
         xs_surrogate = load_and_check(
-            result_folder + '/samples_from_p_hat' + model_filename + '.npy'
+            result_folder + '/samples_from_p_hat' + result_filename + '.npy'
         )
         roc_auc, tpr, fpr = discriminate_samples(xs_test, xs_surrogate)
         np.save(

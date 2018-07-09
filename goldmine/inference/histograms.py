@@ -17,10 +17,12 @@ class HistogramInference(Inference):
             # Parameters for new MAF
             self.n_bins_theta = params.get('n_bins_theta', 'auto')
             self.n_bins_x = params.get('n_bins_x', 'auto')
+            self.observables = params.get('observables', 'all')
 
             logging.info('Initialized histogram with the following settings:')
             logging.info('  Bins per parameter:  %s', self.n_bins_theta)
             logging.info('  Bins per observable: %s', self.n_bins_x)
+            logging.info('  Observable indices:  %s', self.observables)
 
             # Not yet trained
             self.n_parameters = None
@@ -48,7 +50,13 @@ class HistogramInference(Inference):
         # Number of bins
         n_samples = x.shape[0]
         n_parameters = theta.shape[1]
-        n_observables = x.shape[1]
+        n_all_observables = x.shape[1]
+
+        # Observables to actually plot
+        if self.observables == 'all':
+            self.observables = list(range(n_all_observables))
+
+        n_binned_observables = len(self.observables)
 
         # TODO: better automatic bin number determination
         recommended_n_bins = 10 + int(round(n_samples ** (1. / 3.), 0))
@@ -56,13 +64,16 @@ class HistogramInference(Inference):
 
         n_bins_per_theta = self.n_bins_theta
         if n_bins_per_theta == 'auto':
-            n_bins_per_theta = max(3, int(round(recommended_n_bins ** (1. / (n_parameters + n_observables)))))
+            n_bins_per_theta = max(3, int(round(recommended_n_bins ** (1. / (n_parameters + n_binned_observables)))))
 
         n_bins_per_x = self.n_bins_x
         if n_bins_per_x == 'auto':
-            n_bins_per_x = max(3, int(round(recommended_n_bins ** (1. / (n_parameters + n_observables)))))
+            n_bins_per_x = max(3, int(round(recommended_n_bins ** (1. / (n_parameters + n_binned_observables)))))
 
-        all_n_bins = [n_bins_per_theta] * n_parameters + [n_bins_per_x] * n_observables
+        all_n_bins = [1 for i in range(n_all_observables)]
+        for i in self.observables:
+            all_n_bins[i] = n_bins_per_x
+        all_n_bins = [n_bins_per_theta] * n_parameters + all_n_bins
 
         # Find edges based on percentiles
         all_edges = []
@@ -98,16 +109,18 @@ class HistogramInference(Inference):
         n_samples = x.shape[0]
         self.n_parameters = theta.shape[1]
         self.n_observables = x.shape[1]
+        fill_empty_bins = params.get('fill_empty_bins', False)
 
         logging.info('Filling histogram with settings:')
-        logging.info('  theta given: %s', theta is not None)
-        logging.info('  x given:     %s', x is not None)
-        logging.info('  y given:     %s', y is not None)
-        logging.info('  r_xz given:  %s', r_xz is not None)
-        logging.info('  t_xz given:  %s', t_xz is not None)
-        logging.info('  Samples:     %s', n_samples)
-        logging.info('  Parameters:  %s', self.n_parameters)
-        logging.info('  Obserables:  %s', self.n_observables)
+        logging.info('  theta given:   %s', theta is not None)
+        logging.info('  x given:       %s', x is not None)
+        logging.info('  y given:       %s', y is not None)
+        logging.info('  r_xz given:    %s', r_xz is not None)
+        logging.info('  t_xz given:    %s', t_xz is not None)
+        logging.info('  Samples:       %s', n_samples)
+        logging.info('  Parameters:    %s', self.n_parameters)
+        logging.info('  Observables:    %s', self.n_observables)
+        logging.info('  No empty bins: %s', fill_empty_bins)
 
         # Find bins
         logging.info('Calculating binning')
@@ -132,6 +145,10 @@ class HistogramInference(Inference):
 
         histo, _ = np.histogramdd(theta_x, bins=self.edges, range=ranges, normed=False, weights=None)
 
+        # Avoid empty bins
+        if fill_empty_bins:
+            histo[histo<=1.] = 1.
+
         # Calculate cell volumes
         original_shape = tuple(self.n_bins)
         flat_shape = tuple([-1] + list(self.n_bins[self.n_parameters:]))
@@ -154,6 +171,10 @@ class HistogramInference(Inference):
             histo[i] = histo[i] / np.sum(histo[i] * volumes)
 
         histo = histo.reshape(original_shape)
+
+        # Avoid NaNs
+        histo[np.invert(np.isfinite(histo))] = 0.
+
         self.histo = histo
 
     def save(self, filename):
@@ -176,6 +197,8 @@ class HistogramInference(Inference):
 
             indices[indices < 0] = 0
             indices[indices >= self.n_bins[j]] = self.n_bins[j] - 1
+
+            # logging.debug('Obs %s, bins %s, indices %s', j,self.n_bins[j], indices)
 
             all_indices.append(indices)
 

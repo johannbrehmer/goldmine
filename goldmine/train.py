@@ -27,7 +27,9 @@ def train(simulator_name,
           batch_norm=False,
           activation='relu',
           n_bins_theta='auto',
+          histogram_observables='all',
           n_bins_x='auto',
+          fill_empty_bins=False,
           alpha=1.,
           single_theta=False,
           training_sample_size=None,
@@ -40,26 +42,28 @@ def train(simulator_name,
     """ Main training function """
 
     logging.info('Starting training')
-    logging.info('  Simulator:            %s', simulator_name)
-    logging.info('  Inference method:     %s', inference_name)
-    logging.info('  MADEs:                %s', n_mades)
-    logging.info('  MADE hidden layers:   %s', n_made_hidden_layers)
-    logging.info('  MADE units / layer:   %s', n_made_units_per_layer)
-    logging.info('  Batch norm:           %s', batch_norm)
-    logging.info('  Activation function:  %s', activation)
-    logging.info('  Histogram theta bins: %s', n_bins_theta)
-    logging.info('  Histogram x bins:     %s', n_bins_x)
-    logging.info('  SCANDAL alpha:        %s', alpha)
-    logging.info('  Single-theta sample:  %s', single_theta)
-    logging.info('  Training sample size: %s',
+    logging.info('  Simulator:             %s', simulator_name)
+    logging.info('  Inference method:      %s', inference_name)
+    logging.info('  MADEs:                 %s', n_mades)
+    logging.info('  MADE hidden layers:    %s', n_made_hidden_layers)
+    logging.info('  MADE units / layer:    %s', n_made_units_per_layer)
+    logging.info('  Batch norm:            %s', batch_norm)
+    logging.info('  Activation function:   %s', activation)
+    logging.info('  Histogram theta bins:  %s', n_bins_theta)
+    logging.info('  Histogram observables: %s', histogram_observables)
+    logging.info('  Histogram x bins:      %s', n_bins_x)
+    logging.info('  Fill empty bins:       %s', fill_empty_bins)
+    logging.info('  SCANDAL alpha:         %s', alpha)
+    logging.info('  Single-theta sample:   %s', single_theta)
+    logging.info('  Training sample size:  %s',
                  'maximal' if training_sample_size is None else training_sample_size)
     if compensate_sample_size and training_sample_size is not None:
-        logging.info('  Epochs:               %s (plus compensation for decreased sample size)', n_epochs)
+        logging.info('  Epochs:                %s (plus compensation for decreased sample size)', n_epochs)
     else:
-        logging.info('  Epochs:               %s', n_epochs)
-    logging.info('  Batch size:           %s', batch_size)
-    logging.info('  Learning rate:        %s initially, decaying to %s', initial_lr, final_lr)
-    logging.info('  Early stopping:       %s', early_stopping)
+        logging.info('  Epochs:                %s', n_epochs)
+    logging.info('  Batch size:            %s', batch_size)
+    logging.info('  Learning rate:         %s initially, decaying to %s', initial_lr, final_lr)
+    logging.info('  Early stopping:        %s', early_stopping)
 
     # Check paths
     create_missing_folders(base_dir, simulator_name, inference_name)
@@ -98,7 +102,8 @@ def train(simulator_name,
         n_parameters=n_parameters,
         n_observables=n_observables,
         n_bins_theta=n_bins_theta,
-        n_bins_x=n_bins_x
+        n_bins_x=n_bins_x,
+        observables=histogram_observables
     )
 
     if inference.requires_class_label():
@@ -148,7 +153,8 @@ def train(simulator_name,
         alpha=alpha,
         learning_curve_folder=result_folder,
         learning_curve_filename=output_filename,
-        early_stopping=early_stopping
+        early_stopping=early_stopping,
+        fill_empty_bins=fill_empty_bins
     )
 
     # Save models
@@ -177,10 +183,14 @@ def main():
                         help='Use batch normalization.')
     parser.add_argument('--activation', type=str, default='tanh',
                         help='Activation function: "rely", "tanh", "sigmoid"')
-    parser.add_argument('--thetabins', type=int, default=4,
+    parser.add_argument('--thetabins', type=int, default=3,
                         help='Number of bins per parameter for histogram-based inference.')
-    parser.add_argument('--xbins', type=int, default=4,
+    parser.add_argument('--observables', type=int, nargs='+', default='all',
+                        help='Observable indices used for histograms.')
+    parser.add_argument('--xbins', type=int, default=3,
                         help='Number of bins per observable for histogram-based inference.')
+    parser.add_argument('--fillemptybins', action='store_true',
+                        help='Fill empty histogram bins with 1s.')
     parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
@@ -217,6 +227,8 @@ def main():
         activation=args.activation,
         n_bins_theta=args.thetabins,
         n_bins_x=args.xbins,
+        histogram_observables=args.observables,
+        fill_empty_bins=args.fillemptybins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
         single_theta=args.singletheta,
