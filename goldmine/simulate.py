@@ -55,8 +55,10 @@ def simulate(simulator_name,
     logging.info('  theta0:               %s', 'default' if theta0 is None else theta0)
     logging.info('  theta1:               %s', 'default' if theta1 is None else theta1)
     if theta0 is None:
-        logging.info('  theta sampling:       %s', 'single theta' if single_theta
-        else ('grid' if grid_sampling else 'random'))
+        if single_theta:
+            logging.info('  theta sampling:       single theta')
+        else:
+            logging.info('  theta sampling:       %s', ('grid' if grid_sampling else 'random'))
     logging.info('  Samples / theta:      %s', n_samples_per_theta)
     logging.info('  Generate joint ratio: %s', generate_joint_ratio)
     logging.info('  Generate joint score: %s', generate_joint_score)

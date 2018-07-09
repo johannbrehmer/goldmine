@@ -113,7 +113,7 @@ def discriminate_samples(x1, x2, test_split=0.5,
         yhat_test = classifier(x_test)
 
     y_test = y_test.detach().numpy()
-    yhat_test = yhat_test.detach().numpy()[:,1]
+    yhat_test = yhat_test.detach().numpy()[:, 1]
 
     # Calculate ROC AUC
     logging.info('Calculating ROC curve')

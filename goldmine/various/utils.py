@@ -32,7 +32,6 @@ def general_init():
 
 
 def create_missing_folders(base_dir, simulator_name, inference_name=None):
-
     required_subfolders = ['thetas/' + simulator_name,
                            'samples/' + simulator_name]
     if inference_name is not None:
@@ -54,6 +53,7 @@ def shuffle(*arrays):
     """ Wrapper around sklearn.utils.shuffle that allows for Nones"""
 
     permutation = None
+    n_samples = None
     shuffled_arrays = []
 
     for i, a in enumerate(arrays):
@@ -105,12 +105,11 @@ def get_activation_function(activation_name):
 
 
 def discretize(data, discretization):
-
     for c in range(data.shape[1]):
         if discretization[c] is None or discretization[c] <= 0.:
             continue
         assert discretization[c] > 0.
 
-        data[:, c] = np.round(data[:,c] / discretization[c], 0) * discretization[c]
+        data[:, c] = np.round(data[:, c] / discretization[c], 0) * discretization[c]
 
     return data

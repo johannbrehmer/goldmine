@@ -29,6 +29,7 @@ def train(simulator_name,
           n_bins_theta='auto',
           histogram_observables='all',
           n_bins_x='auto',
+          separate_1d_x_histos=False,
           fill_empty_bins=False,
           alpha=1.,
           single_theta=False,
@@ -41,6 +42,9 @@ def train(simulator_name,
           early_stopping=True):
     """ Main training function """
 
+    if single_theta:
+        n_bins_theta = 1
+
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
     logging.info('  Inference method:      %s', inference_name)
@@ -51,7 +55,8 @@ def train(simulator_name,
     logging.info('  Activation function:   %s', activation)
     logging.info('  Histogram theta bins:  %s', n_bins_theta)
     logging.info('  Histogram observables: %s', histogram_observables)
-    logging.info('  Histogram x bins:      %s', n_bins_x)
+    logging.info('  Histogram x bins:      %s', separate_1d_x_histos)
+    logging.info('  1d x histograms:       %s', n_bins_x)
     logging.info('  Fill empty bins:       %s', fill_empty_bins)
     logging.info('  SCANDAL alpha:         %s', alpha)
     logging.info('  Single-theta sample:   %s', single_theta)
@@ -103,6 +108,7 @@ def train(simulator_name,
         n_observables=n_observables,
         n_bins_theta=n_bins_theta,
         n_bins_x=n_bins_x,
+        separate_1d_x_histos=separate_1d_x_histos,
         observables=histogram_observables
     )
 
@@ -189,6 +195,8 @@ def main():
                         help='Observable indices used for histograms.')
     parser.add_argument('--xbins', type=int, default=3,
                         help='Number of bins per observable for histogram-based inference.')
+    parser.add_argument('--xhistos1d', action='store_true',
+                        help='Whether to use separate 1d histograms for each observable.')
     parser.add_argument('--fillemptybins', action='store_true',
                         help='Fill empty histogram bins with 1s.')
     parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
@@ -227,6 +235,7 @@ def main():
         activation=args.activation,
         n_bins_theta=args.thetabins,
         n_bins_x=args.xbins,
+        separate_1d_x_histos=args.xhistos1d,
         histogram_observables=args.observables,
         fill_empty_bins=args.fillemptybins,
         batch_norm=args.batchnorm,
