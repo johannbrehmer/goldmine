@@ -9,6 +9,9 @@ from goldmine.various.utils import check_random_state
 class GeneralizedGaltonBoard(Simulator):
     """ Generalized Galton board example from arXiv:1805.XXXXX """
 
+    def get_discretization(self):
+        return 1.,
+
     def __init__(self, n_rows=20, n_nails=31):
 
         super().__init__()
@@ -98,9 +101,6 @@ class GeneralizedGaltonBoard(Simulator):
         x = pos
 
         return log_p_xz, x
-
-    def simulator_name(self):
-        return 'galton'
 
     def rvs(self,
             theta,

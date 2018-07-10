@@ -257,7 +257,7 @@ def train(model,
 
         # Early stopping
         if early_stopping and early_stopping_patience is not None:
-            if epoch - early_stopping_epoch >= early_stopping_patience and early_stopping_patience > 0:
+            if epoch - early_stopping_epoch >= early_stopping_patience > 0:
                 logging.info('No improvement for %s epochs, stopping training', epoch - early_stopping_epoch)
                 break
 
@@ -288,7 +288,7 @@ def train(model,
                 )
                 if validation_split is not None:
                     np.save(
-                        learning_curve_folder + '/loss_' + label + '_val' + + learning_curve_filename + '.npy',
+                        learning_curve_folder + '/loss_' + label + '_val' + learning_curve_filename + '.npy',
                         individual_losses_val[:, i]
                     )
 

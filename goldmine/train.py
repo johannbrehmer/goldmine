@@ -21,6 +21,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          run=0,
           n_mades=3,
           n_made_hidden_layers=2,
           n_made_units_per_layer=20,
@@ -29,6 +30,7 @@ def train(simulator_name,
           n_bins_theta='auto',
           histogram_observables='all',
           n_bins_x='auto',
+          separate_1d_x_histos=False,
           fill_empty_bins=False,
           alpha=1.,
           single_theta=False,
@@ -41,9 +43,17 @@ def train(simulator_name,
           early_stopping=True):
     """ Main training function """
 
+    if single_theta:
+        n_bins_theta = 1
+    if histogram_observables is None:
+        histogram_observables = 'all'
+    if len(histogram_observables) == 0:
+        histogram_observables = 'all'
+
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
     logging.info('  Inference method:      %s', inference_name)
+    logging.info('  Run number:            %s', run)
     logging.info('  MADEs:                 %s', n_mades)
     logging.info('  MADE hidden layers:    %s', n_made_hidden_layers)
     logging.info('  MADE units / layer:    %s', n_made_units_per_layer)
@@ -51,7 +61,8 @@ def train(simulator_name,
     logging.info('  Activation function:   %s', activation)
     logging.info('  Histogram theta bins:  %s', n_bins_theta)
     logging.info('  Histogram observables: %s', histogram_observables)
-    logging.info('  Histogram x bins:      %s', n_bins_x)
+    logging.info('  Histogram x bins:      %s', separate_1d_x_histos)
+    logging.info('  1d x histograms:       %s', n_bins_x)
     logging.info('  Fill empty bins:       %s', fill_empty_bins)
     logging.info('  SCANDAL alpha:         %s', alpha)
     logging.info('  Single-theta sample:   %s', single_theta)
@@ -73,6 +84,7 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
+
     sample_filename = 'train'
     output_filename = ''
     if single_theta:
@@ -80,6 +92,15 @@ def train(simulator_name,
         sample_filename += '_singletheta'
     if training_sample_size is not None:
         output_filename += '_trainingsamplesize_' + str(training_sample_size)
+
+    if run is None:
+        run_appendix = ''
+    elif int(run) == 0:
+        run_appendix = ''
+    else:
+        run_appendix = '_run' + str(int(run))
+
+    output_filename += run_appendix
 
     # Load training data and creating model
     logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_' + sample_filename + '.npy')
@@ -103,6 +124,7 @@ def train(simulator_name,
         n_observables=n_observables,
         n_bins_theta=n_bins_theta,
         n_bins_x=n_bins_x,
+        separate_1d_x_histos=separate_1d_x_histos,
         observables=histogram_observables
     )
 
@@ -173,6 +195,8 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
+    parser.add_argument('-i', type=int, default=0,
+                        help='Run number for multiple repeated trainings.')
     parser.add_argument('--nades', type=int, default=5,
                         help='Number of NADEs in a MAF. Default: 5.')
     parser.add_argument('--hidden', type=int, default=1,
@@ -185,10 +209,12 @@ def main():
                         help='Activation function: "rely", "tanh", "sigmoid"')
     parser.add_argument('--thetabins', type=int, default=3,
                         help='Number of bins per parameter for histogram-based inference.')
-    parser.add_argument('--observables', type=int, nargs='+', default='all',
+    parser.add_argument('--observables', type=int, nargs='+',
                         help='Observable indices used for histograms.')
     parser.add_argument('--xbins', type=int, default=3,
                         help='Number of bins per observable for histogram-based inference.')
+    parser.add_argument('--xhistos1d', action='store_true',
+                        help='Whether to use separate 1d histograms for each observable.')
     parser.add_argument('--fillemptybins', action='store_true',
                         help='Fill empty histogram bins with 1s.')
     parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
@@ -211,22 +237,20 @@ def main():
     parser.add_argument('--gradientclip', default=1.,
                         help='Gradient norm clipping threshold.')
 
-    # TODO: Add option for multiple runs
-    # TODO: Add option for custom filename parts
-    # TODO: Better treatment of non-existent files and folders
-
     args = parser.parse_args()
 
     # Start simulation
     train(
         args.simulator,
         args.inference,
+        run=args.i,
         n_mades=args.nades,
         n_made_hidden_layers=args.hidden,
         n_made_units_per_layer=args.units,
         activation=args.activation,
         n_bins_theta=args.thetabins,
         n_bins_x=args.xbins,
+        separate_1d_x_histos=args.xhistos1d,
         histogram_observables=args.observables,
         fill_empty_bins=args.fillemptybins,
         batch_norm=args.batchnorm,

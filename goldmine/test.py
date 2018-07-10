@@ -25,6 +25,7 @@ except ImportError:
 
 def test(simulator_name,
          inference_name,
+         run=0,
          alpha=1.,
          trained_on_single_theta=False,
          training_sample_size=None,
@@ -37,6 +38,7 @@ def test(simulator_name,
     logging.info('Starting evaluation')
     logging.info('  Simulator:                %s', simulator_name)
     logging.info('  Inference method:         %s', inference_name)
+    logging.info('  Run number:               %s', run)
     logging.info('  alpha:                    %s', alpha)
     logging.info('  Single-theta tr. sample:  %s', trained_on_single_theta)
     logging.info('  Training sample size:     %s',
@@ -62,6 +64,16 @@ def test(simulator_name,
     if training_sample_size is not None:
         model_filename += '_trainingsamplesize_' + str(training_sample_size)
         result_filename += '_trainingsamplesize_' + str(training_sample_size)
+
+    if run is None:
+        run_appendix = ''
+    elif int(run) == 0:
+        run_appendix = ''
+    else:
+        run_appendix = '_run' + str(int(run))
+
+    model_filename += run_appendix
+    result_filename += run_appendix
 
     # Load train data
     logging.info('Loading many-theta  train sample')
@@ -208,6 +220,8 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "galton" or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
+    parser.add_argument('-i', type=int, default=0,
+                        help='Run number for multiple repeated trainings.')
     parser.add_argument('--alpha', type=float, default=1.,
                         help='alpha parameter for SCANDAL')
     parser.add_argument('--singletheta', action='store_true', help='Use model trained on single-theta sample.')
@@ -222,6 +236,7 @@ def main():
     test(
         args.simulator,
         args.inference,
+        run=args.i,
         alpha=args.alpha,
         trained_on_single_theta=args.singletheta,
         training_sample_size=args.samplesize,

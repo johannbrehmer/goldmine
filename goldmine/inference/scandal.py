@@ -85,7 +85,8 @@ class SCANDALInference(Inference):
             early_stopping=True,
             alpha=0.01,
             learning_curve_folder=None,
-            learning_curve_filename=None):
+            learning_curve_filename=None,
+            **params):
         """ Trains MAF """
 
         logging.info('Training SCANDAL (MAF + score) with settings:')

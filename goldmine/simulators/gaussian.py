@@ -3,16 +3,18 @@ import logging
 
 from goldmine.simulators.base import Simulator
 
-class GaussianSimulator(Simulator):
 
+class GaussianSimulator(Simulator):
     """ Simple simulator example drawing samples from a conditional Gaussian """
+
+    def get_discretization(self):
+        return None,
 
     def __init__(self):
         super(GaussianSimulator, self).__init__()
 
         # Parameters
         self.n_parameters = 1
-
 
     def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
 
@@ -29,7 +31,7 @@ class GaussianSimulator(Simulator):
             benchmarks = np.random.rand(n_thetas)
 
         else:
-            benchmarks = np.linspace(0., 1., n_thetas).reshape((-1,1))
+            benchmarks = np.linspace(0., 1., n_thetas).reshape((-1, 1))
 
         # Rescale to correct ranges
         benchmarks[:] *= (theta_max - theta_min)
@@ -41,7 +43,7 @@ class GaussianSimulator(Simulator):
 
     def rvs(self, theta, n, random_state=None):
 
-        x = np.random.normal(theta, 1. + theta**2, n).reshape((-1, 1))
+        x = np.random.normal(theta, 1. + theta ** 2, n).reshape((-1, 1))
 
         return x
 
@@ -51,8 +53,8 @@ class GaussianSimulator(Simulator):
 
         # log p = const - 0.5 * (x - theta)**2 / (1 + theta**2)
         # score = 0.5 * 2 * (x - theta) / (1 + theta**2) + 0.5 * (x - theta)**2 / (1 + theta**2)**2 * 2 * theta
-        score = ((x - theta_score) / (1 + theta_score**2)
-                 + theta_score * (x - theta_score)**2 / (1 + theta_score**2)**2)
+        score = ((x - theta_score) / (1 + theta_score ** 2)
+                 + theta_score * (x - theta_score) ** 2 / (1 + theta_score ** 2) ** 2)
 
         return x, score
 
