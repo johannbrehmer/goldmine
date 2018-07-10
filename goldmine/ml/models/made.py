@@ -223,7 +223,7 @@ class ConditionalGaussianMADE(nn.Module):
     def to(self, *args, **kwargs):
 
         logging.debug('Transforming MADE to %s', args)
-        
+
         self = super().to(*args, **kwargs)
 
         for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):

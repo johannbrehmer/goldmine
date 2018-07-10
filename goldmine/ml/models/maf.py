@@ -243,3 +243,12 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
                 x = made.generate_samples(theta, x)
 
         return x
+
+    def to(self, *args, **kwargs):
+
+        logging.debug('Transforming MAF to %s', args)
+
+        self = super().to(*args, **kwargs)
+
+        for i, (made) in enumerate(self.mades):
+            self.mades[i] = made.to(*args, **kwargs)
