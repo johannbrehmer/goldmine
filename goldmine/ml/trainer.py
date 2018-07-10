@@ -288,7 +288,7 @@ def train(model,
                 )
                 if validation_split is not None:
                     np.save(
-                        learning_curve_folder + '/loss_' + label + '_val' + + learning_curve_filename + '.npy',
+                        learning_curve_folder + '/loss_' + label + '_val' + learning_curve_filename + '.npy',
                         individual_losses_val[:, i]
                     )
 

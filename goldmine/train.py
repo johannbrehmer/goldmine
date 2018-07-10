@@ -44,6 +44,10 @@ def train(simulator_name,
 
     if single_theta:
         n_bins_theta = 1
+    if histogram_observables is None:
+        histogram_observables = 'all'
+    if len(histogram_observables) == 0:
+        histogram_observables = 'all'
 
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
@@ -191,7 +195,7 @@ def main():
                         help='Activation function: "rely", "tanh", "sigmoid"')
     parser.add_argument('--thetabins', type=int, default=3,
                         help='Number of bins per parameter for histogram-based inference.')
-    parser.add_argument('--observables', type=int, nargs='+', default='all',
+    parser.add_argument('--observables', type=int, nargs='+',
                         help='Observable indices used for histograms.')
     parser.add_argument('--xbins', type=int, default=3,
                         help='Number of bins per observable for histogram-based inference.')
