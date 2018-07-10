@@ -219,9 +219,19 @@ def train(model,
         total_val_loss = 0.0
 
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
+
+            # Put on device
             theta = theta.to(device)
             x = x.to(device)
             y = y.to(device)
+            try:
+                r_xz = r_xz.to(device)
+            except:
+                pass
+            try:
+                t_xz = t_xz.to(device)
+            except:
+                pass
 
             # Evaluate loss
             _ = model(theta, x)
