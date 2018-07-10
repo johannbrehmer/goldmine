@@ -224,7 +224,10 @@ class ConditionalGaussianMADE(nn.Module):
 
         logging.debug('Transforming MADE to %s', args)
 
-        self = super().to(*args, **kwargs)
+        returned = super().to(*args, **kwargs)
+        logging.debug('returned: %s  %s', type(returned), returned)
+        if returned is not None:
+            self = returned
 
         for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
             self.Ms[i] = M.to(*args, **kwargs)

@@ -248,7 +248,10 @@ class ConditionalMaskedAutoregressiveFlow(nn.Module):
 
         logging.debug('Transforming MAF to %s', args)
 
-        self = super().to(*args, **kwargs)
+        returned = super().to(*args, **kwargs)
+        logging.debug('returned: %s  %s', type(returned), returned)
+        if returned is not None:
+            self = returned
 
         for i, (made) in enumerate(self.mades):
             self.mades[i] = made.to(*args, **kwargs)
