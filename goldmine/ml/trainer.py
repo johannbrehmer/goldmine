@@ -81,6 +81,9 @@ def train(model,
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
 
+    # Move model to device
+    model = model.to(device)
+
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
     xs = torch.stack([tensor(i) for i in xs])
