@@ -21,6 +21,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          run=0,
           n_mades=3,
           n_made_hidden_layers=2,
           n_made_units_per_layer=20,
@@ -52,6 +53,7 @@ def train(simulator_name,
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
     logging.info('  Inference method:      %s', inference_name)
+    logging.info('  Run number:            %s', run)
     logging.info('  MADEs:                 %s', n_mades)
     logging.info('  MADE hidden layers:    %s', n_made_hidden_layers)
     logging.info('  MADE units / layer:    %s', n_made_units_per_layer)
@@ -82,6 +84,7 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
+
     sample_filename = 'train'
     output_filename = ''
     if single_theta:
@@ -89,6 +92,15 @@ def train(simulator_name,
         sample_filename += '_singletheta'
     if training_sample_size is not None:
         output_filename += '_trainingsamplesize_' + str(training_sample_size)
+
+    if run is None:
+        run_appendix = ''
+    elif int(run) == 0:
+        run_appendix = ''
+    else:
+        run_appendix = '_run' + str(int(run))
+
+    output_filename += run_appendix
 
     # Load training data and creating model
     logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_' + sample_filename + '.npy')
@@ -183,6 +195,8 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
+    parser.add_argument('-i', type=int, default=0,
+                        help='Run number for multiple repeated trainings.')
     parser.add_argument('--nades', type=int, default=5,
                         help='Number of NADEs in a MAF. Default: 5.')
     parser.add_argument('--hidden', type=int, default=1,
@@ -223,16 +237,13 @@ def main():
     parser.add_argument('--gradientclip', default=1.,
                         help='Gradient norm clipping threshold.')
 
-    # TODO: Add option for multiple runs
-    # TODO: Add option for custom filename parts
-    # TODO: Better treatment of non-existent files and folders
-
     args = parser.parse_args()
 
     # Start simulation
     train(
         args.simulator,
         args.inference,
+        run=args.i,
         n_mades=args.nades,
         n_made_hidden_layers=args.hidden,
         n_made_units_per_layer=args.units,
