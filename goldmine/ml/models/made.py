@@ -224,10 +224,7 @@ class ConditionalGaussianMADE(nn.Module):
 
         logging.debug('Transforming MADE to %s', args)
 
-        returned = super().to(*args, **kwargs)
-        logging.debug('returned: %s  %s', type(returned), returned)
-        if returned is not None:
-            self = returned
+        self = super().to(*args, **kwargs)
 
         for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
             self.Ms[i] = M.to(*args, **kwargs)
@@ -240,3 +237,5 @@ class ConditionalGaussianMADE(nn.Module):
         self.bm = self.bm.to(*args, **kwargs)
         self.Wp = self.Wp.to(*args, **kwargs)
         self.bp = self.bp.to(*args, **kwargs)
+
+        return self
