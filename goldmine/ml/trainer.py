@@ -235,6 +235,8 @@ def train(model,
 
             # Evaluate loss
             _ = model(theta, x)
+            
+            logging.debug('CUDA: model score %s, t_xz %s', model.score.is_cuda, t_xz.is_cude)
 
             losses = [loss_function(model, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
