@@ -158,7 +158,7 @@ class ConditionalGaussianMADE(nn.Module):
             logging.info('MADE settings: n_inputs = %s, n_conditionals = %s', self.n_inputs, self.n_conditionals)
             logging.info('Shapes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
-            raise ()
+            raise
 
         # feedforward propagation
         for M, W, b in zip(self.Ms[1:], self.Ws[1:], self.bs[1:]):
@@ -213,3 +213,11 @@ class ConditionalGaussianMADE(nn.Module):
             x[:, idx] = m[:, idx] + np.exp(np.minimum(-0.5 * logp[:, idx], 10.0)) * u[:, idx]
 
         return tensor(x)
+
+    def to(self, *args, **kwargs):
+        self = super().to(*args, **kwargs)
+
+        for M in self.Ms:
+            M = M.to(*args, **kwargs)
+
+        self.Mmp = self.Mmp.to(*args, **kwargs)
