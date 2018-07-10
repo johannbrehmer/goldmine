@@ -149,6 +149,8 @@ class ConditionalGaussianMADE(nn.Module):
 
         # First hidden layer
 
+        # Debug
+
         try:
             h = self.activation_function(
                 F.linear(theta, torch.t(self.Wx)) + F.linear(x, torch.t(self.Ms[0] * self.Ws[0]), self.bs[0]))
@@ -158,7 +160,11 @@ class ConditionalGaussianMADE(nn.Module):
             logging.info('MADE settings: n_inputs = %s, n_conditionals = %s', self.n_inputs, self.n_conditionals)
             logging.info('Shapes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
-            raise ()
+            logging.info('Types: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
+                         type(theta), type(self.Wx), type(x), type(self.Ms[0]), type(self.Ws[0]), type(self.bs[0]))
+            logging.info('CUDA: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
+                         theta.is_cuda, self.Wx.is_cuda, x.is_cuda, self.Ms[0].is_cuda, self.Ws[0].is_cuda, self.bs[0].is_cuda)
+            raise
 
         # feedforward propagation
         for M, W, b in zip(self.Ms[1:], self.Ws[1:], self.bs[1:]):
@@ -213,3 +219,23 @@ class ConditionalGaussianMADE(nn.Module):
             x[:, idx] = m[:, idx] + np.exp(np.minimum(-0.5 * logp[:, idx], 10.0)) * u[:, idx]
 
         return tensor(x)
+
+    def to(self, *args, **kwargs):
+
+        logging.debug('Transforming MADE to %s', args)
+
+        self = super().to(*args, **kwargs)
+
+        for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
+            self.Ms[i] = M.to(*args, **kwargs)
+            self.Ws[i] = W.to(*args, **kwargs)
+            self.bs[i] = b.to(*args, **kwargs)
+
+        self.Mmp = self.Mmp.to(*args, **kwargs)
+        self.Wx = self.Wx.to(*args, **kwargs)
+        self.Wm = self.Wm.to(*args, **kwargs)
+        self.bm = self.bm.to(*args, **kwargs)
+        self.Wp = self.Wp.to(*args, **kwargs)
+        self.bp = self.bp.to(*args, **kwargs)
+
+        return self

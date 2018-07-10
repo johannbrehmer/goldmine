@@ -81,6 +81,9 @@ def train(model,
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
 
+    # Move model to device
+    model = model.to(device)
+
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
     xs = torch.stack([tensor(i) for i in xs])
@@ -174,6 +177,14 @@ def train(model,
             theta = theta.to(device)
             x = x.to(device)
             y = y.to(device)
+            try:
+                r_xz = r_xz.to(device)
+            except:
+                pass
+            try:
+                t_xz = t_xz.to(device)
+            except:
+                pass
 
             optimizer.zero_grad()
 
@@ -216,9 +227,19 @@ def train(model,
         total_val_loss = 0.0
 
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
+
+            # Put on device
             theta = theta.to(device)
             x = x.to(device)
             y = y.to(device)
+            try:
+                r_xz = r_xz.to(device)
+            except:
+                pass
+            try:
+                t_xz = t_xz.to(device)
+            except:
+                pass
 
             # Evaluate loss
             _ = model(theta, x)

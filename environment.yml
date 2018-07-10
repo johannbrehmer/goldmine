@@ -8,6 +8,6 @@ dependencies:
   - numpy
   - scipy=1.0.*
   - scikit-learn=0.19.*
-  - torch=0.4.*
+  - pytorch=0.4.*
   - pip:
     - autograd==1.2
