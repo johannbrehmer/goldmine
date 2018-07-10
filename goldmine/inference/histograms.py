@@ -38,7 +38,7 @@ class HistogramInference(Inference):
 
             with open(filename + '_edges.pickle', 'rb') as file:
                 self.edges = pickle.load(file)
-            with open(filename + '_histos.pickle', 'wb') as file:
+            with open(filename + '_histos.pickle', 'rb') as file:
                 self.histos = pickle.load(file)
 
             self.n_bins = [histo.shape for histo in self.histos]
@@ -223,7 +223,7 @@ class HistogramInference(Inference):
 
         log_p = 0.
 
-        for histo, histo_edges in zip(self.histos, self.edges):
+        for histo, histo_edges, n_bins in zip(self.histos, self.edges, self.n_bins):
             histo_indices = []
 
             for j in range(theta_x.shape[1]):
@@ -232,7 +232,7 @@ class HistogramInference(Inference):
                                           side="right") - 1
 
                 indices[indices < 0] = 0
-                indices[indices >= self.n_bins[j]] = self.n_bins[j] - 1
+                indices[indices >= n_bins[j]] = n_bins[j] - 1
 
                 histo_indices.append(indices)
 
