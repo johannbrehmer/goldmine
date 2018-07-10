@@ -221,9 +221,19 @@ class ConditionalGaussianMADE(nn.Module):
         return tensor(x)
 
     def to(self, *args, **kwargs):
+
+        logging.debug('Transforming MADE to %s', args)
+        
         self = super().to(*args, **kwargs)
 
-        for M in self.Ms:
-            M = M.to(*args, **kwargs)
+        for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
+            self.Ms[i] = M.to(*args, **kwargs)
+            self.Ws[i] = W.to(*args, **kwargs)
+            self.bs[i] = b.to(*args, **kwargs)
 
         self.Mmp = self.Mmp.to(*args, **kwargs)
+        self.Wx = self.Wx.to(*args, **kwargs)
+        self.Wm = self.Wm.to(*args, **kwargs)
+        self.bm = self.bm.to(*args, **kwargs)
+        self.Wp = self.Wp.to(*args, **kwargs)
+        self.bp = self.bp.to(*args, **kwargs)
