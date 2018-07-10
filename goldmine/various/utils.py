@@ -1,6 +1,7 @@
 import numpy as np
-import os
+import os, sys
 import logging
+import signal
 import torch.nn.functional as F
 
 
@@ -12,6 +13,10 @@ def check_random_state(random_state):
 
 
 def general_init():
+
+    # This enables a ctr-C without triggering errors
+    signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+
     logging.basicConfig(format='%(asctime)s %(levelname)s    %(message)s', level=logging.DEBUG)
 
     logging.info('')

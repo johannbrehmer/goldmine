@@ -142,7 +142,7 @@ class HistogramInference(Inference):
 
         if self.separate_1d_x_histos:
             for observable in observables:
-                histo_n_bins, histo_edges, histo_ranges = self._calculate_binning(theta, x, observable)
+                histo_n_bins, histo_edges, histo_ranges = self._calculate_binning(theta, x, [observable])
 
                 self.n_bins.append(histo_n_bins)
                 self.edges.append(histo_edges)
@@ -155,7 +155,7 @@ class HistogramInference(Inference):
             self.edges.append(histo_edges)
             ranges.append(histo_ranges)
 
-        for h, (histo_n_bins, histo_edges, histo_ranges) in enumerate(zip(self.n_bins, self.edges, self.ranges)):
+        for h, (histo_n_bins, histo_edges, histo_ranges) in enumerate(zip(self.n_bins, self.edges, ranges)):
             logging.info('Histogram %s: bin edges', h + 1)
             for i, (axis_bins, axis_edges, axis_range) in enumerate(zip(histo_n_bins, histo_edges, histo_ranges)):
                 if i < theta.shape[1]:
@@ -174,7 +174,7 @@ class HistogramInference(Inference):
         self.histos = []
         theta_x = np.hstack([theta, x])
 
-        for histo_edges, histo_ranges, hist_n_bins in zip(self.edges, ranges, self.n_bins):
+        for histo_edges, histo_ranges, histo_n_bins in zip(self.edges, ranges, self.n_bins):
             histo, _ = np.histogramdd(theta_x, bins=histo_edges, range=histo_ranges, normed=False, weights=None)
 
             # Avoid empty bins
