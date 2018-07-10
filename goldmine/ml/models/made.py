@@ -149,6 +149,8 @@ class ConditionalGaussianMADE(nn.Module):
 
         # First hidden layer
 
+        # Debug
+
         try:
             h = self.activation_function(
                 F.linear(theta, torch.t(self.Wx)) + F.linear(x, torch.t(self.Ms[0] * self.Ws[0]), self.bs[0]))
@@ -158,6 +160,8 @@ class ConditionalGaussianMADE(nn.Module):
             logging.info('MADE settings: n_inputs = %s, n_conditionals = %s', self.n_inputs, self.n_conditionals)
             logging.info('Shapes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
+            logging.info('Types: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
+                         type(theta), type(self.Wx), type(x), type(self.Ms[0]), type(self.Ws[0]), type(self.bs[0]))
             raise
 
         # feedforward propagation
