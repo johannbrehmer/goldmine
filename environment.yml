@@ -1,12 +1,13 @@
 name: goldmine
-
+channels:
+- pytorch
+- anaconda
+- defaults
 dependencies:
-  - python=3
+  - python=3.6.*
   - numpy
-  - scipy
-  - matplotlib
-  - jupyter
-  - scikit-learn
-  - torch
+  - scipy=1.0.*
+  - scikit-learn=0.19.*
+  - torch=0.4.*
   - pip:
-    - autograd
+    - autograd==1.2
