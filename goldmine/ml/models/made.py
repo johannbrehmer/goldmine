@@ -162,6 +162,8 @@ class ConditionalGaussianMADE(nn.Module):
                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
             logging.info('Types: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
                          type(theta), type(self.Wx), type(x), type(self.Ms[0]), type(self.Ws[0]), type(self.bs[0]))
+            logging.info('CUDA: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
+                         theta.is_cuda, self.Wx.is_cuda, x.is_cuda, self.Ms[0].is_cuda, self.Ws[0].is_cuda, self.bs[0].is_cuda)
             raise
 
         # feedforward propagation
