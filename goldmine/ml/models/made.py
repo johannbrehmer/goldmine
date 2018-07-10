@@ -228,14 +228,14 @@ class ConditionalGaussianMADE(nn.Module):
 
         for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
             self.Ms[i] = M.to(*args, **kwargs)
-            self.Ws[i] = W.to(*args, **kwargs)
-            self.bs[i] = b.to(*args, **kwargs)
+            # self.Ws[i] = W.to(*args, **kwargs)
+            # self.bs[i] = b.to(*args, **kwargs)
 
         self.Mmp = self.Mmp.to(*args, **kwargs)
-        self.Wx = self.Wx.to(*args, **kwargs)
-        self.Wm = self.Wm.to(*args, **kwargs)
-        self.bm = self.bm.to(*args, **kwargs)
-        self.Wp = self.Wp.to(*args, **kwargs)
-        self.bp = self.bp.to(*args, **kwargs)
+        # self.Wx = self.Wx.to(*args, **kwargs)
+        # self.Wm = self.Wm.to(*args, **kwargs)
+        # self.bm = self.bm.to(*args, **kwargs)
+        # self.Wp = self.Wp.to(*args, **kwargs)
+        # self.bp = self.bp.to(*args, **kwargs)
 
         return self
