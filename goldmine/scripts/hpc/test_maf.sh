@@ -6,6 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
 #SBATCH --time=1-00:00:00
+#SBATCH --gres=gpu:1
 
 source activate goldmine
 cd /home/jb6504/goldmine/goldmine
