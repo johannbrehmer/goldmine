@@ -52,6 +52,10 @@ class MAFInference(Inference):
         else:
             self.maf = torch.load(filename + '.pt')
 
+            # Have everything on CPU (unless training)
+            device = torch.device("cpu")
+            self.maf = self.maf.to(device)
+
             logging.info('Loaded NDE (MAF) from file:')
             logging.info('  Filename:      %s', filename)
             logging.info('  Parameters:    %s', self.maf.n_conditionals)
