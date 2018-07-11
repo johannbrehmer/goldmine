@@ -72,6 +72,7 @@ def discriminate_samples(x1, x2, test_split=0.5,
     layers.append(('softmax', nn.Softmax(dim=1)))
 
     classifier = nn.Sequential(OrderedDict(layers))
+    classifier = classifier.to(device)
 
     # Train
     loss_function = nn.CrossEntropyLoss()
