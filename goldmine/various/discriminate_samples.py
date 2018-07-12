@@ -21,6 +21,7 @@ def discriminate_samples(x1, x2, test_split=0.5,
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
+    cpu_device = torch.device("cpu")
 
     # Prepare data
     xs = np.vstack([x1, x2]).astype(dtype_np)
@@ -72,6 +73,7 @@ def discriminate_samples(x1, x2, test_split=0.5,
     layers.append(('softmax', nn.Softmax(dim=1)))
 
     classifier = nn.Sequential(OrderedDict(layers))
+    classifier = classifier.to(device)
 
     # Train
     loss_function = nn.CrossEntropyLoss()
@@ -112,8 +114,8 @@ def discriminate_samples(x1, x2, test_split=0.5,
 
         yhat_test = classifier(x_test)
 
-    y_test = y_test.detach().numpy()
-    yhat_test = yhat_test.detach().numpy()[:, 1]
+    y_test = y_test.to(cpu_device).detach().numpy()
+    yhat_test = yhat_test.to(cpu_device).detach().numpy()[:, 1]
 
     # Calculate ROC AUC
     logging.info('Calculating ROC curve')

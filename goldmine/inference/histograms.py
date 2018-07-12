@@ -49,7 +49,7 @@ class HistogramInference(Inference):
             for i, histo_n_bins in enumerate(self.n_bins):
                 logging.info('  Bins in histo %s:     %s', i + 1, histo_n_bins)
 
-    def _calculate_binning(self, theta, x, observables):
+    def _calculate_binning(self, theta, x, observables, lower_cutoff_percentile=0., upper_cutoff_percentile=100.):
 
         all_theta_x = np.hstack([theta, x]).T
 
@@ -76,7 +76,7 @@ class HistogramInference(Inference):
         if n_bins_per_x == 'auto':
             n_bins_per_x = max(3, int(round(recommended_n_bins ** (1. / (n_parameters + n_binned_observables)))))
 
-        all_n_bins = [1 for i in range(n_all_observables)]
+        all_n_bins = [1 for _ in range(n_all_observables)]
         for i in observables:
             all_n_bins[i] = n_bins_per_x
         all_n_bins = [n_bins_per_theta] * n_parameters + all_n_bins
@@ -86,7 +86,7 @@ class HistogramInference(Inference):
         all_ranges = []
 
         for i, (data, n_bins) in enumerate(zip(all_theta_x, all_n_bins)):
-            edges = np.percentile(data, np.linspace(0., 100., n_bins + 1))
+            edges = np.percentile(data, np.linspace(lower_cutoff_percentile, upper_cutoff_percentile, n_bins + 1))
             range_ = (np.nanmin(data) - 0.01, np.nanmax(data) + 0.01)
             edges[0], edges[-1] = range_
 
@@ -185,7 +185,15 @@ class HistogramInference(Inference):
             original_shape = tuple(histo_n_bins)
             flat_shape = tuple([-1] + list(histo_n_bins[self.n_parameters:]))
 
-            bin_widths = [axis_edges[1:] - axis_edges[:-1] for axis_edges in histo_edges[self.n_parameters:]]
+            # Fix edges for bvolume calculation (to avoid larger volumes for more training data)
+            modified_histo_edges = []
+            for i in range(x.shape[1]):
+                axis_edges = histo_edges[self.n_parameters + i]
+                axis_edges[0] = min(np.percentile(x[:,i], 5.), axis_edges[1] - 0.01)
+                axis_edges[-1] = max(np.percentile(x[:,i], 95.), axis_edges[-2] + 0.01)
+                modified_histo_edges.append(axis_edges)
+
+            bin_widths = [axis_edges[1:] - axis_edges[:-1] for axis_edges in modified_histo_edges]
 
             volumes = np.ones(flat_shape[1:])
             for obs in range(self.n_observables):
@@ -199,8 +207,8 @@ class HistogramInference(Inference):
             histo = histo.reshape(flat_shape)
 
             for i in range(histo.shape[0]):
+                histo[i] /= np.sum(histo[i])
                 histo[i] /= volumes
-                histo[i] = histo[i] / np.sum(histo[i] * volumes)
 
             histo = histo.reshape(original_shape)
 
