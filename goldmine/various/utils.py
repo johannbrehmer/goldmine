@@ -50,7 +50,7 @@ def create_missing_folders(base_dir, simulator_name, inference_name=None):
 
 
 def shuffle(*arrays):
-    """ Wrapper around sklearn.utils.shuffle that allows for Nones"""
+    """ Shuffles multiple arrays simultaneously"""
 
     permutation = None
     n_samples = None

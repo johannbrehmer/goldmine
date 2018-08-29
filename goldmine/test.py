@@ -27,9 +27,12 @@ def test(simulator_name,
          inference_name,
          run=0,
          alpha=1.,
+         model_label=None,
          trained_on_single_theta=False,
          training_sample_size=None,
-         evaluate_densities=True,
+         evaluate_densities_on_original_theta=True,
+         evaluate_densities_on_grid=True,
+         theta_grid=None,
          generate_samples=True,
          discretize_generated_samples=True,
          classify_surrogate_vs_true_samples=True):
@@ -43,7 +46,7 @@ def test(simulator_name,
     logging.info('  Single-theta tr. sample:  %s', trained_on_single_theta)
     logging.info('  Training sample size:     %s',
                  'maximal' if training_sample_size is None else training_sample_size)
-    logging.info('  Evaluate densities:       %s', evaluate_densities)
+    logging.info('  Evaluate densities:       %s', evaluate_densities_on_original_theta)
     logging.info('  Generate samples:         %s', generate_samples)
     logging.info('  Discretize samples        %s', discretize_generated_samples)
     logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
@@ -134,7 +137,7 @@ def test(simulator_name,
     )
 
     # Evaluate density on test sample
-    if evaluate_densities:
+    if evaluate_densities_on_original_theta:
         try:
             logging.info('Estimating densities on many-theta train sample')
             log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
@@ -232,6 +235,8 @@ def main():
 
     args = parser.parse_args()
 
+    # TODO: eval on grid
+
     # Start simulation
     test(
         args.simulator,
@@ -240,9 +245,9 @@ def main():
         alpha=args.alpha,
         trained_on_single_theta=args.singletheta,
         training_sample_size=args.samplesize,
-        evaluate_densities=True,
+        evaluate_densities_on_original_theta=True,
         generate_samples=args.classifiertest,
-        classify_surrogate_vs_true_samples=args.classifiertest
+        classify_surrogate_vs_true_samples=args.classifiertest,
     )
 
     logging.info("That's all for now, have a nice day!")

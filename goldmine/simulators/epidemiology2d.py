@@ -29,9 +29,9 @@ class Epidemiology2D(Epidemiology):
 
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
 
-        super().__init__(*args)
+        super().__init__(*args, **kwargs)
 
         # Parameters
         self.n_parameters = 2

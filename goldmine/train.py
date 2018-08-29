@@ -21,6 +21,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          model_label=None,
           run=0,
           n_mades=3,
           n_made_hidden_layers=2,
@@ -33,6 +34,7 @@ def train(simulator_name,
           separate_1d_x_histos=False,
           fill_empty_bins=False,
           alpha=1.,
+          training_sample='train',
           single_theta=False,
           training_sample_size=None,
           n_epochs=20,
@@ -195,6 +197,10 @@ def main():
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
+    parser.add_argument('--modellabel', type=str,
+                        help='Additional label (filename) for the trained model.')
+    parser.add_argument('--trainsample', type=str, default='train',
+                        help='Label (filename) for the training sample.')
     parser.add_argument('-i', type=int, default=0,
                         help='Run number for multiple repeated trainings.')
     parser.add_argument('--nades', type=int, default=5,
@@ -243,6 +249,7 @@ def main():
     train(
         args.simulator,
         args.inference,
+        model_label=args.modellabel,
         run=args.i,
         n_mades=args.nades,
         n_made_hidden_layers=args.hidden,
@@ -255,6 +262,7 @@ def main():
         fill_empty_bins=args.fillemptybins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
+        training_sample=args.trainsample,
         single_theta=args.singletheta,
         training_sample_size=args.samplesize,
         n_epochs=args.epochs,

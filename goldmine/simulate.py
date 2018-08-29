@@ -189,7 +189,7 @@ def main():
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
     parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
-    parser.add_argument('sample', help='Sample name ("train" or "test" are often expected)')
+    parser.add_argument('sample', help='Sample label (like "train" or "test")')
     parser.add_argument('--theta0', default=None, help='Theta0 file, defaults to standard parameters')
     parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to no theta1')
     parser.add_argument('--singletheta', action='store_true', help='If argument theta0 is not set, generates sample'
