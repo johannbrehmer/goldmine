@@ -2,6 +2,7 @@ from goldmine.simulators.epidemiology import Epidemiology
 from goldmine.simulators.epidemiology2d import Epidemiology2D
 from goldmine.simulators.galton import GeneralizedGaltonBoard
 from goldmine.simulators.gaussian import GaussianSimulator
+from goldmine.simulators.chutes_ladders import ChutesLaddersSimulator
 from goldmine.inference.histograms import HistogramInference
 from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
@@ -16,6 +17,8 @@ def create_simulator(simulator_name):
         return Epidemiology2D()
     elif simulator_name == 'galton':
         return GeneralizedGaltonBoard()
+    elif simulator_name == 'chutes_ladders':
+        return ChutesLaddersSimulator()
     else:
         raise ValueError('Simulator name {} unknown'.format(simulator_name))
 
