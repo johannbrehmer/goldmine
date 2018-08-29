@@ -1,5 +1,4 @@
 import numpy as np
-import logging
 
 from goldmine.simulators.base import Simulator
 
