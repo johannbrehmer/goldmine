@@ -96,7 +96,7 @@ class LotkaVolterra(Simulator):
         ], dtype=np.int)
 
         # Gillespie algorithm
-        for i in range(n_time_series):
+        for i in range(self.n_time_series):
 
             while next_recorded_time > simulated_time:
 
@@ -109,6 +109,10 @@ class LotkaVolterra(Simulator):
                 ])
                 total_rate = np.sum(rates)
 
+                if total_rate <= 0.:
+                    simulated_time = self.duration + 1.
+                    break
+
                 # Time of next event
                 interaction_time = rng.exponential(scale=1. / total_rate)
                 simulated_time += interaction_time
@@ -118,11 +122,13 @@ class LotkaVolterra(Simulator):
                 # Choose next event
                 event = -1
                 while event < 0:
-                    dice = rng.random(1)
+                    dice = rng.rand(1)
                     for j in range(4):
                         if dice < np.sum(rates[:j]) / total_rate:
                             event = j
                             break
+
+                    logging.warning('No event choosen with dice %s, rates %s', dice, rates)
 
                 # Resolve next event
                 state += event_effects[event]
@@ -134,106 +140,106 @@ class LotkaVolterra(Simulator):
         return logp_xz, time_series
 
 
-def _calculate_observables(self, time_series):
-    """ Calculates observables: a combination of summary statistics and the full time series  """
+    def _calculate_observables(self, time_series):
+        """ Calculates observables: a combination of summary statistics and the full time series  """
 
-    n = time_series.shape[0]
-    x = time_series[:, 0].as_dtype(np.float)
-    y = time_series[:, 1].as_dtype(np.float)
+        n = time_series.shape[0]
+        x = time_series[:, 0].astype(np.float)
+        y = time_series[:, 1].astype(np.float)
 
-    observables = []
+        observables = []
 
-    # Calculate summary statistics, following 1605.06376
-    if self.use_summary_statistics:
+        # Calculate summary statistics, following 1605.06376
+        if self.use_summary_statistics:
 
-        # Mean of time series
-        mean_x = np.mean(x)
-        mean_y = np.mean(y)
+            # Mean of time series
+            mean_x = np.mean(x)
+            mean_y = np.mean(y)
 
-        # Variance of time series
-        var_x = np.var(x, ddof=1)
-        var_y = np.var(y, ddof=1)
+            # Variance of time series
+            var_x = np.var(x, ddof=1)
+            var_y = np.var(y, ddof=1)
 
-        # Normalize for correlation coefficients
-        x_norm = (x - mean_x) / np.sqrt(var_x)
-        y_norm = (y - mean_y) / np.sqrt(var_y)
+            # Normalize for correlation coefficients
+            x_norm = (x - mean_x) / np.sqrt(var_x)
+            y_norm = (y - mean_y) / np.sqrt(var_y)
 
-        # auto correlation coefficient
-        autocorr_x = []
-        autocorr_y = []
-        for lag in [1, 2]:
-            autocorr_x.append(np.dot(x_norm[:-lag], x_norm[lag:]) / (n - 1))
-            autocorr_y.append(np.dot(y_norm[:-lag], y_norm[lag:]) / (n - 1))
+            # auto correlation coefficient
+            autocorr_x = []
+            autocorr_y = []
+            for lag in [1, 2]:
+                autocorr_x.append(np.dot(x_norm[:-lag], x_norm[lag:]) / (n - 1))
+                autocorr_y.append(np.dot(y_norm[:-lag], y_norm[lag:]) / (n - 1))
 
-        # cross correlation coefficient
-        cross_corr = np.dot(x_norm, y_norm) / (n - 1)
+            # cross correlation coefficient
+            cross_corr = np.dot(x_norm, y_norm) / (n - 1)
 
-        observables += [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)] + autocorr_x + autocorr_y + [cross_corr]
+            observables += [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)] + autocorr_x + autocorr_y + [cross_corr]
 
-    # Full time series
-    if self.use_full_time_series:
-        observables += list(x)
-        observables += list(y)
+        # Full time series
+        if self.use_full_time_series:
+            observables += list(x)
+            observables += list(y)
 
-    observables = np.array(observables)
+        observables = np.array(observables)
 
-    return observables
-
-
-def get_discretization(self):
-    discretization = []
-
-    if self.use_summary_statistics:
-        discretization += [1. / self.n_time_series, 1. / self.n_time_series, None, None, None, None, None, None, None]
-
-    if self.use_full_time_series:
-        discretization += [1.] * 2 * self.n_time_series
-
-    return tuple(discretization)
+        return observables
 
 
-def rvs(self, theta, n, random_state=None, return_histories=False):
-    logging.info('Simulating %s evolutions for theta = %s', n, theta)
+    def get_discretization(self):
+        discretization = []
 
-    rng = check_random_state(random_state)
+        if self.use_summary_statistics:
+            discretization += [1. / self.n_time_series, 1. / self.n_time_series, None, None, None, None, None, None, None]
 
-    all_x = []
+        if self.use_full_time_series:
+            discretization += [1.] * 2 * self.n_time_series
 
-    for i in range(n):
-        _, time_series = self._simulate(theta, rng)
-
-        x = self._calculate_observables(time_series)
-        all_x.append(x)
-
-    all_x = np.asarray(all_x)
-
-    if return_histories:
-        return all_x, time_series
-    return all_x
+        return tuple(discretization)
 
 
-def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
-    logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
+    def rvs(self, theta, n, random_state=None, return_histories=False):
+        logging.info('Simulating %s evolutions for theta = %s', n, theta)
 
-    if np.linalg.norm(theta_score - theta) > 1.e-6:
-        logging.error('Different values for theta and theta_score not yet supported!')
-        raise NotImplementedError('Different values for theta and theta_score not yet supported!')
+        rng = check_random_state(random_state)
 
-    rng = check_random_state(random_state)
+        all_x = []
 
-    all_x = []
-    all_t_xz = []
+        for i in range(n):
+            _, time_series = self._simulate(theta, rng)
 
-    for i in range(n):
-        t_xz, time_series = self._d_simulate(theta, rng)
-        all_t_xz.append(t_xz)
+            x = self._calculate_observables(time_series)
+            all_x.append(x)
 
-        x = self._calculate_observables(time_series)
-        all_x.append(x)
+        all_x = np.asarray(all_x)
 
-    all_x = np.asarray(all_x)
-    all_t_xz = np.asarray(all_t_xz)
+        if return_histories:
+            return all_x, time_series
+        return all_x
 
-    if return_histories:
-        return all_x, all_t_xz, time_series
-    return all_x, all_t_xz
+
+    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
+        logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
+
+        if np.linalg.norm(theta_score - theta) > 1.e-6:
+            logging.error('Different values for theta and theta_score not yet supported!')
+            raise NotImplementedError('Different values for theta and theta_score not yet supported!')
+
+        rng = check_random_state(random_state)
+
+        all_x = []
+        all_t_xz = []
+
+        for i in range(n):
+            t_xz, time_series = self._d_simulate(theta, rng)
+            all_t_xz.append(t_xz)
+
+            x = self._calculate_observables(time_series)
+            all_x.append(x)
+
+        all_x = np.asarray(all_x)
+        all_t_xz = np.asarray(all_t_xz)
+
+        if return_histories:
+            return all_x, all_t_xz, time_series
+        return all_x, all_t_xz
