@@ -29,6 +29,7 @@ def simulate(simulator_name,
              grid_sampling=False,
              generate_joint_ratio=True,
              generate_joint_score=True,
+             n_thetas=1000,
              n_samples_per_theta=1000,
              random_state=None):
     """
@@ -45,6 +46,7 @@ def simulate(simulator_name,
                       the sampling.
     :param generate_joint_ratio: bool, whether to ask the simulator for the joint ratio (only if theta1 is given).
     :param generate_joint_score: bool, whether to ask the simulator for the joint score.
+    :param n_thetas: int, number of thetas samples of theta0 is None and single_theta is False
     :param n_samples_per_theta: Number of samples per combination of theta0 and theta1.
     :param random_state: Numpy random state.
     """
@@ -59,6 +61,7 @@ def simulate(simulator_name,
             logging.info('  theta sampling:       single theta')
         else:
             logging.info('  theta sampling:       %s', ('grid' if grid_sampling else 'random'))
+            logging.info('  Number of thetas:     %s', n_thetas)
     logging.info('  Samples / theta:      %s', n_samples_per_theta)
     logging.info('  Generate joint ratio: %s', generate_joint_ratio)
     logging.info('  Generate joint score: %s', generate_joint_score)
@@ -84,6 +87,7 @@ def simulate(simulator_name,
     # Default thetas
     if theta0 is None:
         theta0, theta1 = simulator.theta_defaults(single_theta=single_theta,
+                                                  n_thetas=n_thetas,
                                                   random=not grid_sampling)
 
     # Check thetas
@@ -188,7 +192,8 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
-    parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
+    parser.add_argument('simulator',
+                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('sample', help='Sample label (like "train" or "test")')
     parser.add_argument('--theta0', default=None, help='Theta0 file, defaults to standard parameters')
     parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to no theta1')
@@ -196,6 +201,9 @@ def main():
                                                                    + ' for one reference theta rather than a set')
     parser.add_argument('--gridsampling', action='store_true', help='If argument theta0 is not set, samples theta0 on a'
                                                                     + ' grid rather than randomly')
+    parser.add_argument('--nthetas', type=int, default=1000, help='If argument theta0 is not set and singletheta is'
+                                                                  ' False (the default), sets the number of theta'
+                                                                  'benchmarks samples')
     parser.add_argument('--nsamples', type=int, default=100, help='Number of samples per theta value')
     parser.add_argument('--noratio', action='store_true', help='Do not generate joint ratio')
     parser.add_argument('--noscore', action='store_true', help='Do not generate joint score')
@@ -209,6 +217,7 @@ def main():
         theta0=args.theta0,
         theta1=args.theta1,
         single_theta=args.singletheta,
+        n_thetas=args.nthetas,
         n_samples_per_theta=args.nsamples,
         generate_joint_ratio=not args.noratio,
         generate_joint_score=not args.noscore,

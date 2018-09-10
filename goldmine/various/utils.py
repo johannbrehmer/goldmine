@@ -1,18 +1,23 @@
 import numpy as np
+import autograd
 import os
 import logging
 import torch.nn.functional as F
 
 
-def check_random_state(random_state):
+def check_random_state(random_state, use_autograd=False):
     if random_state is None or isinstance(random_state, int):
+        if use_autograd:
+            return autograd.numpy.random.RandomState(random_state)
         return np.random.RandomState(random_state)
     else:
         return random_state
 
 
 def general_init():
-    logging.basicConfig(format='%(asctime)s %(levelname)s    %(message)s', level=logging.DEBUG)
+
+    logging.basicConfig(format='%(asctime)s  %(message)s', datefmt='%H:%M')
+    logging.getLogger().setLevel(logging.DEBUG)
 
     logging.info('')
     logging.info('------------------------------------------------------------')

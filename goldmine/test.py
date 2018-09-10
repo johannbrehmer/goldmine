@@ -221,7 +221,8 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
-    parser.add_argument('simulator', help='Simulator: "galton" or "epidemiology"')
+    parser.add_argument('simulator',
+                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
     parser.add_argument('-i', type=int, default=0,
                         help='Run number for multiple repeated trainings.')
