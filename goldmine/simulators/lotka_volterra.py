@@ -14,15 +14,18 @@ class LotkaVolterra(Simulator):
     Setup follows appendix F of https://arxiv.org/pdf/1605.06376.pdf very closely.
     """
 
-    def __init__(self, initial_predators=50, initial_prey=100, dutation=30., delta_t=0.2):
+    def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2, use_summary_statistics=True,
+                 use_full_time_series=False):
 
         super().__init__()
 
         # Save parameters
         self.initial_predators = initial_predators
         self.initial_prey = initial_prey
-        self.duration = dutation
+        self.duration = duration
         self.delta_t = delta_t
+        self.use_summary_statistics = use_summary_statistics
+        self.use_full_time_series = use_full_time_series
 
         # Parameters
         self.n_parameters = 4
@@ -131,47 +134,50 @@ class LotkaVolterra(Simulator):
         return logp_xz, time_series
 
 
-def _calculate_observables(self, state):
-    # Note that this is very different from the original paper, which uses an observation model tailored to the
-    # collected data
+def _calculate_observables(self, time_series):
+    """ Calculates observables: a combination of summary statistics and the full time series  """
 
-    # Proportion of individuals with the most common strain (Numminem cross-check)
-    strain_observations = np.sum(state, axis=0)
-    most_common_strain = np.argmax(strain_observations)
-    prevalence_most_common_strain = np.sum(state[:, most_common_strain], dtype=np.float) / float(self.n_individuals)
+    n = time_series.shape[0]
+    x = time_series[:, 0].as_dtype(np.float)
+    y = time_series[:, 1].as_dtype(np.float)
 
-    # Number of singleton strains (= only on 1 individual, Numminem cross-check)
-    n_singleton_strains = np.sum(strain_observations == 1)
+    observables = []
 
-    # Number of observed strains (Numminen 2)
-    n_observed_strains = len(strain_observations[np.nonzero(strain_observations)])
+    # Calculate summary statistics, following 1605.06376
+    if self.use_summary_statistics:
 
-    # Shannon entropy of observed strain distribution (Numminen 1)
-    p_observed_strains = strain_observations[np.nonzero(strain_observations)]  # Remove zeros
-    p_observed_strains = p_observed_strains.astype(np.float) / float(np.sum(p_observed_strains))  # Normalize
-    shannon_entropy = - np.sum(p_observed_strains * np.log(p_observed_strains))
+        # Mean of time series
+        mean_x = np.mean(x)
+        mean_y = np.mean(y)
 
-    # Any / multiple infections of individuals
-    any_infection = (np.sum(state, axis=1) > 0)
-    multiple_infections = (np.sum(state, axis=1) > 1)
+        # Variance of time series
+        var_x = np.var(x, ddof=1)
+        var_y = np.var(y, ddof=1)
 
-    # Prevalence of any infection (Numminen 3)
-    prevalence_any = np.sum(any_infection, dtype=np.float) / self.n_individuals
+        # Normalize for correlation coefficients
+        x_norm = (x - mean_x) / np.sqrt(var_x)
+        y_norm = (y - mean_y) / np.sqrt(var_y)
 
-    # Prevalence of multiple infections (Numminen 4)
-    prevalence_multiple = np.sum(multiple_infections, dtype=np.float) / self.n_individuals
+        # auto correlation coefficient
+        autocorr_x = []
+        autocorr_y = []
+        for lag in [1, 2]:
+            autocorr_x.append(np.dot(x_norm[:-lag], x_norm[lag:]) / (n - 1))
+            autocorr_y.append(np.dot(y_norm[:-lag], y_norm[lag:]) / (n - 1))
 
-    # Combine summary statistics
-    summary_statistics = np.array([
-        shannon_entropy,
-        n_observed_strains,
-        prevalence_any,
-        prevalence_multiple,
-        prevalence_most_common_strain,
-        n_singleton_strains
-    ])
+        # cross correlation coefficient
+        cross_corr = np.dot(x_norm, y_norm) / (n - 1)
 
-    return summary_statistics
+        observables += [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)] + autocorr_x + autocorr_y + [cross_corr]
+
+    # Full time series
+    if self.use_full_time_series:
+        observables += list(x)
+        observables += list(y)
+
+    observables = np.array(observables)
+
+    return observables
 
 
 def get_discretization(self):
