@@ -198,7 +198,6 @@ def rvs(self, theta, n, random_state=None, return_histories=False):
     rng = check_random_state(random_state)
 
     all_x = []
-    histories = []
 
     for i in range(n):
         _, time_series = self._simulate(theta, rng)
@@ -209,7 +208,7 @@ def rvs(self, theta, n, random_state=None, return_histories=False):
     all_x = np.asarray(all_x)
 
     if return_histories:
-        return all_x, histories
+        return all_x, time_series
     return all_x
 
 
@@ -224,7 +223,6 @@ def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=F
 
     all_x = []
     all_t_xz = []
-    histories = []
 
     for i in range(n):
         t_xz, time_series = self._d_simulate(theta, rng)
@@ -237,5 +235,5 @@ def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=F
     all_t_xz = np.asarray(all_t_xz)
 
     if return_histories:
-        return all_x, all_t_xz, histories
+        return all_x, all_t_xz, time_series
     return all_x, all_t_xz
