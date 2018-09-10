@@ -1,5 +1,6 @@
 from goldmine.simulators.epidemiology import Epidemiology
 from goldmine.simulators.epidemiology2d import Epidemiology2D
+from goldmine.simulators.lotka_volterra import LotkaVolterra
 from goldmine.simulators.galton import GeneralizedGaltonBoard
 from goldmine.simulators.gaussian import GaussianSimulator
 from goldmine.simulators.chutes_ladders import ChutesLaddersSimulator
@@ -15,6 +16,8 @@ def create_simulator(simulator_name):
         return Epidemiology()
     elif simulator_name == 'epidemiology2d':
         return Epidemiology2D()
+    elif simulator_name == 'lotkavolterra':
+        return LotkaVolterra()
     elif simulator_name == 'galton':
         return GeneralizedGaltonBoard()
     elif simulator_name == 'chutes_ladders':
