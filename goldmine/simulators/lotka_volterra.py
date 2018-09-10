@@ -24,6 +24,7 @@ class LotkaVolterra(Simulator):
         self.initial_prey = initial_prey
         self.duration = duration
         self.delta_t = delta_t
+        self.n_time_series = int(self.duration / self.delta_t) + 1
         self.use_summary_statistics = use_summary_statistics
         self.use_full_time_series = use_full_time_series
 
@@ -76,8 +77,7 @@ class LotkaVolterra(Simulator):
     def _simulate(self, theta, rng):
 
         # Prepare recorded time series of states
-        n_time_series = int(self.duration / self.dt) + 1
-        time_series = np.zeros([n_time_series, 2], dtype=np.int)
+        time_series = np.zeros([self.n_time_series, 2], dtype=np.int)
 
         # Initial state
         state = np.array([self.initial_predators, self.initial_prey], dtype=np.int)
@@ -181,11 +181,19 @@ def _calculate_observables(self, time_series):
 
 
 def get_discretization(self):
-    return None, 1, 1. / self.n_individuals, 1. / self.n_individuals, 1. / self.n_individuals, 1
+    discretization = []
+
+    if self.use_summary_statistics:
+        discretization += [1. / self.n_time_series, 1. / self.n_time_series, None, None, None, None, None, None, None]
+
+    if self.use_full_time_series:
+        discretization += [1.] * 2 * self.n_time_series
+
+    return tuple(discretization)
 
 
 def rvs(self, theta, n, random_state=None, return_histories=False):
-    logging.info('Simulating %s epidemic evolutions for theta = %s', n, theta)
+    logging.info('Simulating %s evolutions for theta = %s', n, theta)
 
     rng = check_random_state(random_state)
 
@@ -193,14 +201,9 @@ def rvs(self, theta, n, random_state=None, return_histories=False):
     histories = []
 
     for i in range(n):
-        if return_histories:
-            _, (state, history) = self._simulate_transmission(theta, rng, return_history=True)
-            histories.append(history)
-        else:
-            _, state = self._simulate_transmission(theta, rng, return_history=False)
+        _, time_series = self._simulate(theta, rng)
 
-        x = self._calculate_observables(state)
-
+        x = self._calculate_observables(time_series)
         all_x.append(x)
 
     all_x = np.asarray(all_x)
@@ -213,6 +216,10 @@ def rvs(self, theta, n, random_state=None, return_histories=False):
 def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
     logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
 
+    if np.linalg.norm(theta_score - theta) > 1.e-6:
+        logging.error('Different values for theta and theta_score not yet supported!')
+        raise NotImplementedError('Different values for theta and theta_score not yet supported!')
+
     rng = check_random_state(random_state)
 
     all_x = []
@@ -220,16 +227,11 @@ def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=F
     histories = []
 
     for i in range(n):
-        if return_histories:
-            t_xz, (state, history) = self._d_simulate_transmission(theta, rng, return_history=True)
-            histories.append(history)
-        else:
-            t_xz, state = self._d_simulate_transmission(theta, rng, return_history=False)
-
-        x = self._calculate_observables(state)
-
-        all_x.append(x)
+        t_xz, time_series = self._d_simulate(theta, rng)
         all_t_xz.append(t_xz)
+
+        x = self._calculate_observables(time_series)
+        all_x.append(x)
 
     all_x = np.asarray(all_x)
     all_t_xz = np.asarray(all_t_xz)
@@ -237,11 +239,3 @@ def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=F
     if return_histories:
         return all_x, all_t_xz, histories
     return all_x, all_t_xz
-
-
-def rvs_ratio(self, theta, theta0, theta1, n, random_state=None):
-    pass
-
-
-def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None):
-    pass
