@@ -7,11 +7,19 @@ from goldmine.simulators.base import Simulator
 from goldmine.various.utils import check_random_state
 
 
+class SimulationTooLongException(Exception):
+
+    def __str__(self):
+        return 'Simulation exceeded the maximum number of steps'
+
+
 class LotkaVolterra(Simulator):
     """
     Simulator for a Lotka-Volterra predator-prey scenario.
 
-    Setup follows appendix F of https://arxiv.org/pdf/1605.06376.pdf very closely.
+    Setup follows appendix F of https://arxiv.org/pdf/1605.06376.pdf very closely. One difference is that we do not
+    normalize the summary statistics based on a sample run (since we do not calculate Euclidean distance between summary
+    statistics, this is not absolutely necessary).
     """
 
     def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2, use_summary_statistics=True,
@@ -74,7 +82,7 @@ class LotkaVolterra(Simulator):
 
         return benchmarks, None
 
-    def _simulate(self, theta, rng):
+    def _simulate(self, theta, rng, max_steps=1000000):
 
         # Prepare recorded time series of states
         time_series = np.zeros([self.n_time_series, 2], dtype=np.int)
@@ -83,8 +91,9 @@ class LotkaVolterra(Simulator):
         state = np.array([self.initial_predators, self.initial_prey], dtype=np.int)
         next_recorded_time = 0.
         simulated_time = 0.
+        n_steps = 0.
 
-        # Track log p(x, z) (to calculate the score later)
+        # Track log p(x, z) (to calculate the joint score with autograd)
         logp_xz = 0.
 
         # Possible events
@@ -124,21 +133,25 @@ class LotkaVolterra(Simulator):
                 while event < 0:
                     dice = rng.rand(1)
                     for j in range(4):
-                        if dice < np.sum(rates[:j]) / total_rate:
+                        if dice < np.sum(rates[:j + 1]) / total_rate:
                             event = j
                             break
-
-                    logging.warning('No event choosen with dice %s, rates %s', dice, rates)
 
                 # Resolve next event
                 state += event_effects[event]
                 logp_xz += np.log(rates[event]) - np.log(total_rate)
 
+                # Count steps
+                n_steps += 1
+
+                if n_steps > max_steps:
+                    logging.warning('Too many steps in simulation. Total rate: %s', total_rate)
+                    raise SimulationTooLongException()
+
             time_series[i] = state.copy()
             next_recorded_time += self.delta_t
 
         return logp_xz, time_series
-
 
     def _calculate_observables(self, time_series):
         """ Calculates observables: a combination of summary statistics and the full time series  """
@@ -174,7 +187,8 @@ class LotkaVolterra(Simulator):
             # cross correlation coefficient
             cross_corr = np.dot(x_norm, y_norm) / (n - 1)
 
-            observables += [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)] + autocorr_x + autocorr_y + [cross_corr]
+            observables += [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)]
+            observables += autocorr_x + autocorr_y + [cross_corr]
 
         # Full time series
         if self.use_full_time_series:
@@ -185,28 +199,43 @@ class LotkaVolterra(Simulator):
 
         return observables
 
-
     def get_discretization(self):
         discretization = []
 
         if self.use_summary_statistics:
-            discretization += [1. / self.n_time_series, 1. / self.n_time_series, None, None, None, None, None, None, None]
+            discretization += [1. / self.n_time_series, 1. / self.n_time_series, None, None, None, None, None, None,
+                               None]
 
         if self.use_full_time_series:
             discretization += [1.] * 2 * self.n_time_series
 
         return tuple(discretization)
 
-
-    def rvs(self, theta, n, random_state=None, return_histories=False):
+    def rvs(self, theta, n, random_state=None, return_histories=False, max_failures=5):
         logging.info('Simulating %s evolutions for theta = %s', n, theta)
 
         rng = check_random_state(random_state)
 
         all_x = []
+        histories = []
 
         for i in range(n):
-            _, time_series = self._simulate(theta, rng)
+
+            logging.debug('Starting simulation %s / %s for theta = %s', i + 1, n, theta)
+
+            time_series = None
+            failures = 0
+            while time_series is None:
+                try:
+                    _, time_series = self._simulate(theta, rng)
+                except SimulationTooLongException:
+                    failures += 1
+
+                    if failures > max_failures:
+                        raise SimulationTooLongException
+
+            if return_histories:
+                histories.append(time_series)
 
             x = self._calculate_observables(time_series)
             all_x.append(x)
@@ -214,11 +243,10 @@ class LotkaVolterra(Simulator):
         all_x = np.asarray(all_x)
 
         if return_histories:
-            return all_x, time_series
+            return all_x, histories
         return all_x
 
-
-    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
+    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False, max_failures=5):
         logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
 
         if np.linalg.norm(theta_score - theta) > 1.e-6:
@@ -229,10 +257,25 @@ class LotkaVolterra(Simulator):
 
         all_x = []
         all_t_xz = []
+        histories = []
 
         for i in range(n):
-            t_xz, time_series = self._d_simulate(theta, rng)
+
+            time_series = None
+            t_xz = None
+            failures = 0
+            while time_series is None:
+                try:
+                    t_xz, time_series = self._d_simulate(theta, rng)
+                except SimulationTooLongException:
+                    failures += 1
+
+                    if failures > max_failures:
+                        raise SimulationTooLongException
+
             all_t_xz.append(t_xz)
+            if return_histories:
+                histories.append(time_series)
 
             x = self._calculate_observables(time_series)
             all_x.append(x)
@@ -241,5 +284,5 @@ class LotkaVolterra(Simulator):
         all_t_xz = np.asarray(all_t_xz)
 
         if return_histories:
-            return all_x, all_t_xz, time_series
+            return all_x, all_t_xz, histories
         return all_x, all_t_xz
