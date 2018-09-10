@@ -86,7 +86,6 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-
     sample_filename = 'train'
     output_filename = ''
     if single_theta:
@@ -195,7 +194,8 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
-    parser.add_argument('simulator', help='Simulator: "gaussian", "galton", or "epidemiology"')
+    parser.add_argument('simulator',
+                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
     parser.add_argument('--modellabel', type=str,
                         help='Additional label (filename) for the trained model.')
