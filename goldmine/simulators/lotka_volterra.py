@@ -123,7 +123,10 @@ class LotkaVolterra(Simulator):
                     break
 
                 # Time of next event
-                interaction_time = rng.exponential(scale=1. / total_rate)
+                try:
+                    interaction_time = rng.exponential(scale=1. / total_rate)
+                except ValueError:  # Raised when done in autograd mode for score
+                    interaction_time = rng.exponential(scale=1. / total_rate._value)
                 simulated_time += interaction_time
 
                 logp_xz += np.log(total_rate) - interaction_time * total_rate
@@ -253,7 +256,7 @@ class LotkaVolterra(Simulator):
             logging.error('Different values for theta and theta_score not yet supported!')
             raise NotImplementedError('Different values for theta and theta_score not yet supported!')
 
-        rng = check_random_state(random_state)
+        rng = check_random_state(random_state, use_autograd=True)
 
         all_x = []
         all_t_xz = []
