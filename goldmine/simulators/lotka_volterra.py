@@ -3,14 +3,8 @@ import autograd as ag
 from itertools import product
 import logging
 
-from goldmine.simulators.base import Simulator
+from goldmine.simulators.base import Simulator, SimulationTooLongException
 from goldmine.various.utils import check_random_state
-
-
-class SimulationTooLongException(Exception):
-
-    def __str__(self):
-        return 'Simulation exceeded the maximum number of steps'
 
 
 class LotkaVolterra(Simulator):

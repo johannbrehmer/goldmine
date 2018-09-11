@@ -12,12 +12,14 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 try:
     from goldmine.various.look_up import create_simulator
     from goldmine.various.utils import general_init, create_missing_folders
+    from goldmine.simulators.base import SimulatorException
 except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
     from goldmine.various.look_up import create_simulator
     from goldmine.various.utils import general_init, create_missing_folders
+    from goldmine.simulators.base import SimulatorException
 
 
 def simulate(simulator_name,
@@ -31,10 +33,13 @@ def simulate(simulator_name,
              generate_joint_score=True,
              n_thetas=1000,
              n_samples_per_theta=1000,
-             random_state=None):
+             random_state=None,
+             continue_after_exceptions=True):
     """
     Draws sample from a simulator.
 
+    :param continue_after_exceptions:
+    :param single_theta:
     :param grid_sampling:
     :param sample_label:
     :param simulator_name: Specifies the simulator. Currently supported are 'galton' and 'epidemiology'.
@@ -52,19 +57,20 @@ def simulate(simulator_name,
     """
 
     logging.info('Starting simulation')
-    logging.info('  Simulator:            %s', simulator_name)
-    logging.info('  Sample:               %s', sample_label)
-    logging.info('  theta0:               %s', 'default' if theta0 is None else theta0)
-    logging.info('  theta1:               %s', 'default' if theta1 is None else theta1)
+    logging.info('  Simulator:                 %s', simulator_name)
+    logging.info('  Sample:                    %s', sample_label)
+    logging.info('  theta0:                    %s', 'default' if theta0 is None else theta0)
+    logging.info('  theta1:                    %s', 'default' if theta1 is None else theta1)
     if theta0 is None:
         if single_theta:
-            logging.info('  theta sampling:       single theta')
+            logging.info('  theta sampling:            single theta')
         else:
-            logging.info('  theta sampling:       %s', ('grid' if grid_sampling else 'random'))
-            logging.info('  Number of thetas:     %s', n_thetas)
-    logging.info('  Samples / theta:      %s', n_samples_per_theta)
-    logging.info('  Generate joint ratio: %s', generate_joint_ratio)
-    logging.info('  Generate joint score: %s', generate_joint_score)
+            logging.info('  theta sampling:            %s', ('grid' if grid_sampling else 'random'))
+            logging.info('  Number of thetas:          %s', n_thetas)
+    logging.info('  Samples / theta:           %s', n_samples_per_theta)
+    logging.info('  Generate joint ratio:      %s', generate_joint_ratio)
+    logging.info('  Generate joint score:      %s', generate_joint_score)
+    logging.info('  Continue after exceptions: %s', continue_after_exceptions)
 
     # Check paths
     create_missing_folders(base_dir, simulator_name)
@@ -130,45 +136,58 @@ def simulate(simulator_name,
     for theta0_, theta1_ in zip(theta0, theta1):
         for y in draw_from:
 
-            if generate_joint_ratio and generate_joint_score:
-                x, r_xz, t_xz = simulator.rvs_ratio_score(
-                    theta=theta0_,
-                    theta0=theta0_,
-                    theta1=theta1_,
-                    theta_score=theta0_,
-                    n=n_samples_per_theta_and_draw,
-                    random_state=random_state
-                )
-            elif generate_joint_ratio:
-                x, r_xz = simulator.rvs_ratio(
-                    theta=theta0_,
-                    theta0=theta0_,
-                    theta1=theta1_,
-                    n=n_samples_per_theta_and_draw,
-                    random_state=random_state
-                )
-            elif generate_joint_score:
-                x, t_xz = simulator.rvs_score(
-                    theta=theta0_,
-                    theta_score=theta0_,
-                    n=n_samples_per_theta_and_draw,
-                    random_state=random_state
-                )
-            else:
-                x = simulator.rvs(
-                    theta=theta0_,
-                    n=n_samples_per_theta_and_draw,
-                    random_state=random_state
-                )
+            try:
+                if generate_joint_ratio and generate_joint_score:
+                    x, r_xz, t_xz = simulator.rvs_ratio_score(
+                        theta=theta0_,
+                        theta0=theta0_,
+                        theta1=theta1_,
+                        theta_score=theta0_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                elif generate_joint_ratio:
+                    x, r_xz = simulator.rvs_ratio(
+                        theta=theta0_,
+                        theta0=theta0_,
+                        theta1=theta1_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                    t_xz = None
+                elif generate_joint_score:
+                    x, t_xz = simulator.rvs_score(
+                        theta=theta0_,
+                        theta_score=theta0_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                    r_xz = None
+                else:
+                    x = simulator.rvs(
+                        theta=theta0_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                    r_xz, t_xz = None, None
 
-            all_theta0 += [theta0_] * n_samples_per_theta_and_draw
-            all_theta1 += [theta1_] * n_samples_per_theta_and_draw
-            all_x += list(x)
-            all_y += [y] * n_samples_per_theta_and_draw
-            if generate_joint_ratio:
-                all_r_xz += list(r_xz)
-            if generate_joint_score:
-                all_t_xz += list(t_xz)
+                all_theta0 += [theta0_] * n_samples_per_theta_and_draw
+                all_theta1 += [theta1_] * n_samples_per_theta_and_draw
+                all_x += list(x)
+                all_y += [y] * n_samples_per_theta_and_draw
+                if generate_joint_ratio:
+                    all_r_xz += list(r_xz)
+                if generate_joint_score:
+                    all_t_xz += list(t_xz)
+
+            except SimulatorException as e:
+
+                logging.warning('Simulator raised exception: %s', e)
+
+                if continue_after_exceptions:
+                    logging.info('Ignoring this parameter point and continuing with others.')
+                else:
+                    raise
 
     logging.info('Saving results')
 
