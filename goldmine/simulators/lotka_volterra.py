@@ -3,14 +3,8 @@ import autograd as ag
 from itertools import product
 import logging
 
-from goldmine.simulators.base import Simulator
+from goldmine.simulators.base import Simulator, SimulationTooLongException
 from goldmine.various.utils import check_random_state
-
-
-class SimulationTooLongException(Exception):
-
-    def __str__(self):
-        return 'Simulation exceeded the maximum number of steps'
 
 
 class LotkaVolterra(Simulator):
@@ -82,7 +76,7 @@ class LotkaVolterra(Simulator):
 
         return benchmarks, None
 
-    def _simulate(self, theta, rng, max_steps=1000000):
+    def _simulate(self, theta, rng, max_steps=10000000, epsilon=1.e-9):
 
         # Prepare recorded time series of states
         time_series = np.zeros([self.n_time_series, 2], dtype=np.int)
@@ -118,7 +112,7 @@ class LotkaVolterra(Simulator):
                 ])
                 total_rate = np.sum(rates)
 
-                if total_rate <= 0.:
+                if total_rate <= epsilon:  # Everyone is dead. Nothing will ever happen again.
                     simulated_time = self.duration + 1.
                     break
 
@@ -155,6 +149,42 @@ class LotkaVolterra(Simulator):
             next_recorded_time += self.delta_t
 
         return logp_xz, time_series
+
+    def _simulate_until_success(self, theta, rng, max_steps=10000000, epsilon=1.e-9, max_tries=1000):
+
+        time_series = None
+        logp_xz = None
+        tries = 0
+
+        while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
+            try:
+                logp_xz, time_series = self._simulate(theta, rng, max_steps, epsilon)
+            except SimulationTooLongException:
+                tries += 1
+
+        if time_series is None:
+            raise SimulationTooLongException(
+                'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
+
+        return logp_xz, time_series
+
+    def _d_simulate_until_success(self, theta, rng, max_steps=10000000, epsilon=1.e-9, max_tries=1000):
+
+        time_series = None
+        t_xz = None
+        tries = 0
+
+        while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
+            try:
+                t_xz, time_series = self._d_simulate(theta, rng, max_steps, epsilon)
+            except SimulationTooLongException:
+                tries += 1
+
+        if time_series is None:
+            raise SimulationTooLongException(
+                'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
+
+        return t_xz, time_series
 
     def _calculate_observables(self, time_series):
         """ Calculates observables: a combination of summary statistics and the full time series  """
@@ -226,17 +256,7 @@ class LotkaVolterra(Simulator):
 
             logging.debug('Starting simulation %s / %s for theta = %s', i + 1, n, theta)
 
-            time_series = None
-            failures = 0
-            while time_series is None:
-                try:
-                    _, time_series = self._simulate(theta, rng)
-                except SimulationTooLongException:
-                    failures += 1
-
-                    if failures > max_failures:
-                        raise SimulationTooLongException
-
+            _, time_series = self._simulate_until_success(theta, rng)
             if return_histories:
                 histories.append(time_series)
 
@@ -264,18 +284,7 @@ class LotkaVolterra(Simulator):
 
         for i in range(n):
 
-            time_series = None
-            t_xz = None
-            failures = 0
-            while time_series is None:
-                try:
-                    t_xz, time_series = self._d_simulate(theta, rng)
-                except SimulationTooLongException:
-                    failures += 1
-
-                    if failures > max_failures:
-                        raise SimulationTooLongException
-
+            t_xz, time_series = self._d_simulate_until_success(theta, rng)
             all_t_xz.append(t_xz)
             if return_histories:
                 histories.append(time_series)

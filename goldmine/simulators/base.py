@@ -1,3 +1,11 @@
+class SimulatorException(Exception):
+    pass
+
+
+class SimulationTooLongException(SimulatorException):
+    pass
+
+
 class Simulator:
 
     """ Base class for simulators with access to joint score and joint likelihood ratios. """
