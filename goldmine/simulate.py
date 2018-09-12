@@ -133,7 +133,7 @@ def simulate(simulator_name,
         logging.info('theta1 = %s', theta1)
 
     # Loop over thetas and run simulator
-    n_simulations = len(zip(theta0, theta1))
+    n_simulations = len(list(zip(theta0, theta1)))
     n_verbose = max(n_simulations // 100, 1)
     
     for i_simulation, (theta0_, theta1_) in enumerate(zip(theta0, theta1)):
