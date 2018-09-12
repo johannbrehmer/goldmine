@@ -133,7 +133,14 @@ def simulate(simulator_name,
         logging.info('theta1 = %s', theta1)
 
     # Loop over thetas and run simulator
-    for theta0_, theta1_ in zip(theta0, theta1):
+    n_simulations = len(zip(theta0, theta1))
+    n_verbose = max(n_simulations // 100, 1)
+    
+    for i_simulation, (theta0_, theta1_) in enumerate(zip(theta0, theta1)):
+
+        if (i_simulation + 1) % n_verbose == 0:
+            logging.info('Starting simulation %s / %s', i_simulation + 1, n_simulations)
+
         for y in draw_from:
 
             try:
