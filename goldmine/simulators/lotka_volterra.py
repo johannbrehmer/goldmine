@@ -150,7 +150,7 @@ class LotkaVolterra(Simulator):
 
         return logp_xz, time_series
 
-    def _simulate_until_success(self, theta, rng, max_steps=10000000, epsilon=1.e-9, max_tries=1000):
+    def _simulate_until_success(self, theta, rng, max_steps=1000000, epsilon=1.e-9, max_tries=5):
 
         time_series = None
         logp_xz = None
@@ -168,7 +168,7 @@ class LotkaVolterra(Simulator):
 
         return logp_xz, time_series
 
-    def _d_simulate_until_success(self, theta, rng, max_steps=10000000, epsilon=1.e-9, max_tries=1000):
+    def _d_simulate_until_success(self, theta, rng, max_steps=1000000, epsilon=1.e-9, max_tries=5):
 
         time_series = None
         t_xz = None
