@@ -187,8 +187,6 @@ def simulate(simulator_name,
                 if generate_joint_score:
                     all_t_xz += list(t_xz)
 
-                logging.debug('Memory usage: ')
-
             except SimulatorException as e:
 
                 logging.warning('Simulator raised exception: %s', e)
@@ -201,13 +199,13 @@ def simulate(simulator_name,
         # Monitor memory usage
         if (i_simulation + 1) % n_verbose == 0:
             logging.debug(
-                'Memory usage: theta0 %.1f, theta1 %.1f, x %.1f, y %.1f, r %.1f, t %.1f',
-                get_size(all_theta0),
-                get_size(all_theta1),
-                get_size(all_x),
-                get_size(all_y),
-                get_size(all_r_xz),
-                get_size(all_t_xz)
+                'Memory usage [GB]: theta0 %.1f, theta1 %.1f, x %.1f, y %.1f, r %.1f, t %.1f',
+                get_size(all_theta0) * 1.e-9,
+                get_size(all_theta1) * 1.e-9,
+                get_size(all_x) * 1.e-9,
+                get_size(all_y) * 1.e-9,
+                get_size(all_r_xz) * 1.e-9,
+                get_size(all_t_xz) * 1.e-9
             )
 
     logging.info('Saving results')
