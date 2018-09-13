@@ -11,14 +11,14 @@ base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
 try:
     from goldmine.various.look_up import create_simulator
-    from goldmine.various.utils import general_init, create_missing_folders
+    from goldmine.various.utils import general_init, create_missing_folders, get_size
     from goldmine.simulators.base import SimulatorException
 except ImportError:
     if base_dir in sys.path:
         raise
     sys.path.append(base_dir)
     from goldmine.various.look_up import create_simulator
-    from goldmine.various.utils import general_init, create_missing_folders
+    from goldmine.various.utils import general_init, create_missing_folders, get_size
     from goldmine.simulators.base import SimulatorException
 
 
@@ -135,7 +135,7 @@ def simulate(simulator_name,
     # Loop over thetas and run simulator
     n_simulations = len(list(zip(theta0, theta1)))
     n_verbose = max(n_simulations // 100, 1)
-    
+
     for i_simulation, (theta0_, theta1_) in enumerate(zip(theta0, theta1)):
 
         if (i_simulation + 1) % n_verbose == 0:
@@ -187,6 +187,8 @@ def simulate(simulator_name,
                 if generate_joint_score:
                     all_t_xz += list(t_xz)
 
+                logging.debug('Memory usage: ')
+
             except SimulatorException as e:
 
                 logging.warning('Simulator raised exception: %s', e)
@@ -195,6 +197,18 @@ def simulate(simulator_name,
                     logging.info('Ignoring this parameter point and continuing with others.')
                 else:
                     raise
+
+        # Monitor memory usage
+        if (i_simulation + 1) % n_verbose == 0:
+            logging.debug(
+                'Memory usage: theta0 %.1f, theta1 %.1f, x %.1f, y %.1f, r %.1f, t %.1f',
+                get_size(all_theta0),
+                get_size(all_theta1),
+                get_size(all_x),
+                get_size(all_y),
+                get_size(all_r_xz),
+                get_size(all_t_xz)
+            )
 
     logging.info('Saving results')
 
