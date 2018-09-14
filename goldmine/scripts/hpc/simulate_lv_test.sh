@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=simulate
+#SBATCH --job-name=sim-test
 #SBATCH --output=simulate_lv_test_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
