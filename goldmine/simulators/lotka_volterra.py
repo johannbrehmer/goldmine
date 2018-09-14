@@ -280,6 +280,7 @@ class LotkaVolterra(Simulator):
             return all_x, histories
         return all_x
 
+    @profile
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False, max_failures=5):
         logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
 
