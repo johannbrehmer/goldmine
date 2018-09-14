@@ -4,7 +4,7 @@ from itertools import product
 import logging
 
 from goldmine.simulators.base import Simulator, SimulationTooLongException
-from goldmine.various.utils import check_random_state
+from goldmine.various.utils import check_random_state, get_size
 
 
 class LotkaVolterra(Simulator):
@@ -148,6 +148,8 @@ class LotkaVolterra(Simulator):
             time_series[i] = state.copy()
             next_recorded_time += self.delta_t
 
+        logging.debug('Simulation with theta = %s finished after %s steps', theta, n_steps)
+
         return logp_xz, time_series
 
     def _simulate_until_success(self, theta, rng, max_steps=1000000, epsilon=1.e-9, max_tries=5):
@@ -174,11 +176,15 @@ class LotkaVolterra(Simulator):
         t_xz = None
         tries = 0
 
+        logging.debug('Simulator size before d_simulate call: %.1f GB', get_size(self))
+
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             try:
                 t_xz, time_series = self._d_simulate(theta, rng, max_steps, epsilon)
             except SimulationTooLongException:
                 tries += 1
+
+        logging.debug('Simulator size after d_simulate call: %.1f GB', get_size(self))
 
         if time_series is None:
             raise SimulationTooLongException(
@@ -269,7 +275,6 @@ class LotkaVolterra(Simulator):
             return all_x, histories
         return all_x
 
-    @profile
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False, max_failures=5):
         logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
 

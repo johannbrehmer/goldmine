@@ -22,6 +22,7 @@ except ImportError:
     from goldmine.simulators.base import SimulatorException
 
 
+@profile
 def simulate(simulator_name,
              sample_label,
              theta0=None,
