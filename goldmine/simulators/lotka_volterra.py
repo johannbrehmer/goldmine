@@ -142,8 +142,7 @@ class LotkaVolterra(Simulator):
                 n_steps += 1
 
                 if (n_steps + 1) % steps_warning == 0:
-                    logging.info('Simulation is exceeding %s steps, simulated time: %s', theta, n_steps,
-                                 simulated_time)
+                    logging.info('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
 
                 if n_steps > max_steps:
                     logging.warning('Too many steps in simulation. Total rate: %s', total_rate)
@@ -151,8 +150,6 @@ class LotkaVolterra(Simulator):
 
             time_series[i] = state.copy()
             next_recorded_time += self.delta_t
-
-        logging.debug('Simulation finished after %s steps', theta, n_steps)
 
         return logp_xz, time_series
 
