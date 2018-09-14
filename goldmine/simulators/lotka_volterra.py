@@ -163,10 +163,14 @@ class LotkaVolterra(Simulator):
         tries = 0
 
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
+            tries += 1
             try:
                 logp_xz, time_series = self._simulate(theta, rng, max_steps, steps_warning, epsilon)
             except SimulationTooLongException:
-                tries += 1
+                pass
+            else:
+                if time_series is None:  # This should not happen
+                    raise RuntimeError('No time series result and no exception -- this should not happen!')
 
         if time_series is None:
             raise SimulationTooLongException(
@@ -174,7 +178,6 @@ class LotkaVolterra(Simulator):
 
         return logp_xz, time_series
 
-    @profile
     def _d_simulate_until_success(self, theta, rng, max_steps=100000, steps_warning=10000, epsilon=1.e-9, max_tries=5):
 
         time_series = None
@@ -184,10 +187,14 @@ class LotkaVolterra(Simulator):
         logging.debug('Simulator size before d_simulate call: %.1f GB', get_size(self) * 1.e-9)
 
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
+            tries += 1
             try:
                 t_xz, time_series = self._d_simulate(theta, rng, max_steps, steps_warning, epsilon)
             except SimulationTooLongException:
-                tries += 1
+                pass
+            else:
+                if time_series is None:  # This should not happen
+                    raise RuntimeError('No time series result and no exception -- this should not happen!')
 
         logging.debug('Simulator size after d_simulate call: %.1f GB', get_size(self) * 1.e-9)
 
@@ -280,7 +287,6 @@ class LotkaVolterra(Simulator):
             return all_x, histories
         return all_x
 
-    @profile
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False, max_failures=5):
         logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
 
