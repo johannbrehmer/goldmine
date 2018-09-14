@@ -142,7 +142,7 @@ class LotkaVolterra(Simulator):
                 n_steps += 1
 
                 if (n_steps + 1) % steps_warning == 0:
-                    logging.info('Simulation with theta = %s is exceeding %s steps, simulated time: %s', theta, n_steps,
+                    logging.info('Simulation is exceeding %s steps, simulated time: %s', theta, n_steps,
                                  simulated_time)
 
                 if n_steps > max_steps:
@@ -152,7 +152,7 @@ class LotkaVolterra(Simulator):
             time_series[i] = state.copy()
             next_recorded_time += self.delta_t
 
-        logging.debug('Simulation with theta = %s finished after %s steps', theta, n_steps)
+        logging.debug('Simulation finished after %s steps', theta, n_steps)
 
         return logp_xz, time_series
 
@@ -184,8 +184,6 @@ class LotkaVolterra(Simulator):
         t_xz = None
         tries = 0
 
-        logging.debug('Simulator size before d_simulate call: %.1f GB', get_size(self) * 1.e-9)
-
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
@@ -195,8 +193,6 @@ class LotkaVolterra(Simulator):
             else:
                 if time_series is None:  # This should not happen
                     raise RuntimeError('No time series result and no exception -- this should not happen!')
-
-        logging.debug('Simulator size after d_simulate call: %.1f GB', get_size(self) * 1.e-9)
 
         if time_series is None:
             raise SimulationTooLongException(
@@ -272,8 +268,6 @@ class LotkaVolterra(Simulator):
 
         for i in range(n):
 
-            logging.debug('Starting simulation %s / %s for theta = %s', i + 1, n, theta)
-
             _, time_series = self._simulate_until_success(theta, rng)
             if return_histories:
                 histories.append(time_series)
@@ -288,7 +282,7 @@ class LotkaVolterra(Simulator):
         return all_x
 
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False, max_failures=5):
-        logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
+        logging.info('Simulating %s evolutions for theta = %s, augmenting with joint score', n, theta)
 
         if np.linalg.norm(theta_score - theta) > 1.e-6:
             logging.error('Different values for theta and theta_score not yet supported!')
