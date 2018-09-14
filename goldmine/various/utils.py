@@ -148,4 +148,4 @@ def get_size(obj, seen=None):
     if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
         size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
 
-    return size
+    return float(size)

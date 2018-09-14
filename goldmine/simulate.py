@@ -22,6 +22,7 @@ except ImportError:
     from goldmine.simulators.base import SimulatorException
 
 
+@profile
 def simulate(simulator_name,
              sample_label,
              theta0=None,
@@ -128,9 +129,9 @@ def simulate(simulator_name,
     all_t_xz = []
 
     logging.info('Parameter points:')
-    logging.info('theta0 = %s', theta0)
+    logging.info('  theta0 = %s', theta0)
     if has_theta1:
-        logging.info('theta1 = %s', theta1)
+        logging.info('  theta1 = %s', theta1)
 
     # Loop over thetas and run simulator
     n_simulations = len(list(zip(theta0, theta1)))
@@ -139,7 +140,8 @@ def simulate(simulator_name,
     for i_simulation, (theta0_, theta1_) in enumerate(zip(theta0, theta1)):
 
         if (i_simulation + 1) % n_verbose == 0:
-            logging.info('Starting simulation %s / %s', i_simulation + 1, n_simulations)
+            logging.info('Starting parameter setup %s / %s: theta0 = %s, theta1 = %s', i_simulation + 1, n_simulations,
+                         theta0_, theta1_)
 
         for y in draw_from:
 
