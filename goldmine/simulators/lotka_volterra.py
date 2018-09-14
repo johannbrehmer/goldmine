@@ -141,7 +141,7 @@ class LotkaVolterra(Simulator):
                 # Count steps
                 n_steps += 1
 
-                if n_steps == steps_warning:
+                if (n_steps + 1) % steps_warning == 0:
                     logging.info('Simulation with theta = %s is exceeding %s steps, simulated time: %s', theta, n_steps,
                                  simulated_time)
 
