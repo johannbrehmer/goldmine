@@ -57,6 +57,10 @@ def shuffle_and_combine(simulator, input_samples, output_sample, regex=False):
                         logging.debug('  Found input sample %s', input_sample)
                         input_samples.append(input_sample)
 
+        if len(input_samples) == 0:
+            logging.warning('  No matching input samples found!')
+            return
+
     # Combine samples
     n_samples = None
     permutation = None
@@ -126,8 +130,8 @@ def main():
     # Start simulation
     shuffle_and_combine(
         args.simulator,
-        args.output,
         args.inputs,
+        args.output,
         args.regex
     )
 
