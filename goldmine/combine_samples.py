@@ -4,8 +4,10 @@ from __future__ import absolute_import, division, print_function
 
 import argparse
 import logging
+import os
 from os import sys, path
 import numpy as np
+import re
 
 base_dir = path.abspath(path.join(path.dirname(__file__), '..'))
 
@@ -20,17 +22,40 @@ except ImportError:
     from goldmine.various.utils import general_init, shuffle, load_and_check, create_missing_folders
 
 
-def shuffle_and_combine(simulator, input_samples, output_sample):
+def shuffle_and_combine(simulator, input_samples, output_sample, regex=False):
     logging.info('Starting shuffling and combining')
-    logging.info('  Simulator:     %s', simulator)
-    logging.info('  Input samples: %s', input_samples[0])
+    logging.info('  Simulator:           %s', simulator)
+    logging.info('  Input samples:       %s', input_samples[0])
     for sample in input_samples[1:]:
-        logging.info('                 %s', sample)
-    logging.info('  Output sample: %s', input_samples)
+        logging.info('                       %s', sample)
+    logging.info('  Output sample:       %s', output_sample)
+    logging.info('  Regular expressions: %s', regex)
 
     # Path and filenames
     folder = base_dir + '/goldmine/data/samples/' + simulator
     filenames = ['theta0', 'theta1', 'x', 'y', 'r_xz', 't_xz']
+
+    # Parse regular expressions
+    if regex:
+        input_expressions = input_samples
+        input_samples = []
+        for expr in input_expressions:
+
+            logging.debug('Parsing regex %s', expr)
+
+            regex = re.compile('x_(' + expr + ')\.npy')
+
+            for root, _, files in os.walk(folder):
+                for file in files:
+                    if regex.match(file):
+                        input_sample = file[2:-4]
+
+                        if input_sample in input_samples:
+                            logging.debug('  Input sample %s already in list', input_sample)
+                            continue
+
+                        logging.debug('  Found input sample %s', input_sample)
+                        input_samples.append(input_sample)
 
     # Combine samples
     n_samples = None
@@ -92,7 +117,9 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('output', help='Combined sample label (like "train" or "test")')
-    parser.add_argument('inputs', nargs='+', help='Individual input sample labels (like "train0 train1 train2")')
+    parser.add_argument('inputs', nargs='+', help='Individual input sample labels (like "train0 train1 train2"). If '
+                                                  'option --regex is set, inputs can be regular expressions.')
+    parser.add_argument('--regex', action='store_true', help='Allows regular expressions in inputs')
 
     args = parser.parse_args()
 
@@ -100,7 +127,8 @@ def main():
     shuffle_and_combine(
         args.simulator,
         args.output,
-        args.inputs
+        args.inputs,
+        args.regex
     )
 
     logging.info("That's all for now, have a nice day!")
