@@ -85,6 +85,7 @@ class MAFInference(Inference):
             initial_learning_rate=0.001,
             final_learning_rate=0.0001,
             n_epochs=50,
+            validation_split=0.2,
             early_stopping=True,
             alpha=None,
             learning_curve_folder=None,
@@ -104,6 +105,7 @@ class MAFInference(Inference):
         logging.info('  Batch size:     %s', batch_size)
         logging.info('  Optimizer:      %s', trainer)
         logging.info('  Learning rate:  %s initially, decaying to %s', initial_learning_rate, final_learning_rate)
+        logging.info('  Valid. split:   %s', validation_split)
         logging.info('  Early stopping: %s', early_stopping)
         logging.info('  Epochs:         %s', n_epochs)
 
@@ -118,6 +120,7 @@ class MAFInference(Inference):
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
             n_epochs=n_epochs,
+            validation_split=validation_split,
             early_stopping=early_stopping,
             learning_curve_folder=learning_curve_folder,
             learning_curve_filename=learning_curve_filename
