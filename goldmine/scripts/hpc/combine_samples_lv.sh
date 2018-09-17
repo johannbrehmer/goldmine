@@ -12,3 +12,4 @@ cd /home/jb6504/goldmine/goldmine/
 
 ./combine_samples.py --regex lotkavolterra train "train\d+"
 ./combine_samples.py --regex lotkavolterra test_singletheta "test\d+_singletheta"
+./combine_samples.py --regex lotkavolterra test "test\d+"
