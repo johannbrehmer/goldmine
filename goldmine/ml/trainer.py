@@ -8,13 +8,15 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
 
+from goldmine.various.utils import check_for_nans_in_parameters
+
 
 class GoldDataset(torch.utils.data.Dataset):
 
     def __init__(self, theta, x, y=None, r_xz=None, t_xz=None):
         self.n = theta.shape[0]
 
-        placeholder = torch.stack([tensor([0.]) for i in range(self.n)])
+        placeholder = torch.stack([tensor([0.]) for _ in range(self.n)])
 
         self.theta = theta
         self.x = x
@@ -45,44 +47,21 @@ def train(model,
           loss_weights=None,
           loss_labels=None,
           batch_size=64,
+          trainer='adam',
           initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
           clip_gradient=1.,
           run_on_gpu=True,
+          double_precision=False,
           validation_split=0.2, early_stopping=True, early_stopping_patience=20,
           learning_curve_folder=None, learning_curve_filename=None,
           verbose='some'):
-    """
-
-    :param model:
-    :param loss_functions:
-    :param thetas:
-    :param xs:
-    :param ys:
-    :param r_xzs:
-    :param t_xzs:
-    :param loss_weights:
-    :param loss_labels:
-    :param batch_size:
-    :param initial_learning_rate:
-    :param final_learning_rate:
-    :param n_epochs:
-    :param clip_gradient:
-    :param run_on_gpu:
-    :param validation_split:
-    :param early_stopping:
-    :param learning_curve_folder:
-    :param learning_curve_filename:
-    :param verbose: 'some', 'all', 'none'
-    :return:
-    """
-    logging.info('Starting training')
-
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
+    dtype = torch.double if double_precision else torch.float
 
     # Move model to device
-    model = model.to(device)
+    model = model.to(device, dtype)
 
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
@@ -131,7 +110,12 @@ def train(model,
         )
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
+    if trainer == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
+    elif trainer == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=initial_learning_rate)
+    else:
+        raise ValueError('Unknown trainer {}'.format(trainer))
 
     # Early stopping
     early_stopping = early_stopping and (validation_split is not None) and (n_epochs > 1)
@@ -150,13 +134,16 @@ def train(model,
     individual_losses_val = []
     total_losses_train = []
     total_losses_val = []
+    total_val_loss = None
 
     # Verbosity
     n_epochs_verbose = None
     if verbose == 'all':  # Print output after every epoch
         n_epochs_verbose = 1
     elif verbose == 'some':  # Print output after 10%, 20%, ..., 100% progress
-        n_epochs_verbose = int(round(n_epochs / 10, 0))
+        n_epochs_verbose = max(int(round(n_epochs / 10, 0)), 1)
+
+    logging.info('Starting training')
 
     # Loop over epochs
     for epoch in range(n_epochs):
@@ -174,24 +161,24 @@ def train(model,
 
         # Loop over batches
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
-            theta = theta.to(device)
-            x = x.to(device)
-            y = y.to(device)
+            theta = theta.to(device, dtype)
+            x = x.to(device, dtype)
+            y = y.to(device, dtype)
             try:
-                r_xz = r_xz.to(device)
-            except:
+                r_xz = r_xz.to(device, dtype)
+            except NameError:
                 pass
             try:
-                t_xz = t_xz.to(device)
-            except:
+                t_xz = t_xz.to(device, dtype)
+            except NameError:
                 pass
 
             optimizer.zero_grad()
 
             # Evaluate loss
-            _ = model(theta, x)
+            _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
 
-            losses = [loss_function(model, y, r_xz, t_xz) for loss_function in loss_functions]
+            losses = [loss_function(log_likelihood, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
@@ -200,13 +187,20 @@ def train(model,
                 individual_train_loss[i] += individual_loss.item()
             total_train_loss += loss.item()
 
-            # Calculate gradient and update optimizer
+            # Calculate gradient
             loss.backward()
-            optimizer.step()
 
             # Clip gradients
             if clip_gradient is not None:
                 clip_grad_norm_(model.parameters(), clip_gradient)
+
+            # Check for NaNs
+            if check_for_nans_in_parameters(model):
+                logging.warning('NaNs in parameters or gradients, stopping training!')
+                break
+
+            # Optimizer step
+            optimizer.step()
 
         individual_train_loss /= len(train_loader)
         total_train_loss /= len(train_loader)
@@ -229,22 +223,22 @@ def train(model,
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
 
             # Put on device
-            theta = theta.to(device)
-            x = x.to(device)
-            y = y.to(device)
+            theta = theta.to(device, dtype)
+            x = x.to(device, dtype)
+            y = y.to(device, dtype)
             try:
-                r_xz = r_xz.to(device)
-            except:
+                r_xz = r_xz.to(device, dtype)
+            except NameError:
                 pass
             try:
-                t_xz = t_xz.to(device)
-            except:
+                t_xz = t_xz.to(device, dtype)
+            except NameError:
                 pass
 
             # Evaluate loss
-            _ = model(theta, x)
+            _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
 
-            losses = [loss_function(model, y, r_xz, t_xz) for loss_function in loss_functions]
+            losses = [loss_function(log_likelihood, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
@@ -259,13 +253,14 @@ def train(model,
         total_losses_val.append(total_val_loss)
         individual_losses_val.append(individual_val_loss)
 
-        # Early stopping
+        # Early stopping: best epoch so far?
         if early_stopping:
             if early_stopping_best_val_loss is None or total_val_loss < early_stopping_best_val_loss:
                 early_stopping_best_val_loss = total_val_loss
                 early_stopping_best_model = model.state_dict()
                 early_stopping_epoch = epoch
 
+        # Print out information
         if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
             if early_stopping and epoch == early_stopping_epoch:
                 logging.info('  Epoch %d: train loss %.2f (%s), validation loss %.2f (%s) (*)'
@@ -276,13 +271,13 @@ def train(model,
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
                                 total_losses_val[-1], individual_losses_val[-1]))
 
-        # Early stopping
+        # Early stopping: actually stop training
         if early_stopping and early_stopping_patience is not None:
             if epoch - early_stopping_epoch >= early_stopping_patience > 0:
                 logging.info('No improvement for %s epochs, stopping training', epoch - early_stopping_epoch)
                 break
 
-    # Early stopping
+    # Early stopping: back to best state
     if early_stopping:
         if early_stopping_best_val_loss < total_val_loss:
             logging.info('Early stopping after epoch %s, with loss %.2f compared to final loss %.2f',
