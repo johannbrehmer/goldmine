@@ -3,4 +3,5 @@
 cd /home/jb6504/goldmine/goldmine/scripts/hpc
 
 sbatch --array=100-499 simulate_lv_train.sh
-# sbatch --array=0-99 simulate_lv_test.sh
+# sbatch --array=0-99 simulate_lv_test_singletheta.sh
+sbatch --array=0-99 simulate_lv_test.sh
