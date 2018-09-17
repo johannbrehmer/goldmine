@@ -178,7 +178,7 @@ def train_model(model,
             # Evaluate loss
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
 
-            losses = [loss_function(log_likelihood, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            losses = [loss_function(log_likelihood, None, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
@@ -238,7 +238,7 @@ def train_model(model,
             # Evaluate loss
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
 
-            losses = [loss_function(log_likelihood, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            losses = [loss_function(log_likelihood, None, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
