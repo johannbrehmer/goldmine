@@ -36,7 +36,7 @@ class MaskedAutoregressiveFlow(BaseFlow):
             if not (isinstance(input_order, str) and input_order == 'random'):
                 input_order = made.input_order[::-1]
 
-        # Batch normalizatino
+        # Batch normalization
         self.bns = None
         if self.batch_norm:
             self.bns = nn.ModuleList()

@@ -44,7 +44,7 @@ class MAFInference(Inference):
                 n_mades=n_mades,
                 activation=activation,
                 batch_norm=batch_norm,
-                input_order='sequential',
+                input_order='random',
                 mode='sequential',
                 alpha=0.1
             )
