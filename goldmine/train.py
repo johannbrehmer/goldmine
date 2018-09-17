@@ -106,7 +106,6 @@ def train(simulator_name,
         run_appendix = ''
     else:
         run_appendix = '_run' + str(int(run))
-
     output_filename += run_appendix
 
     # Load training data and creating model
@@ -248,7 +247,7 @@ def main():
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
                         help='Factor of learning rate decay over the whole training. Default: 0.1.')
-    parser.add_argument('--validationsplit', type='float', default=0.3,
+    parser.add_argument('--validationsplit', type=float, default=0.3,
                         help='Validation split. Default: 0.3.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')

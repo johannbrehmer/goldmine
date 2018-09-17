@@ -101,7 +101,7 @@ def load_and_check(filename, warning_threshold=1.e9):
 
 def get_activation_function(activation_name):
     if activation_name == 'relu':
-        return torch.tanh
+        return torch.relu
     elif activation_name == 'tanh':
         return torch.tanh
     elif activation_name == 'sigmoid':
