@@ -137,10 +137,9 @@ class ConditionalGaussianMADE(BaseConditionalFlow):
 
         self.activation_function = get_activation_function(activation)
 
-        # Output info
+        # Output info. TODO: make these not properties of self
         self.m = None
         self.logp = None
-        self.log_likelihood = None
 
     def forward(self, theta, x, **kwargs):
         # Conditioner
