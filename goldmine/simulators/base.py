@@ -14,9 +14,12 @@ class Simulator:
         pass
 
     def get_discretization(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
+        raise NotImplementedError()
+
+    def theta_grid_default(self, n_points_per_dim):
         raise NotImplementedError()
 
     def rvs(self, theta, n, random_state=None):

@@ -27,29 +27,40 @@ def test(simulator_name,
          inference_name,
          run=0,
          alpha=1.,
-         model_label=None,
+         model_label='model',
          trained_on_single_theta=False,
          training_sample_size=None,
          evaluate_densities_on_original_theta=True,
          evaluate_densities_on_grid=True,
+         evaluate_ratios_on_grid=False,
          theta_grid=None,
-         generate_samples=True,
-         discretize_generated_samples=True,
-         classify_surrogate_vs_true_samples=True):
+         generate_samples=False,
+         discretize_generated_samples=False,
+         classify_surrogate_vs_true_samples=False):
     """ Main evaluation function """
 
     logging.info('Starting evaluation')
-    logging.info('  Simulator:                %s', simulator_name)
-    logging.info('  Inference method:         %s', inference_name)
-    logging.info('  Run number:               %s', run)
-    logging.info('  alpha:                    %s', alpha)
-    logging.info('  Single-theta tr. sample:  %s', trained_on_single_theta)
-    logging.info('  Training sample size:     %s',
+    logging.info('  Simulator:                        %s', simulator_name)
+    logging.info('  Inference method:                 %s', inference_name)
+    logging.info('  ML model name:                    %s', model_label)
+    logging.info('  Run number:                       %s', run)
+    logging.info('  alpha:                            %s', alpha)
+    logging.info('  Single-theta tr. sample:          %s', trained_on_single_theta)
+    logging.info('  Training sample size:             %s',
                  'maximal' if training_sample_size is None else training_sample_size)
-    logging.info('  Evaluate densities:       %s', evaluate_densities_on_original_theta)
-    logging.info('  Generate samples:         %s', generate_samples)
-    logging.info('  Discretize samples        %s', discretize_generated_samples)
-    logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
+    logging.info('  Evaluate log p on original theta: %s', evaluate_densities_on_original_theta)
+    logging.info('  Evaluate log p on grid:           %s', evaluate_densities_on_grid)
+    logging.info('  Evaluate ratios on grid:          %s', evaluate_ratios_on_grid)
+    if evaluate_densities_on_grid:
+        if isinstance(theta_grid, int):
+            logging.info('  Theta grid:                       default grid with %s points per dimension', theta_grid)
+        else:
+            logging.info('  Theta grid:                       %s', theta_grid[0])
+            for grid_component in theta_grid[1:]:
+                logging.info('                                    %s', grid_component)
+    logging.info('  Generate samples:                 %s', generate_samples)
+    logging.info('  Discretize samples                %s', discretize_generated_samples)
+    logging.info('  Classify samples vs true:         %s', classify_surrogate_vs_true_samples)
 
     # Check paths
     create_missing_folders(base_dir, simulator_name, inference_name)
@@ -59,7 +70,7 @@ def test(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    model_filename = ''
+    model_filename = model_label
     result_filename = ''
     if trained_on_single_theta:
         model_filename += '_singletheta'
@@ -74,9 +85,14 @@ def test(simulator_name,
         run_appendix = ''
     else:
         run_appendix = '_run' + str(int(run))
-
     model_filename += run_appendix
     result_filename += run_appendix
+
+    # Theta grid
+    if evaluate_densities_on_grid or evaluate_ratios_on_grid:
+        if isinstance(theta_grid, int):
+            simulator = create_simulator(simulator_name)
+            theta_grid = simulator.theta_grid_default(n_points_per_dim=theta_grid)
 
     # Load train data
     logging.info('Loading many-theta  train sample')
@@ -90,19 +106,6 @@ def test(simulator_name,
 
     logging.info('Found %s samples with %s parameters and %s observables',
                  n_samples_train, n_parameters_train, n_observables_train)
-
-    # Load train data (single theta)
-    logging.info('Loading single-theta train sample')
-    thetas_train_singletheta = load_and_check(sample_folder + '/theta0_train_singletheta.npy')
-    xs_train_singletheta = load_and_check(sample_folder + '/x_train_singletheta.npy')
-
-    n_samples_train_singletheta = xs_train_singletheta.shape[0]
-    n_observables_train_singletheta = xs_train_singletheta.shape[1]
-    n_parameters_train_singletheta = thetas_train_singletheta.shape[1]
-    assert thetas_train_singletheta.shape[0] == n_samples_train_singletheta
-
-    logging.info('Found %s samples with %s parameters and %s observables',
-                 n_samples_train_singletheta, n_parameters_train_singletheta, n_observables_train_singletheta)
 
     # Load test data
     logging.info('Loading many-theta test sample')
@@ -130,26 +133,19 @@ def test(simulator_name,
                  n_samples_singletheta, n_parameters_singletheta, n_observables_singletheta)
 
     # Load inference model
-    logging.info('Loading trained model from %s', model_folder + '/model' + model_filename + '.*')
+    logging.info('Loading trained model from %s', model_folder + '/' + model_filename + '.*')
     inference = create_inference(
         inference_name,
-        filename=model_folder + '/model' + model_filename
+        filename=model_folder + '/' + model_filename
     )
 
     # Evaluate density on test sample
     if evaluate_densities_on_original_theta:
         try:
-            logging.info('Estimating densities on many-theta train sample')
+            logging.info('Estimating densities on train sample')
             log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
             np.save(
                 result_folder + '/log_p_hat_train' + result_filename + '.npy',
-                log_p_hat
-            )
-
-            logging.info('Estimating densities on single-theta train sample')
-            log_p_hat = inference.predict_density(thetas_train_singletheta, xs_train_singletheta, log=True)
-            np.save(
-                result_folder + '/log_p_hat_train_singletheta' + result_filename + '.npy',
                 log_p_hat
             )
 
@@ -160,7 +156,7 @@ def test(simulator_name,
                 log_p_hat
             )
 
-            logging.info('Estimating densities on single-theta test sample')
+            logging.info('Estimating densities on single-theta test sample, testing original theta')
             log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
             np.save(
                 result_folder + '/log_p_hat_test_singletheta' + result_filename + '.npy',
@@ -170,7 +166,24 @@ def test(simulator_name,
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
 
-    # TODO: Implement ratio estimation
+    # TODO
+    if evaluate_densities_on_grid:
+        try:
+            logging.info('Estimating densities on single-theta test sample, testing theta grid')
+
+            raise NotImplementedError
+
+            # Loop over theta grid
+            #   For each theta, call:
+            #   log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
+            # Save results
+
+        except NotImplementedError:
+            logging.warning('Inference method %s does not support density evaluation', inference_name)
+
+    # TODO
+    if evaluate_ratios_on_grid:
+        raise NotImplementedError('Likelihood ratio evaluation on grid not implemented yet')
 
     # Generate samples
     if generate_samples:
@@ -235,8 +248,6 @@ def main():
                         help='Train classifier to discriminate between samples from simulator and surrogate')
 
     args = parser.parse_args()
-
-    # TODO: eval on grid
 
     # Start simulation
     test(

@@ -36,7 +36,7 @@ class MaskedAutoregressiveFlow(BaseFlow):
             if not (isinstance(input_order, str) and input_order == 'random'):
                 input_order = made.input_order[::-1]
 
-        # Batch normalizatino
+        # Batch normalization
         self.bns = None
         if self.batch_norm:
             self.bns = nn.ModuleList()
@@ -87,7 +87,6 @@ class MaskedAutoregressiveFlow(BaseFlow):
         return x
 
     def to(self, *args, **kwargs):
-        logging.debug('Transforming MAF to %s', args)
         self.to_args = args
         self.to_kwargs = kwargs
 
@@ -185,7 +184,6 @@ class ConditionalMaskedAutoregressiveFlow(BaseConditionalFlow):
         return x
 
     def to(self, *args, **kwargs):
-        logging.debug('Transforming MAF to %s', args)
         self = super().to(*args, **kwargs)
 
         for i, (made) in enumerate(self.mades):

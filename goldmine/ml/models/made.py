@@ -94,8 +94,6 @@ class GaussianMADE(BaseFlow):
         return x
 
     def to(self, *args, **kwargs):
-        logging.debug('Transforming MADE to %s', args)
-
         self.to_args = args
         self.to_kwargs = kwargs
 
@@ -200,8 +198,6 @@ class ConditionalGaussianMADE(BaseConditionalFlow):
         return x
 
     def to(self, *args, **kwargs):
-        logging.debug('Transforming MADE to %s', args)
-
         self = super().to(*args, **kwargs)
 
         for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
