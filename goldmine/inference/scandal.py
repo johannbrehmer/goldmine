@@ -5,7 +5,7 @@ import logging
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
-from goldmine.ml.trainer import train
+from goldmine.ml.trainer import train_model
 from goldmine.ml.losses import negative_log_likelihood, score_mse
 
 
@@ -114,7 +114,7 @@ class SCANDALInference(Inference):
         assert x is not None
         assert t_xz is not None
 
-        train(
+        train_model(
             model=self.maf,
             loss_functions=[negative_log_likelihood, score_mse],
             loss_weights=[1., alpha],

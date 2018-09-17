@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=train_maf
-#SBATCH --output=train_maf_%a.log
+#SBATCH --job-name=train_scandal
+#SBATCH --output=train_scandal_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB

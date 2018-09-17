@@ -5,7 +5,7 @@ from torch import tensor
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
-from goldmine.ml.trainer import train
+from goldmine.ml.trainer import train_model
 from goldmine.ml.losses import negative_log_likelihood
 
 
@@ -107,7 +107,7 @@ class MAFInference(Inference):
         logging.info('  Early stopping: %s', early_stopping)
         logging.info('  Epochs:         %s', n_epochs)
 
-        train(
+        train_model(
             model=self.maf,
             loss_functions=[negative_log_likelihood],
             thetas=theta,
