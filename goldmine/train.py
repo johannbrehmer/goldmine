@@ -40,6 +40,7 @@ def train(simulator_name,
           n_epochs=20,
           compensate_sample_size=False,
           batch_size=64,
+          trainer='adam',
           initial_lr=0.001,
           final_lr=0.0001,
           early_stopping=True):
@@ -77,6 +78,7 @@ def train(simulator_name,
     else:
         logging.info('  Epochs:                %s', n_epochs)
     logging.info('  Batch size:            %s', batch_size)
+    logging.info('  Optimizer:             %s', trainer)
     logging.info('  Learning rate:         %s initially, decaying to %s', initial_lr, final_lr)
     logging.info('  Early stopping:        %s', early_stopping)
 
@@ -173,6 +175,7 @@ def train(simulator_name,
         ys, r_xz, t_xz,
         n_epochs=n_epochs,
         batch_size=batch_size,
+        trainer=trainer,
         initial_learning_rate=initial_lr,
         final_learning_rate=final_lr,
         alpha=alpha,
@@ -236,6 +239,8 @@ def main():
                              + ' compensate for the decreased sample size.')
     parser.add_argument('--alpha', type=float, default=0.001,
                         help='alpha parameter for SCANDAL. Default: 0.001.')
+    parser.add_argument('--optimizer', default='adam',
+                        help='Optimizer. For now, "adam" and "sgd" are supported.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
@@ -269,6 +274,7 @@ def main():
         training_sample_size=args.samplesize,
         n_epochs=args.epochs,
         compensate_sample_size=args.compensate_samplesize,
+        trainer=args.optimizer,
         initial_lr=args.lr,
         final_lr=args.lr * args.lrdecay,
         early_stopping=not args.noearlystopping
