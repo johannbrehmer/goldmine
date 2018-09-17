@@ -2,9 +2,10 @@ import numpy as np
 import autograd
 import os
 import logging
-import torch.nn.functional as F
 import sys
 import inspect
+import torch
+import torch.nn.functional as F
 
 
 def check_random_state(random_state, use_autograd=False):
@@ -149,3 +150,14 @@ def get_size(obj, seen=None):
         size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
 
     return float(size)
+
+
+def check_for_nans_in_parameters(model, check_gradients=True):
+    for param in model.parameters():
+        if torch.any(torch.isnan(param)):
+            return True
+
+        if check_gradients and torch.any(torch.isnan(param.grad)):
+            return True
+
+    return False
