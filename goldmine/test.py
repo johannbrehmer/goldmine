@@ -27,29 +27,37 @@ def test(simulator_name,
          inference_name,
          run=0,
          alpha=1.,
-         model_label=None,
+         model_label='model',
          trained_on_single_theta=False,
          training_sample_size=None,
          evaluate_densities_on_original_theta=True,
          evaluate_densities_on_grid=True,
+         evaluate_ratios_on_grid=False,
          theta_grid=None,
-         generate_samples=True,
-         discretize_generated_samples=True,
-         classify_surrogate_vs_true_samples=True):
+         generate_samples=False,
+         discretize_generated_samples=False,
+         classify_surrogate_vs_true_samples=False):
     """ Main evaluation function """
 
     logging.info('Starting evaluation')
-    logging.info('  Simulator:                %s', simulator_name)
-    logging.info('  Inference method:         %s', inference_name)
-    logging.info('  Run number:               %s', run)
-    logging.info('  alpha:                    %s', alpha)
-    logging.info('  Single-theta tr. sample:  %s', trained_on_single_theta)
-    logging.info('  Training sample size:     %s',
+    logging.info('  Simulator:                        %s', simulator_name)
+    logging.info('  Inference method:                 %s', inference_name)
+    logging.info('  ML model name:                    %s', model_label)
+    logging.info('  Run number:                       %s', run)
+    logging.info('  alpha:                            %s', alpha)
+    logging.info('  Single-theta tr. sample:          %s', trained_on_single_theta)
+    logging.info('  Training sample size:             %s',
                  'maximal' if training_sample_size is None else training_sample_size)
-    logging.info('  Evaluate densities:       %s', evaluate_densities_on_original_theta)
-    logging.info('  Generate samples:         %s', generate_samples)
-    logging.info('  Discretize samples        %s', discretize_generated_samples)
-    logging.info('  Classify samples vs true: %s', classify_surrogate_vs_true_samples)
+    logging.info('  Evaluate log p on original theta: %s', evaluate_densities_on_original_theta)
+    logging.info('  Evaluate log p on grid:           %s', evaluate_densities_on_grid)
+    logging.info('  Evaluate ratios on grid:          %s', evaluate_ratios_on_grid)
+    if evaluate_densities_on_grid:
+        logging.info('  Theta grid:                       %s', theta_grid[0])
+        for grid_component in theta_grid[1:]:
+            logging.info('                                    %s', grid_component)
+    logging.info('  Generate samples:                 %s', generate_samples)
+    logging.info('  Discretize samples                %s', discretize_generated_samples)
+    logging.info('  Classify samples vs true:         %s', classify_surrogate_vs_true_samples)
 
     # Check paths
     create_missing_folders(base_dir, simulator_name, inference_name)
@@ -59,7 +67,7 @@ def test(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    model_filename = ''
+    model_filename = model_label
     result_filename = ''
     if trained_on_single_theta:
         model_filename += '_singletheta'
@@ -74,7 +82,6 @@ def test(simulator_name,
         run_appendix = ''
     else:
         run_appendix = '_run' + str(int(run))
-
     model_filename += run_appendix
     result_filename += run_appendix
 
@@ -130,10 +137,10 @@ def test(simulator_name,
                  n_samples_singletheta, n_parameters_singletheta, n_observables_singletheta)
 
     # Load inference model
-    logging.info('Loading trained model from %s', model_folder + '/model' + model_filename + '.*')
+    logging.info('Loading trained model from %s', model_folder + '/' + model_filename + '.*')
     inference = create_inference(
         inference_name,
-        filename=model_folder + '/model' + model_filename
+        filename=model_folder + '/' + model_filename
     )
 
     # Evaluate density on test sample
@@ -170,7 +177,13 @@ def test(simulator_name,
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
 
-    # TODO: Implement ratio estimation
+    # TODO
+    if evaluate_densities_on_grid:
+        raise NotImplementedError('Density evaluation on grid not implemented yet')
+
+    # TODO
+    if evaluate_ratios_on_grid:
+        raise NotImplementedError('Likelihood ratio evaluation on grid not implemented yet')
 
     # Generate samples
     if generate_samples:
@@ -235,8 +248,6 @@ def main():
                         help='Train classifier to discriminate between samples from simulator and surrogate')
 
     args = parser.parse_args()
-
-    # TODO: eval on grid
 
     # Start simulation
     test(
