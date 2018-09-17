@@ -43,6 +43,7 @@ def train(simulator_name,
           trainer='adam',
           initial_lr=0.001,
           final_lr=0.0001,
+          validation_split=0.2,
           early_stopping=True):
     """ Main training function """
 
@@ -80,6 +81,7 @@ def train(simulator_name,
     logging.info('  Batch size:            %s', batch_size)
     logging.info('  Optimizer:             %s', trainer)
     logging.info('  Learning rate:         %s initially, decaying to %s', initial_lr, final_lr)
+    logging.info('  Validation split:      %s', validation_split)
     logging.info('  Early stopping:        %s', early_stopping)
 
     # Check paths
@@ -181,6 +183,7 @@ def train(simulator_name,
         alpha=alpha,
         learning_curve_folder=result_folder,
         learning_curve_filename=output_filename,
+        validation_split=validation_split,
         early_stopping=early_stopping,
         fill_empty_bins=fill_empty_bins
     )
@@ -232,8 +235,8 @@ def main():
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
                              + 'samples.')
-    parser.add_argument('--epochs', type=int, default=20,
-                        help='Number of epochs. Default: 20.')
+    parser.add_argument('--epochs', type=int, default=50,
+                        help='Number of epochs. Default: 50.')
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
@@ -245,6 +248,8 @@ def main():
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
                         help='Factor of learning rate decay over the whole training. Default: 0.1.')
+    parser.add_argument('--validationsplit', type='float', default=0.3,
+                        help='Validation split. Default: 0.3.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
     parser.add_argument('--gradientclip', default=10.,
@@ -277,6 +282,7 @@ def main():
         trainer=args.optimizer,
         initial_lr=args.lr,
         final_lr=args.lr * args.lrdecay,
+        validation_split=args.validationsplit,
         early_stopping=not args.noearlystopping
     )
 

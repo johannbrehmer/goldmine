@@ -5,7 +5,6 @@ import logging
 import sys
 import inspect
 import torch
-import torch.nn.functional as F
 
 
 def check_random_state(random_state, use_autograd=False):
@@ -102,11 +101,11 @@ def load_and_check(filename, warning_threshold=1.e9):
 
 def get_activation_function(activation_name):
     if activation_name == 'relu':
-        return F.relu
+        return torch.tanh
     elif activation_name == 'tanh':
-        return F.tanh
+        return torch.tanh
     elif activation_name == 'sigmoid':
-        return F.sigmoid
+        return torch.sigmoid
     else:
         raise ValueError('Activation function %s unknown', activation_name)
 
