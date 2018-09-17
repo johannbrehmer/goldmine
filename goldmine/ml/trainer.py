@@ -41,20 +41,20 @@ class GoldDataset(torch.utils.data.Dataset):
         return self.n
 
 
-def train(model,
-          loss_functions,
-          thetas, xs, ys=None, r_xzs=None, t_xzs=None,
-          loss_weights=None,
-          loss_labels=None,
-          batch_size=64,
-          trainer='adam',
-          initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
-          clip_gradient=1.,
-          run_on_gpu=True,
-          double_precision=False,
-          validation_split=0.2, early_stopping=True, early_stopping_patience=20,
-          learning_curve_folder=None, learning_curve_filename=None,
-          verbose='some'):
+def train_model(model,
+                loss_functions,
+                thetas, xs, ys=None, r_xzs=None, t_xzs=None,
+                loss_weights=None,
+                loss_labels=None,
+                batch_size=64,
+                trainer='adam',
+                initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
+                clip_gradient=1.,
+                run_on_gpu=True,
+                double_precision=False,
+                validation_split=0.2, early_stopping=True, early_stopping_patience=20,
+                learning_curve_folder=None, learning_curve_filename=None,
+                verbose='some'):
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
