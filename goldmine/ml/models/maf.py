@@ -119,10 +119,6 @@ class ConditionalMaskedAutoregressiveFlow(BaseConditionalFlow):
         self.mode = mode
         self.alpha = alpha
 
-        # log p and score
-        self.log_likelihood = None
-        self.score = None
-
         # Build MADEs
         self.mades = nn.ModuleList()
         for i in range(n_mades):
