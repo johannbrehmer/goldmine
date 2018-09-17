@@ -21,7 +21,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
-          model_label=None,
+          model_label='model',
           run=0,
           n_mades=3,
           n_made_hidden_layers=2,
@@ -55,6 +55,7 @@ def train(simulator_name,
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
     logging.info('  Inference method:      %s', inference_name)
+    logging.info('  ML model name:         %s', model_label)
     logging.info('  Run number:            %s', run)
     logging.info('  MADEs:                 %s', n_mades)
     logging.info('  MADE hidden layers:    %s', n_made_hidden_layers)
@@ -67,7 +68,8 @@ def train(simulator_name,
     logging.info('  1d x histograms:       %s', n_bins_x)
     logging.info('  Fill empty bins:       %s', fill_empty_bins)
     logging.info('  SCANDAL alpha:         %s', alpha)
-    logging.info('  Single-theta sample:   %s', single_theta)
+    logging.info('  Training sample name:  %s', training_sample)
+    logging.info('  Train on single theta: %s', single_theta)
     logging.info('  Training sample size:  %s',
                  'maximal' if training_sample_size is None else training_sample_size)
     if compensate_sample_size and training_sample_size is not None:
@@ -86,8 +88,8 @@ def train(simulator_name,
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
-    sample_filename = 'train'
-    output_filename = ''
+    sample_filename = training_sample
+    output_filename = model_label
     if single_theta:
         output_filename += '_singletheta'
         sample_filename += '_singletheta'
@@ -182,7 +184,7 @@ def train(simulator_name,
 
     # Save models
     logging.info('Saving learned model to %s', model_folder + '/model' + output_filename + '.*')
-    inference.save(model_folder + '/model' + output_filename)
+    inference.save(model_folder + '/' + output_filename)
 
 
 def main():
@@ -197,8 +199,8 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
-    parser.add_argument('--modellabel', type=str,
-                        help='Additional label (filename) for the trained model.')
+    parser.add_argument('--modellabel', type=str, default='model',
+                        help='Additional name for the trained model.')
     parser.add_argument('--trainsample', type=str, default='train',
                         help='Label (filename) for the training sample.')
     parser.add_argument('-i', type=int, default=0,
@@ -240,7 +242,7 @@ def main():
                         help='Factor of learning rate decay over the whole training. Default: 0.1.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
-    parser.add_argument('--gradientclip', default=1.,
+    parser.add_argument('--gradientclip', default=10.,
                         help='Gradient norm clipping threshold.')
 
     args = parser.parse_args()
