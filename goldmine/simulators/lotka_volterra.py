@@ -76,6 +76,11 @@ class LotkaVolterra(Simulator):
 
         return benchmarks, None
 
+    def theta_grid_default(self, n_points_per_dim=10):
+        points_per_dim = np.exp(np.linspace(-5, 2., n_points_per_dim))
+
+        return [points_per_dim for _ in range(4)]
+
     def _simulate(self, theta, rng, max_steps=100000, steps_warning=10000, epsilon=1.e-9):
 
         # Prepare recorded time series of states
