@@ -65,7 +65,7 @@ class BaseConditionalFlow(nn.Module):
         if not theta.requires_grad:
             theta.requires_grad = True
 
-        u, log_likelihood = self.log_likelihood(x, **kwargs)
+        u, log_likelihood = self.log_likelihood(theta, x, **kwargs)
 
         score = grad(log_likelihood, theta,
                      grad_outputs=torch.ones_like(log_likelihood.data),
