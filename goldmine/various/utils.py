@@ -16,9 +16,13 @@ def check_random_state(random_state, use_autograd=False):
         return random_state
 
 
-def general_init():
+def general_init(debug=False):
     logging.basicConfig(format='%(asctime)s  %(message)s', datefmt='%H:%M')
-    logging.getLogger().setLevel(logging.DEBUG)
+
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.INFO)
 
     logging.info('')
     logging.info('------------------------------------------------------------')

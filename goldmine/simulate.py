@@ -139,8 +139,8 @@ def simulate(simulator_name,
     for i_simulation, (theta0_, theta1_) in enumerate(zip(theta0, theta1)):
 
         if (i_simulation + 1) % n_verbose == 0:
-            logging.info('Starting parameter setup %s / %s: theta0 = %s, theta1 = %s', i_simulation + 1, n_simulations,
-                         theta0_, theta1_)
+            logging.info('Starting simulation for parameter setup %s / %s: theta0 = %s, theta1 = %s', i_simulation + 1,
+                         n_simulations, theta0_, theta1_)
 
         for y in draw_from:
 
@@ -197,18 +197,6 @@ def simulate(simulator_name,
                 else:
                     raise
 
-        # Monitor memory usage
-        if (i_simulation + 1) % n_verbose == 0:
-            logging.debug(
-                'Memory usage [GB]: theta0 %.1f, theta1 %.1f, x %.1f, y %.1f, r %.1f, t %.1f',
-                get_size(all_theta0) * 1.e-9,
-                get_size(all_theta1) * 1.e-9,
-                get_size(all_x) * 1.e-9,
-                get_size(all_y) * 1.e-9,
-                get_size(all_r_xz) * 1.e-9,
-                get_size(all_t_xz) * 1.e-9
-            )
-
     logging.info('Saving results')
 
     # Save results
@@ -224,9 +212,6 @@ def simulate(simulator_name,
 
 def main():
     """ Starts simulation """
-
-    # Set up logging and numpy
-    general_init()
 
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
@@ -246,8 +231,12 @@ def main():
     parser.add_argument('--nsamples', type=int, default=100, help='Number of samples per theta value')
     parser.add_argument('--noratio', action='store_true', help='Do not generate joint ratio')
     parser.add_argument('--noscore', action='store_true', help='Do not generate joint score')
+    parser.add_argument('--debug', action='store_true', help='Print debug output')
 
     args = parser.parse_args()
+
+    # Set up logging and numpy
+    general_init(debug=args.debug)
 
     # Start simulation
     simulate(
