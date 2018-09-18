@@ -245,9 +245,13 @@ class LotkaVolterra(Simulator):
 
             # Normalize summary statistics
             if self.normalize_summary_statistics:
-                # Normalize to roughly mean expectation 0 and variance 1, based on a pilot run
-                means = [90.0, 46.5, 8.45, 7.74, 0.979, 0.936, 0.970, 0.912, 0.101]
-                stds = [21., 58., 0.60, 0.77, 0.0087, 0.021, 0.013, 0.023, 0.17]
+                # Normalize to mean expectation 0 and variance 1 (for prior), based on a pilot run
+                means = [7.05559643e+02, 3.97849297e+01, 7.34776178e+00, 4.51226290e+00,
+                         8.33611704e-01, 7.38606619e-01, 1.38464173e-01, 7.72252462e-02,
+                         6.52340705e-02]
+                stds = [2.90599684e+03, 5.31219626e+02, 3.54734035e+00, 1.31554388e+00,
+                        1.88679522e-01, 2.54926902e-01, 2.71919076e-01, 2.00932294e-01,
+                        3.55916090e-01]
 
                 for i, (summary_statistic, mean, std) in enumerate(zip(summary_statistics, means, stds)):
                     summary_statistics[i] = (summary_statistic - mean) / std
@@ -284,7 +288,7 @@ class LotkaVolterra(Simulator):
         histories = []
 
         for i in range(n):
-            logging.debug('  Starting sample %s of %s', i+1, n)
+            logging.debug('  Starting sample %s of %s', i + 1, n)
 
             _, time_series = self._simulate_until_success(theta, rng)
             if return_histories:
@@ -313,7 +317,7 @@ class LotkaVolterra(Simulator):
         histories = []
 
         for i in range(n):
-            logging.debug('  Starting sample %s of %s', i+1, n)
+            logging.debug('  Starting sample %s of %s', i + 1, n)
 
             t_xz, time_series = self._d_simulate_until_success(theta, rng)
             all_t_xz.append(t_xz)
