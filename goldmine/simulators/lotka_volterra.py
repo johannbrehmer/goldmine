@@ -16,8 +16,8 @@ class LotkaVolterra(Simulator):
     statistics, this is not absolutely necessary).
     """
 
-    def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2, use_summary_statistics=True,
-                 use_full_time_series=False):
+    def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2,
+                 use_summary_statistics=True, normalize_summary_statistics=True, use_full_time_series=False):
 
         super().__init__()
 
@@ -28,6 +28,7 @@ class LotkaVolterra(Simulator):
         self.delta_t = delta_t
         self.n_time_series = int(self.duration / self.delta_t) + 1
         self.use_summary_statistics = use_summary_statistics
+        self.normalize_summary_statistics = normalize_summary_statistics
         self.use_full_time_series = use_full_time_series
 
         # Parameters
@@ -236,8 +237,19 @@ class LotkaVolterra(Simulator):
             # cross correlation coefficient
             cross_corr = np.dot(x_norm, y_norm) / (n - 1)
 
-            observables += [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)]
-            observables += autocorr_x + autocorr_y + [cross_corr]
+            summary_statistics = [mean_x, mean_y, np.log(var_x + 1), np.log(var_y + 1)]
+            summary_statistics += autocorr_x + autocorr_y + [cross_corr]
+
+            # Normalize summary statistics
+            if self.normalize_summary_statistics:
+                # Normalize to roughly mean expectation 0 and variance 1, based on a pilot run
+                means = [90.0, 46.5, 8.45, 7.74, 0.979, 0.936, 0.970, 0.912, 0.101]
+                stds = [21., 58., 0.60, 0.77, 0.0087, 0.021, 0.013, 0.023, 0.17]
+
+                for i, (summary_statistic, mean, std) in enumerate(zip(summary_statistics, means, stds)):
+                    summary_statistics[i] = (summary_statistic - mean) / std
+
+            observables += summary_statistics
 
         # Full time series
         if self.use_full_time_series:
@@ -260,7 +272,7 @@ class LotkaVolterra(Simulator):
 
         return tuple(discretization)
 
-    def rvs(self, theta, n, random_state=None, return_histories=False, max_failures=5):
+    def rvs(self, theta, n, random_state=None, return_histories=False):
         logging.info('Simulating %s evolutions for theta = %s', n, theta)
 
         rng = check_random_state(random_state)
@@ -283,7 +295,7 @@ class LotkaVolterra(Simulator):
             return all_x, histories
         return all_x
 
-    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False, max_failures=5):
+    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
         logging.info('Simulating %s evolutions for theta = %s, augmenting with joint score', n, theta)
 
         if np.linalg.norm(theta_score - theta) > 1.e-6:
