@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:1
 
 source activate goldmine
-cd /home/jb6504/goldmine/goldmine
+cd /scratch/jb6504/goldmine/goldmine
 
 ./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000
 ./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000
