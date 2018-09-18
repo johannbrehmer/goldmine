@@ -39,7 +39,7 @@ def train(simulator_name,
           training_sample_size=None,
           n_epochs=20,
           compensate_sample_size=False,
-          batch_size=64,
+          batch_size=128,
           trainer='adam',
           initial_lr=0.001,
           final_lr=0.0001,
@@ -221,8 +221,8 @@ def main():
                         help='Number of units per hidden layer. Default: 100.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
-    parser.add_argument('--activation', type=str, default='tanh',
-                        help='Activation function: "rely", "tanh", "sigmoid"')
+    parser.add_argument('--activation', type=str, default='relu',
+                        help='Activation function: "relu", "tanh", "sigmoid"')
 
     # Histogram parameters
     parser.add_argument('--thetabins', type=int, default=3,
@@ -243,6 +243,8 @@ def main():
                              + 'samples.')
 
     # Training settings
+    parser.add_argument('--batchsize', type=int, default=128,
+                        help='Batch size. Default: 128.')
     parser.add_argument('--epochs', type=int, default=50,
                         help='Number of epochs. Default: 50.')
     parser.add_argument('--compensate_samplesize', action='store_true',
@@ -252,10 +254,10 @@ def main():
                         help='alpha parameter for SCANDAL. Default: 0.0001.')
     parser.add_argument('--optimizer', default='adam',
                         help='Optimizer. For now, "adam" and "sgd" are supported.')
-    parser.add_argument('--lr', type=float, default=0.005,
-                        help='Initial learning rate. Default: 0.005.')
-    parser.add_argument('--lrdecay', type=float, default=0.01,
-                        help='Factor of learning rate decay over the whole training. Default: 0.01.')
+    parser.add_argument('--lr', type=float, default=0.001,
+                        help='Initial learning rate. Default: 0.001.')
+    parser.add_argument('--lrdecay', type=float, default=0.02,
+                        help='Factor of learning rate decay over the whole training. Default: 0.02.')
     parser.add_argument('--validationsplit', type=float, default=0.2,
                         help='Validation split. Default: 0.2.')
     parser.add_argument('--noearlystopping', action='store_true',
@@ -285,6 +287,7 @@ def main():
         training_sample=args.trainsample,
         single_theta=args.singletheta,
         training_sample_size=args.samplesize,
+        batch_size=args.batchsize,
         n_epochs=args.epochs,
         compensate_sample_size=args.compensate_samplesize,
         trainer=args.optimizer,
