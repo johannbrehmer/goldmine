@@ -52,10 +52,6 @@ class MAFInference(Inference):
         else:
             self.maf = torch.load(filename + '.pt')
 
-            # Have everything on CPU (unless training)
-            device = torch.device("cpu")
-            self.maf = self.maf.to(device)
-
             logging.info('Loaded NDE (MAF) from file:')
             logging.info('  Filename:      %s', filename)
             logging.info('  Parameters:    %s', self.maf.n_conditionals)
@@ -64,6 +60,10 @@ class MAFInference(Inference):
             logging.info('  Hidden layers: %s', self.maf.n_hiddens)
             logging.info('  Activation:    %s', self.maf.activation)
             logging.info('  Batch norm:    %s', self.maf.batch_norm)
+
+        # Have everything on CPU (unless training)
+        self.device = torch.device("cpu")
+        self.dtype = torch.float
 
     def requires_class_label(self):
         return False
@@ -130,7 +130,11 @@ class MAFInference(Inference):
         torch.save(self.maf, filename + '.pt')
 
     def predict_density(self, theta, x, log=False):
-        _, log_likelihood = self.maf.log_likelihood(tensor(theta), tensor(x))
+        self.maf = self.maf.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        x_tensor = tensor(x).to(self.device, self.dtype)
+
+        _, log_likelihood = self.maf.log_likelihood(theta_tensor, x_tensor)
         log_likelihood = log_likelihood.detach().numpy()
 
         if log:
@@ -138,8 +142,13 @@ class MAFInference(Inference):
         return np.exp(log_likelihood)
 
     def predict_ratio(self, theta0, theta1, x, log=False):
-        _, log_likelihood_theta0 = self.maf.log_likelihood(tensor(theta0), tensor(x))
-        _, log_likelihood_theta1 = self.maf.log_likelihood(tensor(theta1), tensor(x))
+        self.maf = self.maf.to(self.device, self.dtype)
+        theta0_tensor = tensor(theta0).to(self.device, self.dtype)
+        theta1_tensor = tensor(theta1).to(self.device, self.dtype)
+        x_tensor = tensor(x).to(self.device, self.dtype)
+
+        _, log_likelihood_theta0 = self.maf.log_likelihood(theta0_tensor, x_tensor)
+        _, log_likelihood_theta1 = self.maf.log_likelihood(theta1_tensor, x_tensor)
 
         log_likelihood_theta0 = log_likelihood_theta0.detach().numpy()
         log_likelihood_theta1 = log_likelihood_theta1.detach().numpy()
@@ -149,11 +158,18 @@ class MAFInference(Inference):
         return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
 
     def predict_score(self, theta, x):
-        _, _, score = self.maf.log_likelihood_and_score(tensor(theta), tensor(x))
+        self.maf = self.maf.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        x_tensor = tensor(x).to(self.device, self.dtype)
+
+        _, _, score = self.maf.log_likelihood_and_score(theta_tensor, x_tensor)
         score = score.detach().numpy()
 
         return score
 
     def generate_samples(self, theta):
-        samples = self.maf.generate_samples(theta).detach().numpy()
+        self.maf = self.maf.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+
+        samples = self.maf.generate_samples(theta_tensor).detach().numpy()
         return samples

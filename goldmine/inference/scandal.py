@@ -1,77 +1,12 @@
-import numpy as np
-import torch
-from torch import tensor
 import logging
 
-from goldmine.inference.base import Inference
-from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
+from goldmine.inference.nde import MAFInference
 from goldmine.ml.trainer import train_model
 from goldmine.ml.losses import negative_log_likelihood, score_mse
 
 
-class SCANDALInference(Inference):
+class SCANDALInference(MAFInference):
     """ Neural conditional density estimation with masked autoregressive flows. """
-
-    def __init__(self, **params):
-        super().__init__()
-
-        filename = params.get('filename', None)
-
-        # New MAF setup
-        if filename is None:
-            # Parameters for new MAF
-            n_parameters = params['n_parameters']
-            n_observables = params['n_observables']
-            n_mades = params.get('n_mades', 2)
-            n_made_hidden_layers = params.get('n_made_hidden_layers', 2)
-            n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
-            activation = params.get('activation', 'relu')
-            batch_norm = params.get('batch_norm', False)
-
-            logging.info('Initialized NDE (MAF) with the following settings:')
-            logging.info('  Parameters:    %s', n_parameters)
-            logging.info('  Observables:   %s', n_observables)
-            logging.info('  MADEs:         %s', n_mades)
-            logging.info('  Hidden layers: %s', n_made_hidden_layers)
-            logging.info('  Units:         %s', n_made_units_per_layer)
-            logging.info('  Activation:    %s', activation)
-            logging.info('  Batch norm:    %s', batch_norm)
-
-            # MAF
-            self.maf = ConditionalMaskedAutoregressiveFlow(
-                n_conditionals=n_parameters,
-                n_inputs=n_observables,
-                n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
-                n_mades=n_mades,
-                activation=activation,
-                batch_norm=batch_norm,
-                input_order='random',
-                mode='sequential',
-                alpha=0.1
-            )
-
-        # Load trained model from file
-        else:
-            self.maf = torch.load(filename + '.pt')
-
-            # Have everything on CPU (unless training)
-            device = torch.device("cpu")
-            self.maf = self.maf.to(device)
-
-            logging.info('Loaded NDE (MAF) from file:')
-            logging.info('  Filename:      %s', filename)
-            logging.info('  Parameters:    %s', self.maf.n_conditionals)
-            logging.info('  Observables:   %s', self.maf.n_inputs)
-            logging.info('  MADEs:         %s', self.maf.n_mades)
-            logging.info('  Hidden layers: %s', self.maf.n_hiddens)
-            logging.info('  Activation:    %s', self.maf.activation)
-            logging.info('  Batch norm:    %s', self.maf.batch_norm)
-
-    def requires_class_label(self):
-        return False
-
-    def requires_joint_ratio(self):
-        return False
 
     def requires_joint_score(self):
         return True
@@ -134,35 +69,3 @@ class SCANDALInference(Inference):
             learning_curve_folder=learning_curve_folder,
             learning_curve_filename=learning_curve_filename
         )
-
-    def save(self, filename):
-        torch.save(self.maf, filename + '.pt')
-
-    def predict_density(self, theta, x, log=False):
-        _, log_likelihood = self.maf.log_likelihood(tensor(theta), tensor(x))
-        log_likelihood = log_likelihood.detach().numpy()
-
-        if log:
-            return log_likelihood
-        return np.exp(log_likelihood)
-
-    def predict_ratio(self, theta0, theta1, x, log=False):
-        _, log_likelihood_theta0 = self.maf.log_likelihood(tensor(theta0), tensor(x))
-        _, log_likelihood_theta1 = self.maf.log_likelihood(tensor(theta1), tensor(x))
-
-        log_likelihood_theta0 = log_likelihood_theta0.detach().numpy()
-        log_likelihood_theta1 = log_likelihood_theta1.detach().numpy()
-
-        if log:
-            return log_likelihood_theta0 - log_likelihood_theta1
-        return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
-
-    def predict_score(self, theta, x):
-        _, _, score = self.maf.log_likelihood_and_score(tensor(theta), tensor(x))
-        score = score.detach().numpy()
-
-        return score
-
-    def generate_samples(self, theta):
-        samples = self.maf.generate_samples(theta).detach().numpy()
-        return samples
