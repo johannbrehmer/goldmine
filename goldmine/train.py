@@ -221,7 +221,7 @@ def main():
                         help='Number of units per hidden layer. Default: 100.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
-    parser.add_argument('--activation', type=str, default='relu',
+    parser.add_argument('--activation', type=str, default='tanh',
                         help='Activation function: "relu", "tanh", "sigmoid"')
 
     # Histogram parameters
