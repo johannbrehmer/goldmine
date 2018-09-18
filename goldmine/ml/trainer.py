@@ -52,7 +52,7 @@ def train_model(model,
                 clip_gradient=1.,
                 run_on_gpu=True,
                 double_precision=False,
-                validation_split=0.2, early_stopping=True, early_stopping_patience=20,
+                validation_split=0.2, early_stopping=True, early_stopping_patience=None,
                 learning_curve_folder=None, learning_curve_filename=None,
                 verbose='some'):
     # CPU or GPU?
@@ -289,9 +289,9 @@ def train_model(model,
     # Save learning curve
     if learning_curve_folder is not None and learning_curve_filename is not None:
 
-        np.save(learning_curve_folder + '/loss_train' + learning_curve_filename + '.npy', total_losses_train)
+        np.save(learning_curve_folder + '/loss_train_' + learning_curve_filename + '.npy', total_losses_train)
         if validation_split is not None:
-            np.save(learning_curve_folder + '/loss_val' + learning_curve_filename + '.npy', total_losses_val)
+            np.save(learning_curve_folder + '/loss_val_' + learning_curve_filename + '.npy', total_losses_val)
 
         if loss_labels is not None:
             individual_losses_train = np.array(individual_losses_train)
