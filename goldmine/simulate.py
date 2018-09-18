@@ -139,8 +139,8 @@ def simulate(simulator_name,
     for i_simulation, (theta0_, theta1_) in enumerate(zip(theta0, theta1)):
 
         if (i_simulation + 1) % n_verbose == 0:
-            logging.info('Starting parameter setup %s / %s: theta0 = %s, theta1 = %s', i_simulation + 1, n_simulations,
-                         theta0_, theta1_)
+            logging.info('Starting simulation for parameter setup %s / %s: theta0 = %s, theta1 = %s', i_simulation + 1,
+                         n_simulations, theta0_, theta1_)
 
         for y in draw_from:
 
@@ -196,18 +196,6 @@ def simulate(simulator_name,
                     logging.info('Ignoring this parameter point and continuing with others.')
                 else:
                     raise
-
-        # Monitor memory usage
-        if (i_simulation + 1) % n_verbose == 0:
-            logging.debug(
-                'Memory usage [GB]: theta0 %.1f, theta1 %.1f, x %.1f, y %.1f, r %.1f, t %.1f',
-                get_size(all_theta0) * 1.e-9,
-                get_size(all_theta1) * 1.e-9,
-                get_size(all_x) * 1.e-9,
-                get_size(all_y) * 1.e-9,
-                get_size(all_r_xz) * 1.e-9,
-                get_size(all_t_xz) * 1.e-9
-            )
 
     logging.info('Saving results')
 

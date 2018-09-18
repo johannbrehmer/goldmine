@@ -151,7 +151,7 @@ class LotkaVolterra(Simulator):
                 n_steps += 1
 
                 if (n_steps + 1) % steps_warning == 0:
-                    logging.info('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
+                    logging.debug('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
 
                 if n_steps > max_steps:
                     logging.warning('Too many steps in simulation. Total rate: %s', total_rate)
@@ -276,7 +276,7 @@ class LotkaVolterra(Simulator):
         return tuple(discretization)
 
     def rvs(self, theta, n, random_state=None, return_histories=False):
-        logging.info('Simulating %s evolutions for theta = %s', n, theta)
+        logging.debug('Simulating %s evolutions for theta = %s', n, theta)
 
         rng = check_random_state(random_state)
 
@@ -300,7 +300,7 @@ class LotkaVolterra(Simulator):
         return all_x
 
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
-        logging.info('Simulating %s evolutions for theta = %s, augmenting with joint score', n, theta)
+        logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint score', n, theta)
 
         if np.linalg.norm(theta_score - theta) > 1.e-6:
             logging.error('Different values for theta and theta_score not yet supported!')
