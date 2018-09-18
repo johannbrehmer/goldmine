@@ -11,10 +11,12 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine
 
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID}
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --classifiertest
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --classifiertest
