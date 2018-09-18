@@ -39,7 +39,7 @@ def train(simulator_name,
           training_sample_size=None,
           n_epochs=20,
           compensate_sample_size=False,
-          batch_size=64,
+          batch_size=128,
           trainer='adam',
           initial_lr=0.001,
           final_lr=0.0001,
@@ -188,7 +188,7 @@ def train(simulator_name,
     )
 
     # Save models
-    logging.info('Saving learned model to %s', model_folder + '/model' + output_filename + '.*')
+    logging.info('Saving learned model to %s', model_folder + '/' + output_filename + '.*')
     inference.save(model_folder + '/' + output_filename)
 
 
@@ -201,6 +201,7 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
+    # Basic run settings and labels
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
@@ -210,6 +211,8 @@ def main():
                         help='Label (filename) for the training sample.')
     parser.add_argument('-i', type=int, default=0,
                         help='Run number for multiple repeated trainings.')
+
+    # Flow architecture
     parser.add_argument('--nades', type=int, default=5,
                         help='Number of NADEs in a MAF. Default: 5.')
     parser.add_argument('--hidden', type=int, default=1,
@@ -218,8 +221,10 @@ def main():
                         help='Number of units per hidden layer. Default: 100.')
     parser.add_argument('--batchnorm', action='store_true',
                         help='Use batch normalization.')
-    parser.add_argument('--activation', type=str, default='tanh',
-                        help='Activation function: "rely", "tanh", "sigmoid"')
+    parser.add_argument('--activation', type=str, default='relu',
+                        help='Activation function: "relu", "tanh", "sigmoid"')
+
+    # Histogram parameters
     parser.add_argument('--thetabins', type=int, default=3,
                         help='Number of bins per parameter for histogram-based inference.')
     parser.add_argument('--observables', type=int, nargs='+',
@@ -230,25 +235,31 @@ def main():
                         help='Whether to use separate 1d histograms for each observable.')
     parser.add_argument('--fillemptybins', action='store_true',
                         help='Fill empty histogram bins with 1s.')
+
+    # Training sample details
     parser.add_argument('--singletheta', action='store_true', help='Train on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered. Default: use all available '
                              + 'samples.')
+
+    # Training settings
+    parser.add_argument('--batchsize', type=int, default=128,
+                        help='Batch size. Default: 128.')
     parser.add_argument('--epochs', type=int, default=50,
                         help='Number of epochs. Default: 50.')
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
-    parser.add_argument('--alpha', type=float, default=0.001,
-                        help='alpha parameter for SCANDAL. Default: 0.001.')
+    parser.add_argument('--alpha', type=float, default=0.0001,
+                        help='alpha parameter for SCANDAL. Default: 0.0001.')
     parser.add_argument('--optimizer', default='adam',
                         help='Optimizer. For now, "adam" and "sgd" are supported.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
-    parser.add_argument('--lrdecay', type=float, default=0.1,
-                        help='Factor of learning rate decay over the whole training. Default: 0.1.')
-    parser.add_argument('--validationsplit', type=float, default=0.3,
-                        help='Validation split. Default: 0.3.')
+    parser.add_argument('--lrdecay', type=float, default=0.02,
+                        help='Factor of learning rate decay over the whole training. Default: 0.02.')
+    parser.add_argument('--validationsplit', type=float, default=0.2,
+                        help='Validation split. Default: 0.2.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
     parser.add_argument('--gradientclip', default=10.,
@@ -276,6 +287,7 @@ def main():
         training_sample=args.trainsample,
         single_theta=args.singletheta,
         training_sample_size=args.samplesize,
+        batch_size=args.batchsize,
         n_epochs=args.epochs,
         compensate_sample_size=args.compensate_samplesize,
         trainer=args.optimizer,
