@@ -12,7 +12,8 @@ class LotkaVolterra(Simulator):
     Simulator for a Lotka-Volterra predator-prey scenario.
 
     Setup follows appendix F of https://arxiv.org/pdf/1605.06376.pdf very closely. Note, however, that as parameters
-    theta we use the log of the parameters of that paper!
+    theta we use the log of the parameters of that paper! In other words, the parameters multiplying the predator and
+    prey numbers in the differential equation are the components of exp(theta).
     """
 
     def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2,
@@ -283,6 +284,7 @@ class LotkaVolterra(Simulator):
         histories = []
 
         for i in range(n):
+            logging.debug('  Starting sample %s of %s', i+1, n)
 
             _, time_series = self._simulate_until_success(theta, rng)
             if return_histories:
@@ -311,6 +313,7 @@ class LotkaVolterra(Simulator):
         histories = []
 
         for i in range(n):
+            logging.debug('  Starting sample %s of %s', i+1, n)
 
             t_xz, time_series = self._d_simulate_until_success(theta, rng)
             all_t_xz.append(t_xz)

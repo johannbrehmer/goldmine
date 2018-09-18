@@ -225,9 +225,6 @@ def simulate(simulator_name,
 def main():
     """ Starts simulation """
 
-    # Set up logging and numpy
-    general_init()
-
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
@@ -246,8 +243,12 @@ def main():
     parser.add_argument('--nsamples', type=int, default=100, help='Number of samples per theta value')
     parser.add_argument('--noratio', action='store_true', help='Do not generate joint ratio')
     parser.add_argument('--noscore', action='store_true', help='Do not generate joint score')
+    parser.add_argument('--debug', action='store_true', help='Print debug output')
 
     args = parser.parse_args()
+
+    # Set up logging and numpy
+    general_init(debug=args.debug)
 
     # Start simulation
     simulate(
