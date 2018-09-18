@@ -11,9 +11,8 @@ class LotkaVolterra(Simulator):
     """
     Simulator for a Lotka-Volterra predator-prey scenario.
 
-    Setup follows appendix F of https://arxiv.org/pdf/1605.06376.pdf very closely. One difference is that we do not
-    normalize the summary statistics based on a sample run (since we do not calculate Euclidean distance between summary
-    statistics, this is not absolutely necessary).
+    Setup follows appendix F of https://arxiv.org/pdf/1605.06376.pdf very closely. Note, however, that as parameters
+    theta we use the log of the parameters of that paper!
     """
 
     def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2,
@@ -41,11 +40,11 @@ class LotkaVolterra(Simulator):
 
         # Single benchmark point
         if single_theta:
-            return [np.array([0.01, 0.5, 1.0, 0.01])], None
+            return [np.log(np.array([0.01, 0.5, 1.0, 0.01]))], None
 
         # Ranges
-        theta_min = np.exp(np.array([-5., -5., -5., -5.]))
-        theta_max = np.exp(np.array([2., 2., 2., 2.]))
+        theta_min = np.array([-5., -5., -5., -5.])
+        theta_max = np.array([2., 2., 2., 2.])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
@@ -70,19 +69,22 @@ class LotkaVolterra(Simulator):
             benchmarks = np.array(benchmarks)
 
         # Rescale and exponentiate to correct ranges
-        benchmarks[:] *= np.log(theta_max) - np.log(theta_min)
-        benchmarks[:] += np.log(theta_min)
+        benchmarks[:] *= (theta_max - theta_min)
+        benchmarks[:] += theta_min
 
-        benchmarks = np.exp(benchmarks)
+        benchmarks = benchmarks
 
         return benchmarks, None
 
     def theta_grid_default(self, n_points_per_dim=10):
-        points_per_dim = np.exp(np.linspace(-5, 2., n_points_per_dim))
+        points_per_dim = np.linspace(-5, 2., n_points_per_dim)
 
         return [points_per_dim for _ in range(4)]
 
     def _simulate(self, theta, rng, max_steps=100000, steps_warning=10000, epsilon=1.e-9):
+
+        # Exponentiated theta
+        exp_theta = np.exp(theta)
 
         # Prepare recorded time series of states
         time_series = np.zeros([self.n_time_series, 2], dtype=np.int)
@@ -111,10 +113,10 @@ class LotkaVolterra(Simulator):
 
                 # Rates of different possible events
                 rates = np.array([
-                    theta[0] * state[0] * state[1],  # Predator born
-                    theta[1] * state[0],  # Predator dies
-                    theta[2] * state[1],  # Prey born
-                    theta[3] * state[0] * state[1]  # Predator eats prey
+                    exp_theta[0] * state[0] * state[1],  # Predator born
+                    exp_theta[1] * state[0],  # Predator dies
+                    exp_theta[2] * state[1],  # Prey born
+                    exp_theta[3] * state[0] * state[1]  # Predator eats prey
                 ])
                 total_rate = np.sum(rates)
 
