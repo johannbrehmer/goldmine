@@ -17,4 +17,4 @@ cd /scratch/jb6504/goldmine/goldmine
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --classifiertest
+./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID}
