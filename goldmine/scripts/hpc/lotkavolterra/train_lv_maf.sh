@@ -19,4 +19,5 @@ cd /scratch/jb6504/goldmine/goldmine
 ./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000
 ./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000
 ./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID}
+./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 500000
+./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000000

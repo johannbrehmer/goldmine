@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
 #SBATCH --time=1-00:00:00
-#SBATCH --gres=gpu:1
+# #SBATCH --gres=gpu:1
 
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine
@@ -19,4 +19,5 @@ cd /scratch/jb6504/goldmine/goldmine
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --classifiertest
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --classifiertest
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --classifiertest
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --classifiertest
+./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 500000 --classifiertest
+./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000000 --classifiertest
