@@ -139,6 +139,10 @@ class ConditionalGaussianMADE(BaseConditionalFlow):
         self.m = None
         self.logp = None
 
+        # Dtype and GPU / CPU management
+        self.to_args = None
+        self.to_kwargs = None
+
     def forward(self, theta, x, **kwargs):
         # Conditioner
         try:
@@ -198,6 +202,9 @@ class ConditionalGaussianMADE(BaseConditionalFlow):
         return x
 
     def to(self, *args, **kwargs):
+        self.to_args = args
+        self.to_kwargs = kwargs
+
         self = super().to(*args, **kwargs)
 
         for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
