@@ -10,4 +10,4 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine/
 
-./simulate.py --singletheta --nsamples 1000 --noscore --noratio lotkavolterra test${SLURM_ARRAY_TASK_ID}
+./simulate.py --singletheta --nsamples 1000 --noscore --noratio lotkavolterra testfocus${SLURM_ARRAY_TASK_ID}

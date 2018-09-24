@@ -43,11 +43,13 @@ class LotkaVolterra(Simulator):
 
         # Single benchmark point
         if single_theta:
-            return [np.log(np.array([0.01, 0.5, 1.0, 0.01]))], [np.array([-4.5,-0.5,0.,-4.5])]
+            return [np.log(np.array([0.01, 0.5, 1.0, 0.01]))], [np.array([-4.6,-0.5,0.,-4.6])]
 
         # Ranges
-        theta_min = np.array([-5., -5., -5., -5.])
-        theta_max = np.array([2., 2., 2., 2.])
+        #theta_min = np.array([-5., -5., -5., -5.])
+        #theta_max = np.array([2., 2., 2., 2.])
+        theta_min = np.array([-5.,  -0.8, -0.3, -5.])
+        theta_max = np.array([-4.5, -0.3, 0.2, -4.5])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
