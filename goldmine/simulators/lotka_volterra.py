@@ -43,12 +43,12 @@ class LotkaVolterra(Simulator):
 
         # Single benchmark point
         if single_theta:
-            return [np.log(np.array([0.01, 0.5, 1.0, 0.01]))], [np.array([-4.6,-0.5,0.,-4.6])]
+            return [np.log(np.array([0.01, 0.5, 1.0, 0.01]))], [np.array([-4.6, -0.5, 0., -4.6])]
 
         # Ranges
-        #theta_min = np.array([-5., -5., -5., -5.])
-        #theta_max = np.array([2., 2., 2., 2.])
-        theta_min = np.array([-5.,  -0.8, -0.3, -5.])
+        # theta_min = np.array([-5., -5., -5., -5.])
+        # theta_max = np.array([2., 2., 2., 2.])
+        theta_min = np.array([-5., -0.8, -0.3, -5.])
         theta_max = np.array([-4.5, -0.3, 0.2, -4.5])
 
         # Generate benchmarks in [0,1]^n_parameters
@@ -78,7 +78,7 @@ class LotkaVolterra(Simulator):
         benchmarks[:] += theta_min
 
         theta1 = np.zeros_like(benchmarks)
-        theta1[:,:] = np.array([-4.5,-0.5,0.,-4.5])
+        theta1[:, :] = np.array([-4.5, -0.5, 0., -4.5])
 
         return benchmarks, theta1
 
@@ -293,12 +293,22 @@ class LotkaVolterra(Simulator):
             # Normalize summary statistics
             if self.normalize_summary_statistics:
                 # Normalize to mean expectation 0 and variance 1 (for prior), based on a pilot run
-                means = [7.05559643e+02, 3.97849297e+01, 7.34776178e+00, 4.51226290e+00,
-                         8.33611704e-01, 7.38606619e-01, 1.38464173e-01, 7.72252462e-02,
-                         6.52340705e-02]
-                stds = [2.90599684e+03, 5.31219626e+02, 3.54734035e+00, 1.31554388e+00,
-                        1.88679522e-01, 2.54926902e-01, 2.71919076e-01, 2.00932294e-01,
-                        3.55916090e-01]
+
+                # # Based on big prior
+                # means = [7.05559643e+02, 3.97849297e+01, 7.34776178e+00, 4.51226290e+00,
+                #          8.33611704e-01, 7.38606619e-01, 1.38464173e-01, 7.72252462e-02,
+                #          6.52340705e-02]
+                # stds = [2.90599684e+03, 5.31219626e+02, 3.54734035e+00, 1.31554388e+00,
+                #         1.88679522e-01, 2.54926902e-01, 2.71919076e-01, 2.00932294e-01,
+                #         3.55916090e-01]
+
+                # Based on 'focus' prior
+                means = [1.04272841e+02, 7.92735828e+01, 8.56355494e+00, 8.11906932e+00,
+                         9.75067266e-01, 9.23352650e-01, 9.71107191e-01, 9.11167340e-01,
+                         4.36308022e-02]
+                stds = [2.68008281e+01, 2.14120703e+02, 9.00247450e-01, 1.04245882e+00,
+                        1.13785497e-02, 2.63556410e-02, 1.36672075e-02, 2.76435894e-02,
+                        1.38785995e-01]
 
                 for i, (summary_statistic, mean, std) in enumerate(zip(summary_statistics, means, stds)):
                     summary_statistics[i] = (summary_statistic - mean) / std
