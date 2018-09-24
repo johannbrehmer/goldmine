@@ -58,8 +58,8 @@ class GaussianSimulator(Simulator):
         x2 = np.random.normal(- theta, 0.5, n - n // 2)
         t2 = (x2 - theta_score) / 0.5 ** 2
 
-        x = np.concatenate((x1,x2), axis=0)
-        score = np.concatenate((t1,t2), axis=0)
+        x = np.concatenate((x1,x2), axis=0).reshape((-1, 1))
+        score = np.concatenate((t1,t2), axis=0).reshape((-1, 1))
 
         return x, score
 

@@ -110,6 +110,9 @@ def simulate(simulator_name,
     else:
         theta1 = np.empty_like(theta0)
         theta1[:] = np.NaN
+
+        if generate_joint_ratio:
+            logging.warning('Joint ratio requested, but theta1 not given -- will just generate joint score.')
         generate_joint_ratio = False
 
         if draw_from is None:
