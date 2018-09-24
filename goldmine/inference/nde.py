@@ -128,8 +128,13 @@ class MAFInference(Inference):
 
     def save(self, filename):
         # Fix a bug in pyTorch, see https://github.com/pytorch/text/issues/350
-        self.maf.to_args = None
-        self.maf.to_kwargs = None
+        self.maf.to()
+
+        # self.maf.to_args = None
+        # self.maf.to_kwargs = None
+        # for made in self.maf.mades:
+        #     made.to_args = None
+        #     made.to_kwargs = None
 
         torch.save(self.maf, filename + '.pt')
 
