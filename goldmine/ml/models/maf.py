@@ -118,6 +118,10 @@ class ConditionalMaskedAutoregressiveFlow(BaseConditionalFlow):
         self.mode = mode
         self.alpha = alpha
 
+        # Dtype and GPU / CPU management
+        self.to_args = None
+        self.to_kwargs = None
+
         # Build MADEs
         self.mades = nn.ModuleList()
         for i in range(n_mades):
@@ -184,6 +188,9 @@ class ConditionalMaskedAutoregressiveFlow(BaseConditionalFlow):
         return x
 
     def to(self, *args, **kwargs):
+        self.to_args = args
+        self.to_kwargs = kwargs
+
         self = super().to(*args, **kwargs)
 
         for i, (made) in enumerate(self.mades):
