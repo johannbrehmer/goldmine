@@ -4,7 +4,7 @@ from itertools import product
 import logging
 
 from goldmine.simulators.base import Simulator, SimulationTooLongException
-from goldmine.various.utils import check_random_state, get_size
+from goldmine.various.utils import check_random_state
 
 
 class LotkaVolterra(Simulator):
@@ -82,12 +82,17 @@ class LotkaVolterra(Simulator):
 
         return [points_per_dim for _ in range(4)]
 
-    def _simulate(self, theta, rng, thetas_eval=None, max_steps=100000, steps_warning=10000, epsilon=1.e-9):
+    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000,
+                  epsilon=1.e-9):
 
         # Thetas for the evaluation of the likelihood (ratio / score). The first one is used for the first return
         # value (and thus for the score)
-        if thetas_eval is None:
-            thetas_eval = [theta]
+        if theta is None:
+            theta = np.copy(theta_score)
+
+        thetas_eval = [theta_score]
+        if thetas_additional is not None:
+            thetas_eval += thetas_additional
         n_eval = len(thetas_eval)
 
         # Exponentiated theta
@@ -137,7 +142,6 @@ class LotkaVolterra(Simulator):
                     interaction_time = rng.exponential(scale=1. / total_rate)
                 except ValueError:  # Raised when done in autograd mode for score
                     interaction_time = rng.exponential(scale=1. / total_rate._value)
-                simulated_time += interaction_time
 
                 # Choose next event
                 event = -1
@@ -149,22 +153,24 @@ class LotkaVolterra(Simulator):
                             break
 
                 # Calculate and sum log probability
-                for i in range(n_eval):
+                for k in range(n_eval):
                     rates_eval = np.array([
-                        exp_thetas_eval[i][0] * state[0] * state[1],  # Predator born
-                        exp_thetas_eval[i][1] * state[0],  # Predator dies
-                        exp_thetas_eval[i][2] * state[1],  # Prey born
-                        exp_thetas_eval[i][3] * state[0] * state[1]  # Predator eats prey
+                        exp_thetas_eval[k][0] * state[0] * state[1],  # Predator born
+                        exp_thetas_eval[k][1] * state[0],  # Predator dies
+                        exp_thetas_eval[k][2] * state[1],  # Prey born
+                        exp_thetas_eval[k][3] * state[0] * state[1]  # Predator eats prey
                     ])
                     total_rate_eval = np.sum(rates_eval)
 
-                    logp_xz[i] += np.log(total_rate_eval) - interaction_time * total_rate_eval
-                    logp_xz[i] += np.log(rates_eval[event]) - np.log(total_rate_eval)
+                    logp_xz[k] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
+                                   + np.log(rates_eval[event]) - np.log(total_rate_eval))
 
                 # Resolve event
+                simulated_time += interaction_time
                 state += event_effects[event]
                 n_steps += 1
 
+                # Handling long simulations
                 if (n_steps + 1) % steps_warning == 0:
                     logging.debug('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
 
@@ -175,9 +181,10 @@ class LotkaVolterra(Simulator):
             time_series[i] = state.copy()
             next_recorded_time += self.delta_t
 
-        return logp_xz[0], (logp_xz, time_series)
+        return logp_xz[0], (logp_xz[1:], time_series)
 
-    def _simulate_until_success(self, theta, rng, thetas_eval=None, max_steps=100000, steps_warning=10000, epsilon=1.e-9, max_tries=5):
+    def _simulate_until_success(self, theta, rng, thetas_additional=None, max_steps=100000, steps_warning=10000,
+                                epsilon=1.e-9, max_tries=5):
 
         time_series = None
         logp_xz = None
@@ -186,7 +193,15 @@ class LotkaVolterra(Simulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                _, (logp_xz, time_series) = self._simulate(theta, rng, thetas_eval, max_steps, steps_warning, epsilon)
+                _, (logp_xz, time_series) = self._simulate(
+                    theta_score=theta,
+                    rng=rng,
+                    theta=theta,
+                    thetas_additional=thetas_additional,
+                    max_steps=max_steps,
+                    steps_warning=steps_warning,
+                    epsilon=epsilon
+                )
             except SimulationTooLongException:
                 pass
             else:
@@ -199,7 +214,10 @@ class LotkaVolterra(Simulator):
 
         return logp_xz, time_series
 
-    def _d_simulate_until_success(self, theta, rng, thetas_eval=None, max_steps=100000, steps_warning=10000, epsilon=1.e-9, max_tries=5):
+    def _d_simulate_until_success(self, theta, rng, theta_score=None, thetas_additional=None, max_steps=100000,
+                                  steps_warning=10000, epsilon=1.e-9, max_tries=5):
+        if theta_score is None:
+            theta_score = theta
 
         time_series = None
         t_xz = None
@@ -209,7 +227,15 @@ class LotkaVolterra(Simulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                t_xz, (logp_xz, time_series) = self._d_simulate(theta, rng, thetas_eval, max_steps, steps_warning, epsilon)
+                t_xz, (logp_xz, time_series) = self._d_simulate(
+                    theta_score,
+                    rng,
+                    theta,
+                    thetas_additional,
+                    max_steps,
+                    steps_warning,
+                    epsilon
+                )
             except SimulationTooLongException:
                 pass
             else:
@@ -331,7 +357,7 @@ class LotkaVolterra(Simulator):
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            _, t_xz, time_series = self._d_simulate_until_success(theta, rng, [theta_score])
+            _, t_xz, time_series = self._d_simulate_until_success(theta, rng, theta_score)
             all_t_xz.append(t_xz)
             if return_histories:
                 histories.append(time_series)
@@ -345,6 +371,35 @@ class LotkaVolterra(Simulator):
         if return_histories:
             return all_x, all_t_xz, histories
         return all_x, all_t_xz
+
+    def rvs_ratio(self, theta, theta0, theta1, n, random_state=None, return_histories=False):
+        logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s',
+                      n, theta, theta0, theta1)
+
+        rng = check_random_state(random_state, use_autograd=True)
+
+        all_x = []
+        all_log_r_xz = []
+        histories = []
+
+        for i in range(n):
+            logging.debug('  Starting sample %s of %s', i + 1, n)
+
+            log_p_xzs, time_series = self._simulate_until_success(theta, rng, [theta0, theta1])
+
+            all_log_r_xz.append(log_p_xzs[0] - log_p_xzs[1])
+            if return_histories:
+                histories.append(time_series)
+
+            x = self._calculate_observables(time_series)
+            all_x.append(x)
+
+        all_x = np.asarray(all_x)
+        all_log_r_xz = np.asarray(all_log_r_xz)
+
+        if return_histories:
+            return all_x, all_log_r_xz, histories
+        return all_x, all_log_r_xz
 
     def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s and joint'
@@ -360,10 +415,10 @@ class LotkaVolterra(Simulator):
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            log_p_xzs, t_xz, time_series = self._d_simulate_until_success(theta, rng, [theta_score, theta0, theta1])
+            log_p_xzs, t_xz, time_series = self._d_simulate_until_success(theta, rng, theta_score, [theta0, theta1])
 
             all_t_xz.append(t_xz)
-            all_log_r_xz.append(log_p_xzs[1] - log_p_xzs[2])
+            all_log_r_xz.append(log_p_xzs[0] - log_p_xzs[1])
             if return_histories:
                 histories.append(time_series)
 
