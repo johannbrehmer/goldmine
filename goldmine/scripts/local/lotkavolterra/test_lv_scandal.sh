@@ -11,16 +11,16 @@ do
     echo "Starting job $job"
     echo ''
 
-    ./test.py lotkavolterra scandal -i $job --samplesize 1000
-    ./test.py lotkavolterra scandal -i $job --samplesize 2000
-    ./test.py lotkavolterra scandal -i $job --samplesize 5000
-    ./test.py lotkavolterra scandal -i $job --samplesize 10000
-    ./test.py lotkavolterra scandal -i $job --samplesize 20000
-    ./test.py lotkavolterra scandal -i $job --samplesize 50000
-    ./test.py lotkavolterra scandal -i $job --samplesize 100000
-    ./test.py lotkavolterra scandal -i $job --samplesize 200000
-    #./test.py lotkavolterra scandal -i $job --samplesize 500000
-    #./test.py lotkavolterra scandal -i $job --samplesize 1000000
+    ./test.py lotkavolterra scandal -i $job --samplesize 1000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 2000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 5000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 10000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 20000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 50000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 100000 --classifiertest
+    ./test.py lotkavolterra scandal -i $job --samplesize 200000 --classifiertest
+    #./test.py lotkavolterra scandal -i $job --samplesize 500000 --classifiertest
+    #./test.py lotkavolterra scandal -i $job --samplesize 1000000 --classifiertest
 
     ((job++))
 done
