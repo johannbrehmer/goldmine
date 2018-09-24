@@ -127,7 +127,13 @@ class MAFInference(Inference):
         )
 
     def save(self, filename):
+        # Fix a bug in pyTorch, see https://github.com/pytorch/text/issues/350
+        self.maf.to_args = None
+        self.maf.to_kwargs = None
+
         torch.save(self.maf, filename + '.pt')
+
+        self.maf.to(self.device, self.dtype)
 
     def predict_density(self, theta, x, log=False):
         self.maf = self.maf.to(self.device, self.dtype)
