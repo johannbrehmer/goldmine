@@ -223,7 +223,7 @@ def main():
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('sample', help='Sample label (like "train" or "test")')
     parser.add_argument('--theta0', default=None, help='Theta0 file, defaults to standard parameters')
-    parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to no theta1')
+    parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to standard parameters')
     parser.add_argument('--singletheta', action='store_true', help='If argument theta0 is not set, generates sample'
                                                                    + ' for one reference theta rather than a set')
     parser.add_argument('--gridsampling', action='store_true', help='If argument theta0 is not set, samples theta0 on a'
@@ -252,7 +252,8 @@ def main():
         n_samples_per_theta=args.nsamples,
         generate_joint_ratio=not args.noratio,
         generate_joint_score=not args.noscore,
-        grid_sampling=args.gridsampling
+        grid_sampling=args.gridsampling,
+        draw_from=[0]
     )
 
     logging.info("That's all for now, have a nice day!")
