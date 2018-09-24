@@ -17,7 +17,8 @@ class LotkaVolterra(Simulator):
     """
 
     def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2,
-                 use_summary_statistics=True, normalize_summary_statistics=True, use_full_time_series=False):
+                 use_summary_statistics=True, normalize_summary_statistics=True, use_full_time_series=False,
+                 smear_summary_statistics=False):
 
         super().__init__()
 
@@ -30,6 +31,7 @@ class LotkaVolterra(Simulator):
         self.use_summary_statistics = use_summary_statistics
         self.normalize_summary_statistics = normalize_summary_statistics
         self.use_full_time_series = use_full_time_series
+        self.smear_summary_statistics = smear_summary_statistics
 
         # Parameters
         self.n_parameters = 4
@@ -248,7 +250,7 @@ class LotkaVolterra(Simulator):
 
         return logp_xz, t_xz, time_series
 
-    def _calculate_observables(self, time_series):
+    def _calculate_observables(self, time_series, rng):
         """ Calculates observables: a combination of summary statistics and the full time series  """
 
         n = time_series.shape[0]
@@ -298,6 +300,12 @@ class LotkaVolterra(Simulator):
                 for i, (summary_statistic, mean, std) in enumerate(zip(summary_statistics, means, stds)):
                     summary_statistics[i] = (summary_statistic - mean) / std
 
+            # Smear summary statistics
+            if self.smear_summary_statistics:
+                for i, summary_statistic in enumerate(zip(summary_statistics)):
+                    noise = 0.05 * rng.rand(len(summary_statistic))
+                    summary_statistics[i] += noise
+
             observables += summary_statistics
 
         # Full time series
@@ -308,18 +316,6 @@ class LotkaVolterra(Simulator):
         observables = np.array(observables)
 
         return observables
-
-    def get_discretization(self):
-        discretization = []
-
-        if self.use_summary_statistics:
-            discretization += [1. / self.n_time_series, 1. / self.n_time_series, None, None, None, None, None, None,
-                               None]
-
-        if self.use_full_time_series:
-            discretization += [1.] * 2 * self.n_time_series
-
-        return tuple(discretization)
 
     def rvs(self, theta, n, random_state=None, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s', n, theta)
@@ -336,7 +332,7 @@ class LotkaVolterra(Simulator):
             if return_histories:
                 histories.append(time_series)
 
-            x = self._calculate_observables(time_series)
+            x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
 
         all_x = np.asarray(all_x)
@@ -362,7 +358,7 @@ class LotkaVolterra(Simulator):
             if return_histories:
                 histories.append(time_series)
 
-            x = self._calculate_observables(time_series)
+            x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
 
         all_x = np.asarray(all_x)
@@ -391,7 +387,7 @@ class LotkaVolterra(Simulator):
             if return_histories:
                 histories.append(time_series)
 
-            x = self._calculate_observables(time_series)
+            x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
 
         all_x = np.asarray(all_x)
@@ -422,7 +418,7 @@ class LotkaVolterra(Simulator):
             if return_histories:
                 histories.append(time_series)
 
-            x = self._calculate_observables(time_series)
+            x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
 
         all_x = np.asarray(all_x)
