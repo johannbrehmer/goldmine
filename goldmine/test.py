@@ -33,6 +33,7 @@ def test(simulator_name,
          evaluate_densities_on_original_theta=True,
          evaluate_densities_on_grid=False,
          evaluate_ratios_on_grid=False,
+         evaluate_score_on_original_theta=False,
          theta_grid=10,
          generate_samples=False,
          discretize_generated_samples=False,
@@ -185,6 +186,32 @@ def test(simulator_name,
     if evaluate_ratios_on_grid:
         raise NotImplementedError('Likelihood ratio evaluation on grid not implemented yet')
 
+    if evaluate_score_on_original_theta:
+        try:
+            logging.info('Estimating score on train sample')
+            t_hat = inference.predict_score(thetas_train, xs_train)
+            np.save(
+                result_folder + '/t_hat_train' + result_filename + '.npy',
+                t_hat
+            )
+
+            logging.info('Estimating score on many-theta test sample')
+            t_hat = inference.predict_score(thetas_test, xs_test)
+            np.save(
+                result_folder + '/t_hat_test' + result_filename + '.npy',
+                t_hat
+            )
+
+            logging.info('Estimating score on single-theta test sample, testing original theta')
+            t_hat = inference.predict_score(thetas_singletheta, xs_singletheta)
+            np.save(
+                result_folder + '/t_hat_test_singletheta' + result_filename + '.npy',
+                t_hat
+            )
+
+        except NotImplementedError:
+            logging.warning('Inference method %s does not support score evaluation', inference_name)
+
     # Generate samples
     if generate_samples:
         logging.info('Generating samples according to learned density')
@@ -234,6 +261,7 @@ def main():
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
+    # General setup
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
@@ -244,6 +272,16 @@ def main():
     parser.add_argument('--singletheta', action='store_true', help='Use model trained on single-theta sample.')
     parser.add_argument('--samplesize', type=int, default=None,
                         help='Number of (training + validation) samples considered')
+
+    # Metrics
+    parser.add_argument('--density', action='store_true',
+                        help='Evaluate density on original theta')
+    parser.add_argument('--densitygrid', action='store_true',
+                        help='Evaluate density on theta grid')
+    parser.add_argument('--ratiogrid', action='store_true',
+                        help='Evaluate likelihood ratio on theta grid')
+    parser.add_argument('--score', action='store_true',
+                        help='Evaluate score on original theta')
     parser.add_argument('--classifiertest', action='store_true',
                         help='Train classifier to discriminate between samples from simulator and surrogate')
 
@@ -257,7 +295,10 @@ def main():
         alpha=args.alpha,
         trained_on_single_theta=args.singletheta,
         training_sample_size=args.samplesize,
-        evaluate_densities_on_original_theta=True,
+        evaluate_densities_on_original_theta=args.density,
+        evaluate_densities_on_grid=args.densitygrid,
+        evaluate_ratios_on_grid=args.ratiogrid,
+        evaluate_score_on_original_theta=args.score,
         generate_samples=args.classifiertest,
         classify_surrogate_vs_true_samples=args.classifiertest,
     )
