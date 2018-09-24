@@ -50,7 +50,7 @@ class MAFInference(Inference):
             )
 
         else:
-            self.maf = torch.load(filename + '.pt')
+            self.maf = torch.load(filename + '.pt', map_location='cpu')
 
             logging.info('Loaded NDE (MAF) from file:')
             logging.info('  Filename:      %s', filename)
