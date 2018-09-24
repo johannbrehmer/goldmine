@@ -189,21 +189,21 @@ def test(simulator_name,
     if evaluate_score_on_original_theta:
         try:
             logging.info('Estimating score on train sample')
-            t_hat = inference.predict_score(thetas_train, xs_train, log=True)
+            t_hat = inference.predict_score(thetas_train, xs_train)
             np.save(
                 result_folder + '/t_hat_train' + result_filename + '.npy',
                 t_hat
             )
 
             logging.info('Estimating score on many-theta test sample')
-            t_hat = inference.predict_score(thetas_test, xs_test, log=True)
+            t_hat = inference.predict_score(thetas_test, xs_test)
             np.save(
                 result_folder + '/t_hat_test' + result_filename + '.npy',
                 t_hat
             )
 
             logging.info('Estimating score on single-theta test sample, testing original theta')
-            t_hat = inference.predict_score(thetas_singletheta, xs_singletheta, log=True)
+            t_hat = inference.predict_score(thetas_singletheta, xs_singletheta)
             np.save(
                 result_folder + '/t_hat_test_singletheta' + result_filename + '.npy',
                 t_hat
