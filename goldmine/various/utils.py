@@ -75,7 +75,15 @@ def shuffle(*arrays):
             n_samples = a.shape[0]
             permutation = np.random.permutation(n_samples)
 
-        assert a.shape[0] == n_samples
+        if a.shape[0] != n_samples:
+            logging.error('Mismatched shapes in shuffle:')
+            for arr in arrays:
+                if arr is None:
+                    logging.info('  None')
+                else:
+                    logging.info('  Array with shape %s', arr.shape)
+            raise RuntimeError('Mismatched shapes in shuffle')
+        
         shuffled_a = a[permutation]
         shuffled_arrays.append(shuffled_a)
 
