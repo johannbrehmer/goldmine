@@ -404,11 +404,11 @@ class LotkaVolterra(Simulator):
             all_x.append(x)
 
         all_x = np.asarray(all_x)
-        all_log_r_xz = np.asarray(all_log_r_xz)
+        all_r_xz = np.exp(np.asarray(all_log_r_xz))
 
         if return_histories:
-            return all_x, all_log_r_xz, histories
-        return all_x, all_log_r_xz
+            return all_x, all_r_xz, histories
+        return all_x, all_r_xz
 
     def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s and joint'
@@ -436,8 +436,8 @@ class LotkaVolterra(Simulator):
 
         all_x = np.asarray(all_x)
         all_t_xz = np.asarray(all_t_xz)
-        all_log_r_xz = np.asarray(all_log_r_xz)
+        all_r_xz = np.exp(np.asarray(all_log_r_xz))
 
         if return_histories:
-            return all_x, all_log_r_xz, all_t_xz, histories
-        return all_x, all_log_r_xz, all_t_xz
+            return all_x, all_r_xz, all_t_xz, histories
+        return all_x, all_r_xz, all_t_xz
