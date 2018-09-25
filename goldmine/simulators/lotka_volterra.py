@@ -43,7 +43,8 @@ class LotkaVolterra(Simulator):
 
         # Single benchmark point
         if single_theta:
-            return [np.log(np.array([0.01, 0.5, 1.0, 0.01]))], [np.array([-4.6, -0.5, 0., -4.6])]
+            return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1,-1)),
+                    np.array([-4.6, -0.5, 0., -4.6]).reshape((1,-1)))
 
         # Ranges
         # theta_min = np.array([-5., -5., -5., -5.])
@@ -78,7 +79,7 @@ class LotkaVolterra(Simulator):
         benchmarks[:] += theta_min
 
         theta1 = np.zeros_like(benchmarks)
-        theta1[:, :] = np.array([-4.5, -0.5, 0., -4.5])
+        theta1[:] = np.array([-4.5, -0.5, 0., -4.5])
 
         return benchmarks, theta1
 
