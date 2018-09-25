@@ -7,6 +7,7 @@ from goldmine.simulators.chutes_ladders import ChutesLaddersSimulator
 from goldmine.inference.histograms import HistogramInference
 from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
+from goldmine.inference.rascandal import RASCANDALInference
 
 
 def create_simulator(simulator_name):
@@ -23,7 +24,7 @@ def create_simulator(simulator_name):
     elif simulator_name == 'chutes_ladders':
         return ChutesLaddersSimulator()
     else:
-        raise ValueError('Simulator name {} unknown'.format(simulator_name))
+        raise RuntimeError('Simulator name {} unknown'.format(simulator_name))
 
 
 def create_inference(inference_name, **params):
@@ -33,5 +34,7 @@ def create_inference(inference_name, **params):
         return MAFInference(**params)
     elif inference_name == 'scandal':
         return SCANDALInference(**params)
+    elif inference_name == 'rascandal':
+        return RASCANDALInference(**params)
     else:
-        raise ValueError('Inference technique name {} unknown'.format(inference_name))
+        raise RuntimeError('Inference technique name {} unknown'.format(inference_name))

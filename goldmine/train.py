@@ -33,7 +33,8 @@ def train(simulator_name,
           n_bins_x='auto',
           separate_1d_x_histos=False,
           fill_empty_bins=False,
-          alpha=1.,
+          alpha=0.0001,
+          beta=0.0001,
           training_sample='train',
           single_theta=False,
           training_sample_size=None,
@@ -69,7 +70,8 @@ def train(simulator_name,
     logging.info('  Histogram x bins:      %s', separate_1d_x_histos)
     logging.info('  1d x histograms:       %s', n_bins_x)
     logging.info('  Fill empty bins:       %s', fill_empty_bins)
-    logging.info('  SCANDAL alpha:         %s', alpha)
+    logging.info('  SCANDAL/RASCAL alpha:  %s', alpha)
+    logging.info('  RASCANDAL beta:        %s', beta)
     logging.info('  Training sample name:  %s', training_sample)
     logging.info('  Train on single theta: %s', single_theta)
     logging.info('  Training sample size:  %s',
@@ -180,6 +182,7 @@ def train(simulator_name,
         initial_learning_rate=initial_lr,
         final_learning_rate=final_lr,
         alpha=alpha,
+        beta=beta,
         learning_curve_folder=result_folder,
         learning_curve_filename=output_filename,
         validation_split=validation_split,
@@ -204,7 +207,7 @@ def main():
     # Basic run settings and labels
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
-    parser.add_argument('inference', help='Inference method: "histogram", "maf", or "scandal"')
+    parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal"')
     parser.add_argument('--modellabel', type=str, default='model',
                         help='Additional name for the trained model.')
     parser.add_argument('--trainsample', type=str, default='train',
@@ -251,7 +254,11 @@ def main():
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
     parser.add_argument('--alpha', type=float, default=0.0001,
-                        help='alpha parameter for SCANDAL. Default: 0.0001.')
+                        help='alpha parameter weighting the score MSE in the loss function of the SCANDAL, RASCAL, and'
+                             'and RASCANDAL inference methods. Default: 0.0001.')
+    parser.add_argument('--beta', type=float, default=0.0001,
+                        help='beta parameter weighting the likelihood ratio MSE in the loss function of the RASCANDAL'
+                             'inference method. Default: 0.0001.')
     parser.add_argument('--optimizer', default='adam',
                         help='Optimizer. For now, "adam" and "sgd" are supported.')
     parser.add_argument('--lr', type=float, default=0.001,
@@ -284,6 +291,7 @@ def main():
         fill_empty_bins=args.fillemptybins,
         batch_norm=args.batchnorm,
         alpha=args.alpha,
+        beta=args.beta,
         training_sample=args.trainsample,
         single_theta=args.singletheta,
         training_sample_size=args.samplesize,
