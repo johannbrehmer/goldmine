@@ -223,9 +223,9 @@ def main():
     parser.add_argument('--units', type=int, default=100,
                         help='Number of units per hidden layer. Default: 100.')
     parser.add_argument('--batchnorm', action='store_true',
-                        help='Use batch normalization.')
+                        help='Use batch normalization in the flow between MADE layers.')
     parser.add_argument('--activation', type=str, default='tanh',
-                        help='Activation function: "relu", "tanh", "sigmoid"')
+                        help='Activation function: "relu", "tanh", "sigmoid". Default is "tanh".')
 
     # Histogram parameters
     parser.add_argument('--thetabins', type=int, default=3,
@@ -248,29 +248,29 @@ def main():
     # Training settings
     parser.add_argument('--batchsize', type=int, default=128,
                         help='Batch size. Default: 128.')
-    parser.add_argument('--epochs', type=int, default=50,
-                        help='Number of epochs. Default: 50.')
+    parser.add_argument('--epochs', type=int, default=20,
+                        help='Number of epochs. Default: 20.')
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
-    parser.add_argument('--alpha', type=float, default=0.0001,
+    parser.add_argument('--alpha', type=float, default=0.01,
                         help='alpha parameter weighting the score MSE in the loss function of the SCANDAL, RASCAL, and'
                              'and RASCANDAL inference methods. Default: 0.0001.')
-    parser.add_argument('--beta', type=float, default=0.0001,
+    parser.add_argument('--beta', type=float, default=0.01,
                         help='beta parameter weighting the likelihood ratio MSE in the loss function of the RASCANDAL'
                              'inference method. Default: 0.0001.')
     parser.add_argument('--optimizer', default='adam',
                         help='Optimizer. For now, "adam" and "sgd" are supported.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
-    parser.add_argument('--lrdecay', type=float, default=0.02,
-                        help='Factor of learning rate decay over the whole training. Default: 0.02.')
+    parser.add_argument('--lrdecay', type=float, default=0.1,
+                        help='Factor of learning rate decay over the whole training. Default: 0.1.')
     parser.add_argument('--validationsplit', type=float, default=0.2,
                         help='Validation split. Default: 0.2.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
     parser.add_argument('--gradientclip', default=10.,
-                        help='Gradient norm clipping threshold.')
+                        help='Gradient norm clipping threshold. Default: 10.')
 
     args = parser.parse_args()
 
