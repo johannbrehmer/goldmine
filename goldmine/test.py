@@ -237,7 +237,7 @@ def test(simulator_name,
         xs_surrogate = load_and_check(
             result_folder + '/samples_from_p_hat' + result_filename + '.npy'
         )
-        roc_auc, tpr, fpr = discriminate_samples(xs_test, xs_surrogate)
+        roc_auc, tpr, fpr = discriminate_samples(xs_singletheta, xs_surrogate)
         np.save(
             result_folder + '/roc_auc_surrogate_vs_simulator' + result_filename + '.npy',
             [roc_auc]
