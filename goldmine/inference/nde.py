@@ -174,6 +174,7 @@ class MAFInference(Inference):
         x_tensor = tensor(x).to(self.device, self.dtype)
 
         _, _, score = self.maf.log_likelihood_and_score(theta_tensor, x_tensor)
+
         score = score.detach().numpy()
 
         return score

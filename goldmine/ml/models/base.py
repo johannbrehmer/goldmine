@@ -62,6 +62,9 @@ class BaseConditionalFlow(nn.Module):
     def log_likelihood_and_score(self, theta, x, **kwargs):
         """ Calculates u(x), log p(x), and the score t(x)with a Gaussian base density """
 
+        if theta.shape[0] == 1:
+            theta = theta.expand(x.shape[0], -1)
+
         if not theta.requires_grad:
             theta.requires_grad = True
 

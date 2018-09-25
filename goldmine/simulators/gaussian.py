@@ -10,11 +10,12 @@ class GaussianSimulator(Simulator):
     def get_discretization(self):
         return None,
 
-    def __init__(self):
+    def __init__(self, width=0.5):
         super(GaussianSimulator, self).__init__()
 
         # Parameters
         self.n_parameters = 1
+        self.width = width
 
     def theta_defaults(self, n_thetas=100, single_theta=False, random=True):
 
@@ -42,16 +43,16 @@ class GaussianSimulator(Simulator):
     def rvs(self, theta, n, random_state=None):
 
         x0 = np.hstack((
-            norm.rvs(theta, 0.2, n // 4),
-            norm.rvs(0., 0.2, n // 4),
-            norm.rvs(0., 0.2, n // 4),
-            norm.rvs(-theta, 0.2, n // 4)
+            norm.rvs(theta, self.width, n // 4),
+            norm.rvs(0., self.width, n // 4),
+            norm.rvs(0., self.width, n // 4),
+            norm.rvs(-theta, self.width, n // 4)
         ))
         x1 = np.hstack((
-            norm.rvs(0., 0.2, n // 4),
-            norm.rvs(-theta, 0.2, n // 4),
-            norm.rvs(theta, 0.2, n // 4),
-            norm.rvs(0., 0.2, n // 4)
+            norm.rvs(0., self.width, n // 4),
+            norm.rvs(-theta, self.width, n // 4),
+            norm.rvs(theta, self.width, n // 4),
+            norm.rvs(0., self.width, n // 4)
         ))
 
         x = np.vstack((x0, x1)).T
@@ -63,16 +64,16 @@ class GaussianSimulator(Simulator):
         x = self.rvs(theta, n)
 
         x_a = x[:n//4,:]
-        t_a = (x_a[:,0] - theta) / 0.2**2
+        t_a = (x_a[:,0] - theta) / self.width**2
 
         x_b = x[n//4:2*(n//4),:]
-        t_b = -(x_b[:,1] + theta) / 0.2**2
+        t_b = -(x_b[:,1] + theta) / self.width**2
 
         x_c = x[2*(n//4):3*(n//4),:]
-        t_c = (x_c[:,1] - theta) / 0.2**2
+        t_c = (x_c[:,1] - theta) / self.width**2
 
         x_d = x[3*(n//4):4*(n//4),:]
-        t_d = -(x_d[:,0] + theta) / 0.2**2
+        t_d = -(x_d[:,0] + theta) / self.width**2
 
         t = np.concatenate((t_a, t_b, t_c, t_d), axis=0).reshape((-1,1))
 
