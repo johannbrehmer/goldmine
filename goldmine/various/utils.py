@@ -83,7 +83,7 @@ def shuffle(*arrays):
                 else:
                     logging.info('  Array with shape %s', arr.shape)
             raise RuntimeError('Mismatched shapes in shuffle')
-        
+
         shuffled_a = a[permutation]
         shuffled_arrays.append(shuffled_a)
 

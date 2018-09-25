@@ -137,17 +137,17 @@ def train(simulator_name,
     )
 
     if inference.requires_class_label():
-        ys = load_and_check(sample_folder + '/y_train.npy')
+        ys = load_and_check(sample_folder + '/y_' + sample_filename + '.npy')
     else:
         ys = None
 
     if inference.requires_joint_ratio():
-        r_xz = load_and_check(sample_folder + '/r_xz_train.npy')
+        r_xz = load_and_check(sample_folder + '/r_xz_' + sample_filename + '.npy')
     else:
         r_xz = None
 
     if inference.requires_joint_score():
-        t_xz = load_and_check(sample_folder + '/t_xz_train.npy')
+        t_xz = load_and_check(sample_folder + '/t_xz_' + sample_filename + '.npy')
     else:
         t_xz = None
 
