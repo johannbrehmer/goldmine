@@ -75,7 +75,7 @@ def train_model(model,
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
     xs = torch.stack([tensor(i) for i in xs])
     if ys is not None:
-        ys = torch.stack([tensor(i.astype(np.int32)) for i in ys])  # pyTorch cannot cast np.float64
+        ys = torch.stack([tensor(i.astype(np.float32)) for i in ys])  # pyTorch cannot cast np.float64
     if r_xzs is not None:
         r_xzs = torch.stack([tensor(i) for i in r_xzs])
     if t_xzs is not None:
