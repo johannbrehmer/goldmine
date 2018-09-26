@@ -210,7 +210,7 @@ class Epidemiology(Simulator):
 
     def rvs(self, theta, n, random_state=None, return_histories=False):
 
-        logging.info('Simulating %s epidemic evolutions for theta = %s', n, theta)
+        logging.debug('Simulating %s epidemic evolutions for theta = %s', n, theta)
 
         rng = check_random_state(random_state)
 
@@ -236,7 +236,7 @@ class Epidemiology(Simulator):
 
     def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
 
-        logging.info('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
+        logging.debug('Simulating %s epidemic evolutions for theta = %s, augmenting with joint score', n, theta)
 
         rng = check_random_state(random_state)
 
