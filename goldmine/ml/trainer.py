@@ -48,6 +48,7 @@ def train_model(model,
                 loss_weights=None,
                 loss_labels=None,
                 pre_loss_transformer=None,
+                pre_loss_transform_coefficients=None,
                 batch_size=64,
                 trainer='adam',
                 initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
@@ -64,6 +65,9 @@ def train_model(model,
 
     # Move model to device
     model = model.to(device, dtype)
+
+    if pre_loss_transform_coefficients is not None:
+        pre_loss_transform_coefficients = torch.tensor(pre_loss_transform_coefficients).to(device, dtype)
 
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
@@ -197,7 +201,7 @@ def train_model(model,
             # Pre-loss transformation
             if pre_loss_transformer is not None:
                 log_likelihood, log_r, score, y, r_xz, t_xz = pre_loss_transformer(
-                    log_likelihood, log_r, score, y, r_xz, t_xz
+                    log_likelihood, log_r, score, y, r_xz, t_xz, coefficients=pre_loss_transform_coefficients
                 )
 
             # Evaluate loss
@@ -270,7 +274,7 @@ def train_model(model,
             # Pre-loss transformation
             if pre_loss_transformer is not None:
                 log_likelihood, log_r, score, y, r_xz, t_xz = pre_loss_transformer(
-                    log_likelihood, log_r, score, y, r_xz, t_xz
+                    log_likelihood, log_r, score, y, r_xz, t_xz, coefficients=pre_loss_transform_coefficients
                 )
 
             # Evaluate losses
