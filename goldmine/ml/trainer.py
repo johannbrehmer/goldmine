@@ -78,6 +78,10 @@ def train_model(model,
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
 
+    # Val split
+    if validation_split is not None and validation_split <= 0.:
+        validation_split = None
+
     # Train / validation split
     if validation_split is not None:
         assert 0. < validation_split < 1., 'Wrong validation split: {}'.format(validation_split)
@@ -169,9 +173,9 @@ def train_model(model,
             # Put on device
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
-            y = y.to(device, dtype)
+            y = y.to(device, dtype).view((-1,))
             try:
-                r_xz = r_xz.to(device, dtype)
+                r_xz = r_xz.to(device, dtype).view((-1,))
             except NameError:
                 pass
             try:
@@ -244,9 +248,9 @@ def train_model(model,
             # Put on device
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
-            y = y.to(device, dtype)
+            y = y.to(device, dtype).view((-1,))
             try:
-                r_xz = r_xz.to(device, dtype)
+                r_xz = r_xz.to(device, dtype).view((-1,))
             except NameError:
                 pass
             try:
