@@ -8,6 +8,7 @@ from goldmine.inference.histograms import HistogramInference
 from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
 from goldmine.inference.rascandal import RASCANDALInference
+from goldmine.inference.scandal_cv import SCANDALInferenceWithRatioControlVariate
 
 
 def create_simulator(simulator_name):
@@ -36,5 +37,7 @@ def create_inference(inference_name, **params):
         return SCANDALInference(**params)
     elif inference_name == 'rascandal':
         return RASCANDALInference(**params)
+    elif inference_name == 'scandalcv':
+        return SCANDALInferenceWithRatioControlVariate(**params)
     else:
         raise RuntimeError('Inference technique name {} unknown'.format(inference_name))

@@ -47,6 +47,7 @@ def train_model(model,
                 theta1=None,
                 loss_weights=None,
                 loss_labels=None,
+                pre_loss_transformer=None,
                 batch_size=64,
                 trainer='adam',
                 initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
@@ -75,7 +76,7 @@ def train_model(model,
         t_xzs = torch.stack([tensor(i) for i in t_xzs])
     if theta1 is not None:
         theta1 = tensor(theta1)
-        theta1 = theta1.to(device,dtype)
+        theta1 = theta1.to(device, dtype)
 
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
@@ -179,12 +180,19 @@ def train_model(model,
 
             optimizer.zero_grad()
 
-            # Evaluate loss
+            # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
             if theta1 is not None:
                 log_likelihood_theta1 = model.log_likelihood(theta1, x)
                 log_r = log_likelihood - log_likelihood_theta1
 
+            # Pre-loss transformation
+            if pre_loss_transformer is not None:
+                log_likelihood, log_r, score, y, r_xz, t_xz = pre_loss_transformer(
+                    log_likelihood, log_r, score, y, r_xz, t_xz
+                )
+
+            # Evaluate loss
             losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
@@ -242,9 +250,19 @@ def train_model(model,
             except NameError:
                 pass
 
-            # Evaluate loss
+            # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+            if theta1 is not None:
+                log_likelihood_theta1 = model.log_likelihood(theta1, x)
+                log_r = log_likelihood - log_likelihood_theta1
 
+            # Pre-loss transformation
+            if pre_loss_transformer is not None:
+                log_likelihood, log_r, score, y, r_xz, t_xz = pre_loss_transformer(
+                    log_likelihood, log_r, score, y, r_xz, t_xz
+                )
+
+            # Evaluate losses
             losses = [loss_function(log_likelihood, None, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
