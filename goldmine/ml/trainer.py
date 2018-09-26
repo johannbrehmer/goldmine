@@ -74,9 +74,6 @@ def train_model(model,
         r_xzs = torch.stack([tensor(i) for i in r_xzs])
     if t_xzs is not None:
         t_xzs = torch.stack([tensor(i) for i in t_xzs])
-    if theta1 is not None:
-        theta1 = tensor(theta1)
-        theta1 = theta1.to(device, dtype)
 
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
@@ -141,6 +138,8 @@ def train_model(model,
     total_losses_val = []
     total_val_loss = None
 
+    log_r = None
+
     # Verbosity
     n_epochs_verbose = None
     if verbose == 'all':  # Print output after every epoch
@@ -166,6 +165,13 @@ def train_model(model,
 
         # Loop over batches
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
+
+            # Put on device
+            if theta1 is not None:
+                theta1_tensor = np.empty_like(x)
+                theta1_tensor[:] = theta1
+                theta1_tensor = tensor(theta1_tensor)
+                theta1_tensor = theta1_tensor.to(device, dtype)
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
             y = y.to(device, dtype)
@@ -183,7 +189,7 @@ def train_model(model,
             # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
             if theta1 is not None:
-                _, log_likelihood_theta1 = model.log_likelihood(theta1, x)
+                _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                 log_r = log_likelihood - log_likelihood_theta1
 
             # Pre-loss transformation
@@ -238,6 +244,11 @@ def train_model(model,
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
 
             # Put on device
+            if theta1 is not None:
+                theta1_tensor = np.empty_like(x)
+                theta1_tensor[:] = theta1
+                theta1_tensor = tensor(theta1_tensor)
+                theta1_tensor = theta1_tensor.to(device, dtype)
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
             y = y.to(device, dtype)
@@ -253,7 +264,7 @@ def train_model(model,
             # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
             if theta1 is not None:
-                _, log_likelihood_theta1 = model.log_likelihood(theta1, x)
+                _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                 log_r = log_likelihood - log_likelihood_theta1
 
             # Pre-loss transformation
