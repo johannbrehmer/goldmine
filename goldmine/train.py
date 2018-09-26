@@ -216,7 +216,7 @@ def main():
     # Basic run settings and labels
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
-    parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal"')
+    parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
     parser.add_argument('--modellabel', type=str, default='model',
                         help='Additional name for the trained model.')
     parser.add_argument('--trainsample', type=str, default='train',
