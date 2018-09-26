@@ -168,7 +168,7 @@ def train_model(model,
 
             # Put on device
             if theta1 is not None:
-                theta1_tensor = np.empty_like(x)
+                theta1_tensor = np.empty_like(theta)
                 theta1_tensor[:] = theta1
                 theta1_tensor = tensor(theta1_tensor)
                 theta1_tensor = theta1_tensor.to(device, dtype)
