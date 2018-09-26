@@ -69,6 +69,8 @@ def train_model(model,
     if pre_loss_transform_coefficients is not None:
         pre_loss_transform_coefficients = torch.tensor(pre_loss_transform_coefficients).to(device, dtype)
 
+    logging.debug('Transform coefficients: %s', pre_loss_transform_coefficients)
+
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
     xs = torch.stack([tensor(i) for i in xs])
