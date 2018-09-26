@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:1
 
 source activate goldmine
-cd /home/jb6504/goldmine/goldmine
+cd /scratch/jb6504/goldmine/goldmine
 
 ./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 100 --classifiertest
 ./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 200 --classifiertest
@@ -20,4 +20,5 @@ cd /home/jb6504/goldmine/goldmine
 ./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --classifiertest
 ./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --classifiertest
 ./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --classifiertest
-./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --classifiertest
+./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --classifiertest
+./test.py epidemiology2d maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --classifiertest

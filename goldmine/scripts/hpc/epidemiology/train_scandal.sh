@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:1
 
 source activate goldmine
-cd /home/jb6504/goldmine/goldmine
+cd /scandal/jb6504/goldmine/goldmine
 
 ./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100 --alpha 0.01
 ./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200 --alpha 0.01
