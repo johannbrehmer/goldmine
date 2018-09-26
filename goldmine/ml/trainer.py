@@ -167,11 +167,6 @@ def train_model(model,
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
 
             # Put on device
-            if theta1 is not None:
-                theta1_tensor = np.empty_like(theta)
-                theta1_tensor[:] = theta1
-                theta1_tensor = tensor(theta1_tensor)
-                theta1_tensor = theta1_tensor.to(device, dtype)
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
             y = y.to(device, dtype)
@@ -183,6 +178,9 @@ def train_model(model,
                 t_xz = t_xz.to(device, dtype)
             except NameError:
                 pass
+            if theta1 is not None:
+                theta1_tensor = torch.tensor(theta1).to(device, dtype)
+                theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
             optimizer.zero_grad()
 
@@ -244,11 +242,6 @@ def train_model(model,
         for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
 
             # Put on device
-            if theta1 is not None:
-                theta1_tensor = np.empty_like(x)
-                theta1_tensor[:] = theta1
-                theta1_tensor = tensor(theta1_tensor)
-                theta1_tensor = theta1_tensor.to(device, dtype)
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
             y = y.to(device, dtype)
@@ -260,6 +253,9 @@ def train_model(model,
                 t_xz = t_xz.to(device, dtype)
             except NameError:
                 pass
+            if theta1 is not None:
+                theta1_tensor = torch.tensor(theta1).to(device, dtype)
+                theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
             # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
