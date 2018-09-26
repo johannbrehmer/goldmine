@@ -109,7 +109,7 @@ class HistogramInference(Inference):
     def requires_joint_score(self):
         return False
 
-    def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None,
+    def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None, theta1=None,
             **params):
 
         n_samples = x.shape[0]
@@ -119,6 +119,7 @@ class HistogramInference(Inference):
 
         logging.info('Filling histogram with settings:')
         logging.info('  theta given:   %s', theta is not None)
+        logging.info('  theta1 given:  %s', theta1 is not None)
         logging.info('  x given:       %s', x is not None)
         logging.info('  y given:       %s', y is not None)
         logging.info('  r_xz given:    %s', r_xz is not None)
