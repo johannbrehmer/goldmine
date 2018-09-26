@@ -23,6 +23,7 @@ class RASCANDALInference(MAFInference):
             y=None,
             r_xz=None,
             t_xz=None,
+            theta1=None,
             batch_size=64,
             trainer='adam',
             initial_learning_rate=0.001,
@@ -35,16 +36,18 @@ class RASCANDALInference(MAFInference):
             learning_curve_folder=None,
             learning_curve_filename=None,
             **params):
-        """ Trains MAF """
+        """ Trains RASCANDAL """
 
         logging.info('Training RASCANDAL (MAF + score + ratio) with settings:')
         logging.info('  alpha (score):  %s', alpha)
         logging.info('  beta (ratio):   %s', beta)
         logging.info('  theta given:    %s', theta is not None)
+        logging.info('  theta1 given:   %s', theta1 is not None)
         logging.info('  x given:        %s', x is not None)
         logging.info('  y given:        %s', y is not None)
         logging.info('  r_xz given:     %s', r_xz is not None)
         logging.info('  t_xz given:     %s', t_xz is not None)
+        logging.info('  theta1 given:   %s', theta1 is not None)
         logging.info('  Samples:        %s', x.shape[0])
         logging.info('  Parameters:     %s', theta.shape[1])
         logging.info('  Obserables:     %s', x.shape[1])
@@ -60,6 +63,7 @@ class RASCANDALInference(MAFInference):
         assert y is not None
         assert r_xz is not None
         assert t_xz is not None
+        assert theta1 is not None
 
         train_model(
             model=self.maf,
@@ -67,6 +71,7 @@ class RASCANDALInference(MAFInference):
             loss_weights=[1., alpha, beta],
             loss_labels=['nll', 'score', 'ratio'],
             thetas=theta,
+            theta1=theta1,
             xs=x,
             t_xzs=t_xz,
             batch_size=batch_size,

@@ -44,6 +44,7 @@ class GoldDataset(torch.utils.data.Dataset):
 def train_model(model,
                 loss_functions,
                 thetas, xs, ys=None, r_xzs=None, t_xzs=None,
+                theta1=None,
                 loss_weights=None,
                 loss_labels=None,
                 batch_size=64,
@@ -72,6 +73,9 @@ def train_model(model,
         r_xzs = torch.stack([tensor(i) for i in r_xzs])
     if t_xzs is not None:
         t_xzs = torch.stack([tensor(i) for i in t_xzs])
+    if theta1 is not None:
+        theta1 = tensor(theta1)
+        theta1 = theta1.to(device,dtype)
 
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
@@ -177,8 +181,11 @@ def train_model(model,
 
             # Evaluate loss
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+            if theta1 is not None:
+                log_likelihood_theta1 = model.log_likelihood(theta1, x)
+                log_r = log_likelihood - log_likelihood_theta1
 
-            losses = [loss_function(log_likelihood, None, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l

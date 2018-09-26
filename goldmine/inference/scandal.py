@@ -17,6 +17,7 @@ class SCANDALInference(MAFInference):
             y=None,
             r_xz=None,
             t_xz=None,
+            theta1=None,
             batch_size=64,
             trainer='adam',
             initial_learning_rate=0.001,
@@ -28,7 +29,7 @@ class SCANDALInference(MAFInference):
             learning_curve_folder=None,
             learning_curve_filename=None,
             **params):
-        """ Trains MAF """
+        """ Trains SCANDAL """
 
         logging.info('Training SCANDAL (MAF + score) with settings:')
         logging.info('  alpha:          %s', alpha)
@@ -37,6 +38,7 @@ class SCANDALInference(MAFInference):
         logging.info('  y given:        %s', y is not None)
         logging.info('  r_xz given:     %s', r_xz is not None)
         logging.info('  t_xz given:     %s', t_xz is not None)
+        logging.info('  theta1 given:   %s', theta1 is not None)
         logging.info('  Samples:        %s', x.shape[0])
         logging.info('  Parameters:     %s', theta.shape[1])
         logging.info('  Obserables:     %s', x.shape[1])

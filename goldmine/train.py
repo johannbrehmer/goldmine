@@ -143,8 +143,16 @@ def train(simulator_name,
 
     if inference.requires_joint_ratio():
         r_xz = load_and_check(sample_folder + '/r_xz_' + sample_filename + '.npy')
+        theta1 = load_and_check(sample_folder + '/theta1_' + sample_filename + '.npy')
+
+        if len(theta1.shape) > 1:  # For now, we just want one constant theta1. Might be changed in later versions
+            theta1 = theta1[0]
+
+        assert theta1.shape == thetas[0].shape, 'Shape mismatch between theta0 and theta1'
+
     else:
         r_xz = None
+        theta1 = None
 
     if inference.requires_joint_score():
         t_xz = load_and_check(sample_folder + '/t_xz_' + sample_filename + '.npy')
@@ -176,6 +184,7 @@ def train(simulator_name,
     inference.fit(
         thetas, xs,
         ys, r_xz, t_xz,
+        theta1=theta1,
         n_epochs=n_epochs,
         batch_size=batch_size,
         trainer=trainer,

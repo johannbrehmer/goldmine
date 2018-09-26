@@ -80,6 +80,7 @@ class MAFInference(Inference):
             y=None,
             r_xz=None,
             t_xz=None,
+            theta1=None,
             batch_size=64,
             trainer='adam',
             initial_learning_rate=0.001,
@@ -95,6 +96,7 @@ class MAFInference(Inference):
 
         logging.info('Training NDE (MAF) with settings:')
         logging.info('  theta given:    %s', theta is not None)
+        logging.info('  theta1 given:   %s', theta1 is not None)
         logging.info('  x given:        %s', x is not None)
         logging.info('  y given:        %s', y is not None)
         logging.info('  r_xz given:     %s', r_xz is not None)
