@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=sc_train
-#SBATCH --output=scandal_train_%a.log
+#SBATCH --job-name=eptrainsc
+#SBATCH --output=train_scandal_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
@@ -11,13 +11,14 @@
 source activate goldmine
 cd /home/jb6504/goldmine/goldmine
 
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 500
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000
-./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID}
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 500 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --alpha 0.01
+./train.py epidemiology2d scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --alpha 0.01
