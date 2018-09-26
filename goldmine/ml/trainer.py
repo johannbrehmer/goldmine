@@ -183,7 +183,7 @@ def train_model(model,
             # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
             if theta1 is not None:
-                log_likelihood_theta1 = model.log_likelihood(theta1, x)
+                _, log_likelihood_theta1 = model.log_likelihood(theta1, x)
                 log_r = log_likelihood - log_likelihood_theta1
 
             # Pre-loss transformation
@@ -253,7 +253,7 @@ def train_model(model,
             # Evaluate model
             _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
             if theta1 is not None:
-                log_likelihood_theta1 = model.log_likelihood(theta1, x)
+                _, log_likelihood_theta1 = model.log_likelihood(theta1, x)
                 log_r = log_likelihood - log_likelihood_theta1
 
             # Pre-loss transformation
