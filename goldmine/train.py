@@ -207,9 +207,6 @@ def train(simulator_name,
 def main():
     """ Starts training """
 
-    # Set up logging and numpy
-    general_init()
-
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
@@ -281,7 +278,12 @@ def main():
     parser.add_argument('--gradientclip', default=10.,
                         help='Gradient norm clipping threshold. Default: 10.')
 
+    parser.add_argument('--debug', action='store_true', help='Print debug output')
+
     args = parser.parse_args()
+
+    # Set up logging and numpy
+    general_init(debug=args.debug)
 
     # Start simulation
     train(
