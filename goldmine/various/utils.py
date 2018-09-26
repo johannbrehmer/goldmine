@@ -90,7 +90,7 @@ def shuffle(*arrays):
     return shuffled_arrays
 
 
-def load_and_check(filename, warning_threshold=1.e9):
+def load_and_check(filename, warning_threshold=1.e9, replace_infs_with=np.exp(10.)):
     data = np.load(filename)
 
     n_nans = np.sum(np.isnan(data))
@@ -100,6 +100,10 @@ def load_and_check(filename, warning_threshold=1.e9):
     if n_nans + n_infs > 0:
         logging.warning('Warning: file %s contains %s NaNs and %s Infs, compared to %s finite numbers!',
                         filename, n_nans, n_infs, n_finite)
+
+    if n_infs > 0 and replace_infs_with is not None:
+        logging.info('Replacing %s  infinite values with %s', n_infs, replace_infs_with)
+        data[np.isinf(data)] = replace_infs_with
 
     smallest = np.nanmin(data)
     largest = np.nanmax(data)
