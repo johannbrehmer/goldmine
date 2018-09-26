@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cd /home/jb6504/goldmine/goldmine/scripts/hpc
+cd /home/jb6504/goldmine/goldmine/scripts/hpc/epidemiology
 
-sbatch --array=1-9 train_maf.sh
-sbatch --array=1-9 train_scandal.sh
-sbatch --array=1-9 train_maf_singletheta.sh
+sbatch --array=0-0 train_maf.sh
+sbatch --array=0-0 train_scandal.sh
+sbatch --array=0-0 train_rascandal.sh
