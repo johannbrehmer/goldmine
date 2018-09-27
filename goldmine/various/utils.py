@@ -90,7 +90,7 @@ def shuffle(*arrays):
     return shuffled_arrays
 
 
-def load_and_check(filename, warning_threshold=1.e9, replace_infs_with=np.exp(10.)):
+def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(20.), max_value=np.exp(20.)):
     data = np.load(filename)
 
     n_nans = np.sum(np.isnan(data))
@@ -101,16 +101,24 @@ def load_and_check(filename, warning_threshold=1.e9, replace_infs_with=np.exp(10
         logging.warning('Warning: file %s contains %s NaNs and %s Infs, compared to %s finite numbers!',
                         filename, n_nans, n_infs, n_finite)
 
-    if n_infs > 0 and replace_infs_with is not None:
-        logging.info('Replacing %s  infinite values with %s', n_infs, replace_infs_with)
-        data[np.isinf(data)] = replace_infs_with
+    if n_infs > 0 and max_value is not None:
+        logging.info('Replacing %s  infinite values in file %s with %s', n_infs, filename, max_value)
+        data[np.isinf(data)] = max_value
 
     smallest = np.nanmin(data)
     largest = np.nanmax(data)
 
     if np.abs(smallest) > warning_threshold or np.abs(largest) > warning_threshold:
-        logging.warning('Warning: file %s has some large numbers, rangin from %s to %s',
+        logging.warning('Warning: file %s has some very large numbers, rangin from %s to %s',
                         filename, smallest, largest)
+
+    if max_value is not None and np.sum(data > max_value) > 0:
+        logging.info('Replacing %s large values in file %s with %s', np.sum(data > max_value), filename, max_value)
+        data[data > max_value] = max_value
+
+    if min_value is not None and np.sum(data < min_value) > 0:
+        logging.info('Replacing %s small values in file %s with %s', np.sum(data < min_value), filename, min_value)
+        data[data < min_value] = min_value
 
     return data
 
