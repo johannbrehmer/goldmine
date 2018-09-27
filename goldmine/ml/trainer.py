@@ -81,10 +81,6 @@ def train_model(model,
     if t_xzs is not None:
         t_xzs = torch.stack([tensor(i) for i in t_xzs])
 
-    logging.debug('r_xzs: %s', r_xzs)
-    logging.debug('ys: %s', ys)
-    logging.debug('t_xzs: %s', t_xzs)
-
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
 
@@ -284,7 +280,7 @@ def train_model(model,
                 )
 
             # Evaluate losses
-            losses = [loss_function(log_likelihood, None, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l

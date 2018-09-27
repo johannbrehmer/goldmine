@@ -90,7 +90,7 @@ def shuffle(*arrays):
     return shuffled_arrays
 
 
-def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(10.), max_value=np.exp(10.)):
+def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(20.), max_value=np.exp(20.)):
     data = np.load(filename)
 
     n_nans = np.sum(np.isnan(data))
@@ -113,11 +113,11 @@ def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(10.), ma
                         filename, smallest, largest)
 
     if max_value is not None and np.sum(data > max_value) > 0:
-        logging.info('Replacing %s large values in file %s with %s', np.sum(data > max_value) > 0, filename, max_value)
+        logging.info('Replacing %s large values in file %s with %s', np.sum(data > max_value), filename, max_value)
         data[data > max_value] = max_value
 
     if min_value is not None and np.sum(data < min_value) > 0:
-        logging.info('Replacing %s small values in file %s with %s', np.sum(data < min_value) > 0, filename, min_value)
+        logging.info('Replacing %s small values in file %s with %s', np.sum(data < min_value), filename, min_value)
         data[data < min_value] = min_value
 
     return data
