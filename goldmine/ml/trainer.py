@@ -81,6 +81,10 @@ def train_model(model,
     if t_xzs is not None:
         t_xzs = torch.stack([tensor(i) for i in t_xzs])
 
+    logging.debug('r_xzs: %s', r_xzs)
+    logging.debug('ys: %s', ys)
+    logging.debug('t_xzs: %s', t_xzs)
+
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
 
