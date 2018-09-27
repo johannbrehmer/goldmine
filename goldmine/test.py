@@ -30,6 +30,7 @@ def test(simulator_name,
          model_label='model',
          trained_on_single_theta=False,
          training_sample_size=None,
+         test_sample='test',
          evaluate_densities_on_original_theta=True,
          evaluate_densities_on_grid=False,
          evaluate_ratios_on_grid=False,
@@ -45,6 +46,7 @@ def test(simulator_name,
     logging.info('  Inference method:                 %s', inference_name)
     logging.info('  ML model name:                    %s', model_label)
     logging.info('  Run number:                       %s', run)
+    logging.info('  Test sample:                      %s', test_sample)
     logging.info('  alpha:                            %s', alpha)
     logging.info('  Single-theta tr. sample:          %s', trained_on_single_theta)
     logging.info('  Training sample size:             %s',
@@ -79,6 +81,7 @@ def test(simulator_name,
     if training_sample_size is not None:
         model_filename += '_trainingsamplesize_' + str(training_sample_size)
         result_filename += '_trainingsamplesize_' + str(training_sample_size)
+    test_filename = test_sample
 
     if run is None:
         run_appendix = ''
@@ -95,23 +98,23 @@ def test(simulator_name,
             simulator = create_simulator(simulator_name)
             theta_grid = simulator.theta_grid_default(n_points_per_dim=theta_grid)
 
-    # Load train data
-    logging.info('Loading many-theta  train sample')
-    thetas_train = load_and_check(sample_folder + '/theta0_train.npy')
-    xs_train = load_and_check(sample_folder + '/x_train.npy')
-
-    n_samples_train = xs_train.shape[0]
-    n_observables_train = xs_train.shape[1]
-    n_parameters_train = thetas_train.shape[1]
-    assert thetas_train.shape[0] == n_samples_train
-
-    logging.info('Found %s samples with %s parameters and %s observables',
-                 n_samples_train, n_parameters_train, n_observables_train)
+    # # Load train data
+    # logging.info('Loading many-theta  train sample')
+    # thetas_train = load_and_check(sample_folder + '/theta0_train.npy')
+    # xs_train = load_and_check(sample_folder + '/x_train.npy')
+    #
+    # n_samples_train = xs_train.shape[0]
+    # n_observables_train = xs_train.shape[1]
+    # n_parameters_train = thetas_train.shape[1]
+    # assert thetas_train.shape[0] == n_samples_train
+    #
+    # logging.info('Found %s samples with %s parameters and %s observables',
+    #              n_samples_train, n_parameters_train, n_observables_train)
 
     # Load test data
     logging.info('Loading many-theta test sample')
-    thetas_test = load_and_check(sample_folder + '/theta0_test.npy')
-    xs_test = load_and_check(sample_folder + '/x_test.npy')
+    thetas_test = load_and_check(sample_folder + '/theta0_' + test_filename + '.npy')
+    xs_test = load_and_check(sample_folder + '/x_' + test_filename + '.npy')
 
     n_samples = xs_test.shape[0]
     n_observables = xs_test.shape[1]
@@ -122,8 +125,8 @@ def test(simulator_name,
 
     # Load test data (single theta)
     logging.info('Loading single-theta test sample')
-    thetas_singletheta = load_and_check(sample_folder + '/theta0_test_singletheta.npy')
-    xs_singletheta = load_and_check(sample_folder + '/x_test_singletheta.npy')
+    thetas_singletheta = load_and_check(sample_folder + '/theta0_' + test_filename + '_singletheta.npy')
+    xs_singletheta = load_and_check(sample_folder + '/x_' + test_filename + '_singletheta.npy')
 
     n_samples_singletheta = xs_singletheta.shape[0]
     n_observables_singletheta = xs_singletheta.shape[1]
@@ -143,24 +146,24 @@ def test(simulator_name,
     # Evaluate density on test sample
     if evaluate_densities_on_original_theta:
         try:
-            logging.info('Estimating densities on train sample')
-            log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
-            np.save(
-                result_folder + '/log_p_hat_train' + result_filename + '.npy',
-                log_p_hat
-            )
+            # logging.info('Estimating densities on train sample')
+            # log_p_hat = inference.predict_density(thetas_train, xs_train, log=True)
+            # np.save(
+            #     result_folder + '/log_p_hat_train' + result_filename + '.npy',
+            #     log_p_hat
+            # )
 
             logging.info('Estimating densities on many-theta test sample')
             log_p_hat = inference.predict_density(thetas_test, xs_test, log=True)
             np.save(
-                result_folder + '/log_p_hat_test' + result_filename + '.npy',
+                result_folder + '/log_p_hat_' + test_filename + result_filename + '.npy',
                 log_p_hat
             )
 
             logging.info('Estimating densities on single-theta test sample, testing original theta')
             log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
             np.save(
-                result_folder + '/log_p_hat_test_singletheta' + result_filename + '.npy',
+                result_folder + '/log_p_hat_' + test_filename + '_singletheta' + result_filename + '.npy',
                 log_p_hat
             )
 
@@ -188,24 +191,24 @@ def test(simulator_name,
 
     if evaluate_score_on_original_theta:
         try:
-            logging.info('Estimating score on train sample')
-            t_hat = inference.predict_score(thetas_train, xs_train)
-            np.save(
-                result_folder + '/t_hat_train' + result_filename + '.npy',
-                t_hat
-            )
+            # logging.info('Estimating score on train sample')
+            # t_hat = inference.predict_score(thetas_train, xs_train)
+            # np.save(
+            #     result_folder + '/t_hat_train' + result_filename + '.npy',
+            #     t_hat
+            # )
 
             logging.info('Estimating score on many-theta test sample')
             t_hat = inference.predict_score(thetas_test, xs_test)
             np.save(
-                result_folder + '/t_hat_test' + result_filename + '.npy',
+                result_folder + '/t_hat_' + test_filename + result_filename + '.npy',
                 t_hat
             )
 
             logging.info('Estimating score on single-theta test sample, testing original theta')
             t_hat = inference.predict_score(thetas_singletheta, xs_singletheta)
             np.save(
-                result_folder + '/t_hat_test_singletheta' + result_filename + '.npy',
+                result_folder + '/t_hat_' + test_filename + '_singletheta' + result_filename + '.npy',
                 t_hat
             )
 
@@ -265,6 +268,10 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
+    parser.add_argument('--modellabel', type=str, default='model',
+                        help='Additional name for the trained model.')
+    parser.add_argument('--testsample', type=str, default='test',
+                        help='Label (filename) for the test sample.')
     parser.add_argument('-i', type=int, default=0,
                         help='Run number for multiple repeated trainings.')
     parser.add_argument('--alpha', type=float, default=1.,
@@ -291,6 +298,8 @@ def main():
     test(
         args.simulator,
         args.inference,
+        model_label=args.modellabel,
+        test_sample=args.testsample,
         run=args.i,
         alpha=args.alpha,
         trained_on_single_theta=args.singletheta,
