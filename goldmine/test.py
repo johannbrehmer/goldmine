@@ -190,6 +190,7 @@ def test(simulator_name,
 
             theta_grid_points = np.meshgrid(*theta_grid, indexing='ij')
             theta_grid_points = np.array(theta_grid_points).reshape((len(theta_grid), -1))
+            theta_grid_points = theta_grid_points.T
 
             log_p_hat_grid = []
 
@@ -216,6 +217,7 @@ def test(simulator_name,
 
             theta_grid_points = np.meshgrid(*theta_grid, indexing='ij')
             theta_grid_points = np.array(theta_grid_points).reshape((len(theta_grid), -1))
+            theta_grid_points = theta_grid_points.T
 
             log_r_hat_grid = []
 
