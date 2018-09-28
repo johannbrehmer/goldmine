@@ -55,7 +55,9 @@ def test(simulator_name,
     logging.info('  Evaluate log p on grid:           %s', evaluate_densities_on_grid)
     logging.info('  Evaluate ratios on grid:          %s', evaluate_ratios_on_grid)
     if evaluate_densities_on_grid:
-        if isinstance(theta_grid, int):
+        if theta_grid is None:
+            logging.info('  Theta grid:                       default grid with default resolution')
+        elif isinstance(theta_grid, int):
             logging.info('  Theta grid:                       default grid with %s points per dimension', theta_grid)
         else:
             logging.info('  Theta grid:                       %s', theta_grid[0])
