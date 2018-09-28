@@ -190,8 +190,8 @@ class HistogramInference(Inference):
             modified_histo_edges = []
             for i in range(x.shape[1]):
                 axis_edges = histo_edges[self.n_parameters + i]
-                axis_edges[0] = min(np.percentile(x[:,i], 5.), axis_edges[1] - 0.01)
-                axis_edges[-1] = max(np.percentile(x[:,i], 95.), axis_edges[-2] + 0.01)
+                axis_edges[0] = min(np.percentile(x[:, i], 5.), axis_edges[1] - 0.01)
+                axis_edges[-1] = max(np.percentile(x[:, i], 95.), axis_edges[-2] + 0.01)
                 modified_histo_edges.append(axis_edges)
 
             bin_widths = [axis_edges[1:] - axis_edges[:-1] for axis_edges in modified_histo_edges]

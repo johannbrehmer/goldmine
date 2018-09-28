@@ -9,6 +9,10 @@ from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
 from goldmine.inference.rascandal import RASCANDALInference
 from goldmine.inference.scandal_cv import SCANDALInferenceWithRatioControlVariate
+from goldmine.inference.rolr import ROLRInference
+from goldmine.inference.carl import CARLInference
+from goldmine.inference.cascal import CASCALInference
+from goldmine.inference.rascal import RASCALInference
 
 
 def create_simulator(simulator_name):
@@ -39,5 +43,13 @@ def create_inference(inference_name, **params):
         return RASCANDALInference(**params)
     elif inference_name == 'scandalcv':
         return SCANDALInferenceWithRatioControlVariate(**params)
+    elif inference_name == 'carl':
+        return CARLInference(**params)
+    elif inference_name == 'cascal':
+        return CASCALInference(**params)
+    elif inference_name == 'rolr':
+        return ROLRInference(**params)
+    elif inference_name == 'rascal':
+        return RASCALInference(**params)
     else:
         raise RuntimeError('Inference technique name {} unknown'.format(inference_name))

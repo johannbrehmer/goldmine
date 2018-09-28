@@ -45,6 +45,7 @@ def train_model(model,
                 loss_functions,
                 thetas, xs, ys=None, r_xzs=None, t_xzs=None,
                 theta1=None,
+                mode='flow',
                 loss_weights=None,
                 loss_labels=None,
                 pre_loss_transformer=None,
@@ -83,6 +84,9 @@ def train_model(model,
 
     # Dataset
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
+
+    # Mode
+    assert mode in ['flow', 'ratio']
 
     # Val split
     if validation_split is not None and validation_split <= 0.:
@@ -195,10 +199,16 @@ def train_model(model,
             optimizer.zero_grad()
 
             # Evaluate model
-            _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
-            if theta1 is not None:
-                _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
-                log_r = log_likelihood - log_likelihood_theta1
+            if mode == 'flow':
+                _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+                if theta1 is not None:
+                    _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
+                    log_r = log_likelihood - log_likelihood_theta1
+            elif mode == 'ratio':
+                _, log_r, score = model(theta, x)
+                log_likelihood = None
+            else:
+                raise ValueError('Unknown method type {}'.format(mode))
 
             # Pre-loss transformation
             if pre_loss_transformer is not None:
@@ -268,10 +278,16 @@ def train_model(model,
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
             # Evaluate model
-            _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
-            if theta1 is not None:
-                _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
-                log_r = log_likelihood - log_likelihood_theta1
+            if mode == 'flow':
+                _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+                if theta1 is not None:
+                    _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
+                    log_r = log_likelihood - log_likelihood_theta1
+            elif mode == 'ratio':
+                _, log_r, score = model(theta, x)
+                log_likelihood = None
+            else:
+                raise ValueError('Unknown method type {}'.format(mode))
 
             # Pre-loss transformation
             if pre_loss_transformer is not None:
