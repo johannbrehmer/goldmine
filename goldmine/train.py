@@ -24,8 +24,8 @@ def train(simulator_name,
           model_label='model',
           run=0,
           n_mades=3,
-          n_made_hidden_layers=2,
-          n_made_units_per_layer=20,
+          hidden_layers=2,
+          units_per_layer=20,
           batch_norm=False,
           activation='relu',
           n_bins_theta='auto',
@@ -61,8 +61,8 @@ def train(simulator_name,
     logging.info('  ML model name:         %s', model_label)
     logging.info('  Run number:            %s', run)
     logging.info('  MADEs:                 %s', n_mades)
-    logging.info('  MADE hidden layers:    %s', n_made_hidden_layers)
-    logging.info('  MADE units / layer:    %s', n_made_units_per_layer)
+    logging.info('  Hidden layers:         %s', hidden_layers)
+    logging.info('  Units / layer:         %s', units_per_layer)
     logging.info('  Batch norm:            %s', batch_norm)
     logging.info('  Activation function:   %s', activation)
     logging.info('  Histogram theta bins:  %s', n_bins_theta)
@@ -124,8 +124,10 @@ def train(simulator_name,
     inference = create_inference(
         inference_name,
         n_mades=n_mades,
-        n_made_hidden_layers=n_made_hidden_layers,
-        n_made_units_per_layer=n_made_units_per_layer,
+        n_made_hidden_layers=hidden_layers,
+        n_made_units_per_layer=units_per_layer,
+        n_hidden_layers=hidden_layers,
+        n_units_per_layer=units_per_layer,
         batch_norm=batch_norm,
         activation=activation,
         n_parameters=n_parameters,
@@ -292,8 +294,8 @@ def main():
         model_label=args.modellabel,
         run=args.i,
         n_mades=args.nades,
-        n_made_hidden_layers=args.hidden,
-        n_made_units_per_layer=args.units,
+        hidden_layers=args.hidden,
+        units_per_layer=args.units,
         activation=args.activation,
         n_bins_theta=args.thetabins,
         n_bins_x=args.xbins,

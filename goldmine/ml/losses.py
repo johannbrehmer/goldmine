@@ -28,14 +28,8 @@ def ratio_mse(log_p_pred, log_r_pred, t_pred, y_true, r_true, t_true, log_r_clip
             + ratio_mse_den(log_p_pred, log_r_pred, t_pred, y_true, r_true, t_true, log_r_clip))
 
 
-def standard_cross_entropy(s_hat, log_r_hat, t0_hat, t1_hat, y_true, r_true, t0_true, t1_true):
-    s_hat = 1. / (1. + torch.exp(log_r_hat))
+def standard_cross_entropy(log_p_pred, log_r_pred, t_pred, y_true, r_true, t_true, log_r_clip=10.):
+    r_pred = torch.exp(torch.clamp(log_r_pred, -log_r_clip, log_r_clip))
+    s_hat = 1. / (1. + r_pred)
 
     return BCELoss()(s_hat, y_true)
-
-
-def augmented_cross_entropy(s_hat, log_r_hat, t0_hat, t1_hat, y_true, r_true, t0_true, t1_true):
-    s_hat = 1. / (1. + torch.exp(log_r_hat))
-    s_true = 1. / (1. + r_true)
-
-    return BCELoss()(s_hat, s_true)
