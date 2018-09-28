@@ -35,7 +35,8 @@ def test(simulator_name,
          evaluate_densities_on_grid=False,
          evaluate_ratios_on_grid=False,
          evaluate_score_on_original_theta=False,
-         theta_grid=10,
+         theta_grid=None,
+         theta1_grid=None,
          generate_samples=False,
          discretize_generated_samples=False,
          classify_surrogate_vs_true_samples=False):
@@ -54,13 +55,20 @@ def test(simulator_name,
     logging.info('  Evaluate log p on original theta: %s', evaluate_densities_on_original_theta)
     logging.info('  Evaluate log p on grid:           %s', evaluate_densities_on_grid)
     logging.info('  Evaluate ratios on grid:          %s', evaluate_ratios_on_grid)
-    if evaluate_densities_on_grid:
-        if isinstance(theta_grid, int):
+    if evaluate_densities_on_grid or evaluate_ratios_on_grid:
+        if theta_grid is None:
+            logging.info('  Theta grid:                       default grid with default resolution')
+        elif isinstance(theta_grid, int):
             logging.info('  Theta grid:                       default grid with %s points per dimension', theta_grid)
         else:
             logging.info('  Theta grid:                       %s', theta_grid[0])
             for grid_component in theta_grid[1:]:
                 logging.info('                                    %s', grid_component)
+    if evaluate_ratios_on_grid:
+        if theta1_grid is None:
+            logging.info('  Denominator theta:                default')
+        else:
+            logging.info('  Denominator theta:                %s', theta1_grid)
     logging.info('  Generate samples:                 %s', generate_samples)
     logging.info('  Discretize samples                %s', discretize_generated_samples)
     logging.info('  Classify samples vs true:         %s', classify_surrogate_vs_true_samples)
@@ -93,10 +101,16 @@ def test(simulator_name,
     result_filename += run_appendix
 
     # Theta grid
-    if evaluate_densities_on_grid or evaluate_ratios_on_grid:
-        if isinstance(theta_grid, int):
+    simulator = None
+    if (evaluate_densities_on_grid or evaluate_ratios_on_grid) and (theta_grid is None or isinstance(theta_grid, int)):
+        simulator = create_simulator(simulator_name)
+        theta_grid = simulator.theta_grid_default(n_points_per_dim=theta_grid)
+
+    if evaluate_ratios_on_grid and theta1_grid is None:
+        if simulator is None:
             simulator = create_simulator(simulator_name)
-            theta_grid = simulator.theta_grid_default(n_points_per_dim=theta_grid)
+        _, theta1_grid = simulator.theta_defaults(single_theta=True)
+        theta1_grid = theta1_grid[0]
 
     # # Load train data
     # logging.info('Loading many-theta  train sample')
@@ -170,24 +184,57 @@ def test(simulator_name,
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
 
-    # TODO
     if evaluate_densities_on_grid:
         try:
             logging.info('Estimating densities on single-theta test sample, testing theta grid')
 
-            raise NotImplementedError
+            theta_grid_points = np.meshgrid(*theta_grid, indexing='ij')
+            theta_grid_points = np.array(theta_grid_points).reshape((len(theta_grid), -1))
 
-            # Loop over theta grid
-            #   For each theta, call:
-            #   log_p_hat = inference.predict_density(thetas_singletheta, xs_singletheta, log=True)
-            # Save results
+            log_p_hat_grid = []
+
+            for theta in theta_grid_points:
+                logging.debug('Grid point %s', theta)
+                log_p_hat_grid.append(inference.predict_density(theta, xs_singletheta, log=True))
+
+            np.save(
+                result_folder + '/theta_grid.npy',
+                theta_grid_points
+            )
+            log_p_hat_grid = np.asarray(log_p_hat_grid)
+            np.save(
+                result_folder + '/log_p_hat_' + test_filename + '_singletheta_evaluated_on_grid_' + result_filename + '.npy',
+                log_p_hat_grid
+            )
 
         except NotImplementedError:
             logging.warning('Inference method %s does not support density evaluation', inference_name)
 
-    # TODO
     if evaluate_ratios_on_grid:
-        raise NotImplementedError('Likelihood ratio evaluation on grid not implemented yet')
+        try:
+            logging.info('Estimating ratios on single-theta test sample, testing theta0 grid')
+
+            theta_grid_points = np.meshgrid(*theta_grid, indexing='ij')
+            theta_grid_points = np.array(theta_grid_points).reshape((len(theta_grid), -1))
+
+            log_r_hat_grid = []
+
+            for theta in theta_grid_points:
+                logging.debug('Grid point %s', theta)
+                log_r_hat_grid.append(inference.predict_ratio(theta, theta1_grid, xs_singletheta, log=True))
+
+            np.save(
+                result_folder + '/theta_grid.npy',
+                theta_grid_points
+            )
+            log_r_hat_grid = np.asarray(log_r_hat_grid)
+            np.save(
+                result_folder + '/log_r_hat_' + test_filename + '_singletheta_evaluated_on_grid_' + result_filename + '.npy',
+                log_r_hat_grid
+            )
+
+        except NotImplementedError:
+            logging.warning('Inference method %s does not support ratio evaluation', inference_name)
 
     if evaluate_score_on_original_theta:
         try:
