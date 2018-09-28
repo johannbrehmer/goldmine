@@ -83,10 +83,10 @@ class LotkaVolterra(Simulator):
 
         return benchmarks, theta1
 
-    def theta_grid_default(self, n_points_per_dim=10):
+    def theta_grid_default(self, n_points_per_dim=5):
         # Default
         if n_points_per_dim is None or n_points_per_dim <= 0:
-            n_points_per_dim = 10
+            n_points_per_dim = 5
 
         theta_min = np.array([-5., -0.8, -0.3, -5.]).reshape((4, 1))
         theta_max = np.array([-4.5, -0.3, 0.2, -4.5]).reshape((4, 1))
