@@ -206,6 +206,7 @@ def train_model(model,
                     log_r = log_likelihood - log_likelihood_theta1
             elif mode == 'ratio':
                 _, log_r, score = model(theta, x)
+                log_r = log_r.view((-1,))
                 log_likelihood = None
             else:
                 raise ValueError('Unknown method type {}'.format(mode))
@@ -285,6 +286,7 @@ def train_model(model,
                     log_r = log_likelihood - log_likelihood_theta1
             elif mode == 'ratio':
                 _, log_r, score = model(theta, x)
+                log_r = log_r.view((-1,))
                 log_likelihood = None
             else:
                 raise ValueError('Unknown method type {}'.format(mode))
