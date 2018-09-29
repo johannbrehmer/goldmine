@@ -209,7 +209,7 @@ def train_model(model,
                     _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
             elif mode == 'ratio':
-                _, log_r, score = model(theta, x)
+                _, log_r, score = model(theta, x, track_score=(t_xz is not None))
                 log_r = log_r.view(-1)
                 log_likelihood = None
             else:
@@ -315,7 +315,7 @@ def train_model(model,
                     _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
             elif mode == 'ratio':
-                _, log_r, score = model(theta, x)
+                _, log_r, score = model(theta, x, track_score=(t_xz is not None))
                 log_r = log_r.view(-1)
                 log_likelihood = None
             else:
