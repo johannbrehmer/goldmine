@@ -8,13 +8,13 @@ from goldmine.ml.losses import standard_cross_entropy
 class CARLInference(RatioInference):
 
     def requires_class_label(self):
-        raise True
+        return True
 
     def requires_joint_ratio(self):
-        raise False
+        return False
 
     def requires_joint_score(self):
-        raise False
+        return False
 
     def fit(self,
             theta=None,

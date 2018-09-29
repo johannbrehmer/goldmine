@@ -1,3 +1,4 @@
+import logging
 import torch
 from torch.nn.modules.loss import BCELoss, MSELoss
 import numpy as np
@@ -14,6 +15,7 @@ def score_mse(log_p_pred, log_r_pred, t_pred, y_true, r_true, t_true):
 def ratio_mse_num(log_p_pred, log_r_pred, t_pred, y_true, r_true, t_true, log_r_clip=10.):
     r_true = torch.clamp(r_true, np.exp(-log_r_clip), np.exp(log_r_clip))
     r_pred = torch.exp(torch.clamp(log_r_pred, -log_r_clip, log_r_clip))
+
     return MSELoss()((1. - y_true) * (1. / r_pred), (1. - y_true) * (1. / r_true))
 
 

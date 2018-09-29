@@ -183,9 +183,9 @@ def train_model(model,
             # Put on device
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
-            y = y.to(device, dtype).view((-1,))
+            y = y.to(device, dtype).view(-1)
             try:
-                r_xz = r_xz.to(device, dtype).view((-1,))
+                r_xz = r_xz.to(device, dtype).view(-1)
             except NameError:
                 pass
             try:
@@ -206,6 +206,7 @@ def train_model(model,
                     log_r = log_likelihood - log_likelihood_theta1
             elif mode == 'ratio':
                 _, log_r, score = model(theta, x)
+                log_r = log_r.view(-1)
                 log_likelihood = None
             else:
                 raise ValueError('Unknown method type {}'.format(mode))
@@ -264,9 +265,9 @@ def train_model(model,
             # Put on device
             theta = theta.to(device, dtype)
             x = x.to(device, dtype)
-            y = y.to(device, dtype).view((-1,))
+            y = y.to(device, dtype).view(-1)
             try:
-                r_xz = r_xz.to(device, dtype).view((-1,))
+                r_xz = r_xz.to(device, dtype).view(-1)
             except NameError:
                 pass
             try:
@@ -285,6 +286,7 @@ def train_model(model,
                     log_r = log_likelihood - log_likelihood_theta1
             elif mode == 'ratio':
                 _, log_r, score = model(theta, x)
+                log_r = log_r.view(-1)
                 log_likelihood = None
             else:
                 raise ValueError('Unknown method type {}'.format(mode))
