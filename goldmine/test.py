@@ -39,6 +39,7 @@ def test(simulator_name,
          theta1_grid=None,
          generate_samples=False,
          discretize_generated_samples=False,
+         grid_n_samples=1000,
          classify_surrogate_vs_true_samples=False):
     """ Main evaluation function """
 
@@ -69,6 +70,7 @@ def test(simulator_name,
             logging.info('  Denominator theta:                default')
         else:
             logging.info('  Denominator theta:                %s', theta1_grid)
+    logging.info('  Grid x points saved:              %s', grid_n_samples)
     logging.info('  Generate samples:                 %s', generate_samples)
     logging.info('  Discretize samples                %s', discretize_generated_samples)
     logging.info('  Classify samples vs true:         %s', classify_surrogate_vs_true_samples)
@@ -196,7 +198,7 @@ def test(simulator_name,
 
             for theta in theta_grid_points:
                 logging.debug('Grid point %s', theta)
-                log_p_hat_grid.append(inference.predict_density(theta, xs_singletheta, log=True))
+                log_p_hat_grid.append(inference.predict_density(theta, xs_singletheta[:grid_n_samples], log=True))
 
             np.save(
                 result_folder + '/theta_grid.npy',
@@ -223,7 +225,8 @@ def test(simulator_name,
 
             for theta in theta_grid_points:
                 logging.debug('Grid point %s', theta)
-                log_r_hat_grid.append(inference.predict_ratio(theta, theta1_grid, xs_singletheta, log=True))
+                log_r_hat_grid.append(inference.predict_ratio(theta, theta1_grid, xs_singletheta[:grid_n_samples],
+                                                              log=True))
 
             np.save(
                 result_folder + '/theta_grid.npy',
@@ -341,6 +344,10 @@ def main():
     parser.add_argument('--classifiertest', action='store_true',
                         help='Train classifier to discriminate between samples from simulator and surrogate')
 
+    # Options
+    parser.add_argument('--gridnx', default=1000, type=int,
+                        help='Number of phase-space points saved for the grid evaluation. Default: 1000.')
+
     args = parser.parse_args()
 
     # Start simulation
@@ -359,6 +366,7 @@ def main():
         evaluate_score_on_original_theta=args.score,
         generate_samples=args.classifiertest,
         classify_surrogate_vs_true_samples=args.classifiertest,
+        grid_n_samples=args.gridnx
     )
 
     logging.info("That's all for now, have a nice day!")
