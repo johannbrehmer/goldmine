@@ -200,7 +200,11 @@ def train_model(model,
 
             # Evaluate model
             if mode == 'flow':
-                _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+                if t_xz is not None:
+                    _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+                else:
+                    _, log_likelihood = model.log_likelihood(theta, x)
+                    score = None
                 if theta1 is not None:
                     _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
@@ -302,7 +306,11 @@ def train_model(model,
 
             # Evaluate model
             if mode == 'flow':
-                _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+                if t_xz is not None:
+                    _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
+                else:
+                    _, log_likelihood = model.log_likelihood(theta, x)
+                    score = None
                 if theta1 is not None:
                     _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
