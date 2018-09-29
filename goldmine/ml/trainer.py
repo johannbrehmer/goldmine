@@ -218,7 +218,29 @@ def train_model(model,
                 )
 
             # Evaluate loss
-            losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            try:
+                losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            except RuntimeError:
+                logging.error('Error in evaluating loss functions! Variables:')
+                logging.info('log_likelihood: %s', log_likelihood)
+                if log_likelihood is not None:
+                    logging.info('  Shape: %s', log_likelihood.shape)
+                logging.info('log_r: %s', log_likelihood)
+                if log_r is not None:
+                    logging.info('  Shape: %s', log_r.shape)
+                logging.info('score: %s', score)
+                if score is not None:
+                    logging.info('  Shape: %s', score.shape)
+                logging.info('y: %s', y)
+                if y is not None:
+                    logging.info('  Shape: %s', y.shape)
+                logging.info('r_xz: %s', r_xz)
+                if r_xz is not None:
+                    logging.info('  Shape: %s', r_xz.shape)
+                logging.info('t_xz: %s', t_xz)
+                if t_xz is not None:
+                    logging.info('  Shape: %s', t_xz.shape)
+                raise
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
@@ -298,7 +320,29 @@ def train_model(model,
                 )
 
             # Evaluate losses
-            losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            try:
+                losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
+            except RuntimeError:
+                logging.error('Error in evaluating loss functions in validation! Variables:')
+                logging.info('log_likelihood: %s', log_likelihood)
+                if log_likelihood is not None:
+                    logging.info('  Shape: %s', log_likelihood.shape)
+                logging.info('log_r: %s', log_likelihood)
+                if log_r is not None:
+                    logging.info('  Shape: %s', log_r.shape)
+                logging.info('score: %s', score)
+                if score is not None:
+                    logging.info('  Shape: %s', score.shape)
+                logging.info('y: %s', y)
+                if y is not None:
+                    logging.info('  Shape: %s', y.shape)
+                logging.info('r_xz: %s', r_xz)
+                if r_xz is not None:
+                    logging.info('  Shape: %s', r_xz.shape)
+                logging.info('t_xz: %s', t_xz)
+                if t_xz is not None:
+                    logging.info('  Shape: %s', t_xz.shape)
+                raise
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
