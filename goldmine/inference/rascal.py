@@ -8,13 +8,13 @@ from goldmine.ml.losses import score_mse, ratio_mse
 class RASCALInference(RatioInference):
 
     def requires_class_label(self):
-        raise True
+        return True
 
     def requires_joint_ratio(self):
-        raise True
+        return True
 
     def requires_joint_score(self):
-        raise True
+        return True
 
     def fit(self,
             theta=None,
