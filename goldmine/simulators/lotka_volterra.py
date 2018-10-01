@@ -18,7 +18,7 @@ class LotkaVolterra(Simulator):
 
     def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2,
                  use_summary_statistics=True, normalize_summary_statistics=True, use_full_time_series=False,
-                 smear_summary_statistics=False):
+                 smear_summary_statistics=False, zoom_in=True):
 
         super().__init__()
 
@@ -32,6 +32,7 @@ class LotkaVolterra(Simulator):
         self.normalize_summary_statistics = normalize_summary_statistics
         self.use_full_time_series = use_full_time_series
         self.smear_summary_statistics = smear_summary_statistics
+        self.zoom_in = zoom_in
 
         # Parameters
         self.n_parameters = 4
@@ -43,6 +44,11 @@ class LotkaVolterra(Simulator):
 
         # Single benchmark point
         if single_theta:
+            # return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1, -1)),
+            #        np.array([-4.6, -0.5, 0., -4.6]).reshape((1, -1)))
+            if self.zoom_in:
+                return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1, -1)),
+                        np.array([-4.61, -0.69, 0.00, -4.61]).reshape((1, -1)))
             return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1, -1)),
                     np.array([-4.6, -0.5, 0., -4.6]).reshape((1, -1)))
 
@@ -51,6 +57,10 @@ class LotkaVolterra(Simulator):
         # theta_max = np.array([2., 2., 2., 2.])
         theta_min = np.array([-5., -0.8, -0.3, -5.])
         theta_max = np.array([-4.5, -0.3, 0.2, -4.5])
+
+        if self.zoom_in:
+            theta_min = np.array([-4.62, -0.70, -0.01, -4.62])
+            theta_max = np.array([-4.60, -0.68, 0.01, -4.60])
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
@@ -79,7 +89,10 @@ class LotkaVolterra(Simulator):
         benchmarks[:] += theta_min
 
         theta1 = np.zeros_like(benchmarks)
-        theta1[:] = np.array([-4.5, -0.5, 0., -4.5])
+        if self.zoom_in:
+            theta1[:] = np.array([-4.61, -0.69, 0.00, -4.61])
+        else:
+            theta1[:] = np.array([-4.5, -0.5, 0., -4.5])
 
         return benchmarks, theta1
 
@@ -90,6 +103,9 @@ class LotkaVolterra(Simulator):
 
         theta_min = np.array([-5., -0.8, -0.3, -5.]).reshape((4, 1))
         theta_max = np.array([-4.5, -0.3, 0.2, -4.5]).reshape((4, 1))
+        if self.zoom_in:
+            theta_min = np.array([-4.62, -0.70, -0.01, -4.62]).reshape((4, 1))
+            theta_max = np.array([-4.60, -0.68, 0.01, -4.60]).reshape((4, 1))
 
         u = np.linspace(0., 1., n_points_per_dim).reshape((1, n_points_per_dim))
 

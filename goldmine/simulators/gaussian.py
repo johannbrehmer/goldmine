@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import norm, uniform
+from scipy.stats import norm
 
 from goldmine.simulators.base import Simulator
 
@@ -29,16 +29,16 @@ class GaussianSimulator(Simulator):
 
         # Generate benchmarks in [0,1]^n_parameters
         if random:
-            benchmarks = np.random.rand(n_thetas).reshape((-1,1))
+            benchmarks = np.random.rand(n_thetas).reshape((-1, 1))
 
         else:
-            benchmarks = np.linspace(0.,2.,n_thetas).reshape((-1,1))
+            benchmarks = np.linspace(0., 2., n_thetas).reshape((-1, 1))
 
         # Rescale to correct ranges
         benchmarks[:] *= (theta_max - theta_min)
         benchmarks[:] += theta_min
 
-        return benchmarks.reshape((-1,1)), None
+        return benchmarks.reshape((-1, 1)), None
 
     def rvs(self, theta, n, random_state=None):
 
@@ -63,18 +63,18 @@ class GaussianSimulator(Simulator):
 
         x = self.rvs(theta, n)
 
-        x_a = x[:n//4,:]
-        t_a = (x_a[:,0] - theta) / self.width**2
+        x_a = x[:n // 4, :]
+        t_a = (x_a[:, 0] - theta) / self.width ** 2
 
-        x_b = x[n//4:2*(n//4),:]
-        t_b = -(x_b[:,1] + theta) / self.width**2
+        x_b = x[n // 4:2 * (n // 4), :]
+        t_b = -(x_b[:, 1] + theta) / self.width ** 2
 
-        x_c = x[2*(n//4):3*(n//4),:]
-        t_c = (x_c[:,1] - theta) / self.width**2
+        x_c = x[2 * (n // 4):3 * (n // 4), :]
+        t_c = (x_c[:, 1] - theta) / self.width ** 2
 
-        x_d = x[3*(n//4):4*(n//4),:]
-        t_d = -(x_d[:,0] + theta) / self.width**2
+        x_d = x[3 * (n // 4):4 * (n // 4), :]
+        t_d = -(x_d[:, 0] + theta) / self.width ** 2
 
-        t = np.concatenate((t_a, t_b, t_c, t_d), axis=0).reshape((-1,1))
+        t = np.concatenate((t_a, t_b, t_c, t_d), axis=0).reshape((-1, 1))
 
         return x, t

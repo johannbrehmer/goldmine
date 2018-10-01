@@ -1,7 +1,7 @@
-1;95;0c#!/bin/bash
+#!/bin/bash
 
 #SBATCH --job-name=combine
-#SBATCH --output=combine_samples.log
+#SBATCH --output=log_combine_samples.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=62GB
@@ -11,7 +11,7 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine/
 
-#./combine_samples.py --regex lotkavolterra train_focus "trainfocus\d+"
-./combine_samples.py --regex lotkavolterra train_focus_singletheta "trainfocus\d+_singletheta"
-#./combine_samples.py --regex lotkavolterra test_focus_singletheta "testfocus\d+_singletheta"
-#./combine_samples.py --regex lotkavolterra test_focus "testfocus\d+"
+./combine_samples.py --regex lotkavolterra train_zoom "train_zoom_\d+"
+# ./combine_samples.py --regex lotkavolterra train_zoom_singletheta "train_zoom_\d+_singletheta"
+# ./combine_samples.py --regex lotkavolterra test_zoom_singletheta "test_zoom_\d+_singletheta"
+# ./combine_samples.py --regex lotkavolterra test_zoom "test_zoom_\d+"

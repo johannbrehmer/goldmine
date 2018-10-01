@@ -38,7 +38,7 @@ def general_init(debug=False):
 
     np.seterr(divide='ignore', invalid='ignore')
 
-    np.set_printoptions(formatter={'float_kind': lambda x: "%.2f" % x})
+    np.set_printoptions(formatter={'float_kind': lambda x: "%.4f" % x})
 
 
 def create_missing_folders(base_dir, simulator_name, inference_name=None):
@@ -90,7 +90,7 @@ def shuffle(*arrays):
     return shuffled_arrays
 
 
-def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(20.), max_value=np.exp(20.)):
+def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(25.), max_value=np.exp(25.)):
     data = np.load(filename)
 
     n_nans = np.sum(np.isnan(data))
