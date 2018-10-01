@@ -223,7 +223,7 @@ def train_model(model,
 
             # Evaluate loss
             try:
-                losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
+                losses = [fn(log_likelihood, log_r, score, y, r_xz, t_xz) for fn in loss_functions]
             except RuntimeError:
                 logging.error('Error in evaluating loss functions! Variables:')
                 logging.info('log_likelihood: %s', log_likelihood)
@@ -329,7 +329,7 @@ def train_model(model,
 
             # Evaluate losses
             try:
-                losses = [loss_function(log_likelihood, log_r, score, y, r_xz, t_xz) for loss_function in loss_functions]
+                losses = [fn(log_likelihood, log_r, score, y, r_xz, t_xz) for fn in loss_functions]
             except RuntimeError:
                 logging.error('Error in evaluating loss functions in validation! Variables:')
                 logging.info('log_likelihood: %s', log_likelihood)

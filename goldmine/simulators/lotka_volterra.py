@@ -44,7 +44,7 @@ class LotkaVolterra(Simulator):
 
         # Single benchmark point
         if single_theta:
-            #return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1, -1)),
+            # return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1, -1)),
             #        np.array([-4.6, -0.5, 0., -4.6]).reshape((1, -1)))
             if self.zoom_in:
                 return (np.log(np.array([0.01, 0.5, 1.0, 0.01])).reshape((1, -1)),

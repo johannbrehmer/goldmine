@@ -206,7 +206,8 @@ def test(simulator_name,
             )
             log_p_hat_grid = np.asarray(log_p_hat_grid)
             np.save(
-                result_folder + '/log_p_hat_' + test_filename + '_singletheta_evaluated_on_grid_' + result_filename + '.npy',
+                result_folder + '/log_p_hat_' + test_filename + '_singletheta_evaluated_on_grid_' + result_filename
+                + '.npy',
                 log_p_hat_grid
             )
 
@@ -234,7 +235,8 @@ def test(simulator_name,
             )
             log_r_hat_grid = np.asarray(log_r_hat_grid)
             np.save(
-                result_folder + '/log_r_hat_' + test_filename + '_singletheta_evaluated_on_grid_' + result_filename + '.npy',
+                result_folder + '/log_r_hat_' + test_filename + '_singletheta_evaluated_on_grid_' + result_filename
+                + '.npy',
                 log_r_hat_grid
             )
 
