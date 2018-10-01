@@ -29,7 +29,7 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
         # create network's parameters
         self.degrees = create_degrees(n_inputs, n_hiddens, input_order, mode)
         self.Ms, self.Mmp = create_masks(self.degrees)
-        self.Mmp = self.Mmp.view(self.Mmp.size[0], self.Mmp.size[1], 1)
+        logging.debug('Mmp shape: %s', self.Mmp.shape)
         (self.Wx, self.Ws, self.bs, self.Wm, self.bm, self.Wp, self.bp, self.Wa,
          self.ba) = create_weights_conditional(
             n_conditionals,
@@ -38,6 +38,12 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
             n_components
         )
         self.input_order = self.degrees[0]
+
+        # Shaping things
+        self.Mmp = self.Mmp.unsqueeze(2)
+        self.ba.data = self.ba.data.unsqueeze(0)
+        self.bp.data = self.bp.data.unsqueeze(0)
+        self.bm.data = self.bm.data.unsqueeze(0)
 
         self.activation_function = get_activation_function(activation)
 
@@ -72,11 +78,42 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
 
         # Gaussian parameters
         # TODO: does this work with the MoG version?
-        self.m = F.linear(h, torch.t(self.Mmp * self.Wm), self.bm)
-        self.logp = F.linear(h, torch.t(self.Mmp * self.Wp), self.bp)
+        logging.debug('h: %s', h.shape)
+        logging.debug('Mmp: %s', self.Mmp.shape)
+        logging.debug('Wm: %s', self.Wm.shape)
+        logging.debug('bm: %s', self.bm.shape)
+        logging.debug('Wm * bm: %s', (self.Mmp * self.Wp).shape)
+
+        # h: (batch, hidden)
+        # self.Mmp * self.Wm: (hidden, u, components)
+        # self.bm: (u, components)
+        # Goal: (batch, 1, hidden) * (1, u, hidden, components) + (1, u, components)
+
+        h = h.unsqueeze(1).unsqueeze(2)
+        weight = (self.Mmp * self.Wm).transpose(0, 1)
+        weight = weight.contiguous().unsqueeze(0)
+        logging.debug('h just before: %s', h.shape)
+        logging.debug('weight: %s', weight.shape)
+        self.m = torch.matmul(h, weight)
+        self.m = self.m.squeeze()
+        self.m = self.m + self.bm
+        logging.debug('m: %s', self.m.shape)
+
+        weight = (self.Mmp * self.Wp).transpose(0, 1)
+        weight = weight.contiguous().unsqueeze(0)
+        self.logp = torch.matmul(h, weight)
+        self.logp = self.logp.squeeze()
+        self.logp = self.logp + self.bp
+        logging.debug('logp: %s', self.logp.shape)
 
         # mixing coefficients
-        self.loga = F.linear(h, torch.t(self.Mmp * self.Wa), self.ba)
+        weight = (self.Mmp * self.Wa).transpose(0, 1)
+        weight = weight.contiguous().unsqueeze(0)
+        self.loga = torch.matmul(h, weight)
+        self.loga = self.loga.squeeze()
+        self.loga = self.loga + self.ba
+        logging.debug('loga: %s', self.loga.shape)
+
         self.loga -= torch.log(torch.sum(torch.exp(self.loga), dim=2, keepdim=True))
 
         # u(x)
