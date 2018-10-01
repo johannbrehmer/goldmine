@@ -90,7 +90,7 @@ def shuffle(*arrays):
     return shuffled_arrays
 
 
-def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(20.), max_value=np.exp(20.)):
+def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(25.), max_value=np.exp(25.)):
     data = np.load(filename)
 
     n_nans = np.sum(np.isnan(data))
