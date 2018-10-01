@@ -18,4 +18,4 @@ cd /scratch/jb6504/goldmine/goldmine
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --densitygrid --ratiogrid --density --score --testsample test_focus --modellabel model_focus
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --densitygrid --ratiogrid --density --score --testsample test_focus --modellabel model_focus
 ./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --densitygrid --ratiogrid --density --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --densitygrid --ratiogrid --density --score --testsample test_focus --modellabel model_focus
+./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --densitygrid --ratiogrid --density --score --testsample test_focus --modellabel model_focus --classifiertest

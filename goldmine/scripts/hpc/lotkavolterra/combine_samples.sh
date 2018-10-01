@@ -1,4 +1,4 @@
-1;95;0c#!/bin/bash
+#!/bin/bash
 
 #SBATCH --job-name=combine
 #SBATCH --output=combine_samples.log
