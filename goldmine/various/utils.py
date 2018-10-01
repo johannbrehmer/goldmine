@@ -38,7 +38,7 @@ def general_init(debug=False):
 
     np.seterr(divide='ignore', invalid='ignore')
 
-    np.set_printoptions(formatter={'float_kind': lambda x: "%.2f" % x})
+    np.set_printoptions(formatter={'float_kind': lambda x: "%.4f" % x})
 
 
 def create_missing_folders(base_dir, simulator_name, inference_name=None):

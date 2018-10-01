@@ -10,4 +10,4 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine/
 
-./simulate.py --nsamples 1000 lotkavolterra trainfocus${SLURM_ARRAY_TASK_ID} --singletheta
+./simulate.py --nsamples 2000 lotkavolterra train_zoom_${SLURM_ARRAY_TASK_ID} --singletheta
