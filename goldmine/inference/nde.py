@@ -42,7 +42,8 @@ class MAFInference(Inference):
 
             # MAF
             if n_components is not None and n_components > 1:
-                self.maf = ConditionalMaskedAutoregressiveFlow(
+                self.maf = ConditionalMixtureMaskedAutoregressiveFlow(
+                    n_components=n_components,
                     n_conditionals=n_parameters,
                     n_inputs=n_observables,
                     n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
@@ -54,8 +55,7 @@ class MAFInference(Inference):
                     alpha=0.1
                 )
             else:
-                self.maf = ConditionalMixtureMaskedAutoregressiveFlow(
-                    n_components=n_components,
+                self.maf = ConditionalMaskedAutoregressiveFlow(
                     n_conditionals=n_parameters,
                     n_inputs=n_observables,
                     n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
@@ -76,7 +76,7 @@ class MAFInference(Inference):
             logging.info('  Observables:   %s', self.maf.n_inputs)
             try:
                 logging.info('  Components:    %s', self.maf.n_components)
-            except NameError:
+            except AttributeError:
                 logging.info('  Components:    1')
             logging.info('  MADEs:         %s', self.maf.n_mades)
             logging.info('  Hidden layers: %s', self.maf.n_hiddens)

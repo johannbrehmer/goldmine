@@ -118,6 +118,8 @@ class ConditionalMixtureMaskedAutoregressiveFlow(BaseConditionalFlow):
 
         for i, (made) in enumerate(self.mades):
             self.mades[i] = made.to(*args, **kwargs)
+            
+        self.made_mog = self.made_mog.to(*args, **kwargs)
 
         if self.batch_norm:
             for i, (bn) in enumerate(self.bns):

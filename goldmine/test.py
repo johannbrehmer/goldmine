@@ -78,13 +78,16 @@ def test(simulator_name,
     # Check paths
     create_missing_folders(base_dir, simulator_name, inference_name)
 
-    # Folders and filenames
+    # Folders
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
     model_folder = base_dir + '/goldmine/data/models/' + simulator_name + '/' + inference_name
     result_folder = base_dir + '/goldmine/data/results/' + simulator_name + '/' + inference_name
 
+    # Filenames
     model_filename = model_label
     result_filename = ''
+    if model_label != 'model':
+        result_filename = '_' + model_label
     if trained_on_single_theta:
         model_filename += '_singletheta'
         result_filename += '_trainedonsingletheta'
@@ -322,8 +325,8 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
-    parser.add_argument('--modellabel', type=str, default='model',
-                        help='Additional name for the trained model.')
+    parser.add_argument('--model', type=str, default='model',
+                        help='Trained model name. Default: "model"'.)
     parser.add_argument('--testsample', type=str, default='test',
                         help='Label (filename) for the test sample.')
     parser.add_argument('-i', type=int, default=0,
