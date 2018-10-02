@@ -23,6 +23,7 @@ def train(simulator_name,
           inference_name,
           model_label='model',
           run=0,
+          n_components=1,
           n_mades=3,
           hidden_layers=2,
           units_per_layer=20,
@@ -60,6 +61,7 @@ def train(simulator_name,
     logging.info('  Inference method:      %s', inference_name)
     logging.info('  ML model name:         %s', model_label)
     logging.info('  Run number:            %s', run)
+    logging.info('  Mixture components:    %s', n_components)
     logging.info('  MADEs:                 %s', n_mades)
     logging.info('  Hidden layers:         %s', hidden_layers)
     logging.info('  Units / layer:         %s', units_per_layer)
@@ -124,6 +126,7 @@ def train(simulator_name,
     inference = create_inference(
         inference_name,
         n_mades=n_mades,
+        n_components=n_components,
         n_made_hidden_layers=hidden_layers,
         n_made_units_per_layer=units_per_layer,
         n_hidden_layers=hidden_layers,
@@ -224,6 +227,8 @@ def main():
                         help='Run number for multiple repeated trainings.')
 
     # Flow architecture
+    parser.add_argument('--components', type=int, default=1,
+                        help='Number of Gaussian mixture components in a MAF MoG. Default: 1 (a standard MAF).')
     parser.add_argument('--nades', type=int, default=5,
                         help='Number of NADEs in a MAF. Default: 5.')
     parser.add_argument('--hidden', type=int, default=1,
@@ -294,6 +299,7 @@ def main():
         model_label=args.modellabel,
         run=args.i,
         n_mades=args.nades,
+        n_components=args.components,
         hidden_layers=args.hidden,
         units_per_layer=args.units,
         activation=args.activation,
