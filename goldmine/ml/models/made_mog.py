@@ -76,51 +76,26 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
         for M, W, b in zip(self.Ms[1:], self.Ws[1:], self.bs[1:]):
             h = self.activation_function(F.linear(h, torch.t(M * W), b))
 
-        # Gaussian parameters
-        # TODO: does this work with the MoG version?
-        logging.debug('h: %s', h.shape)
-        logging.debug('Mmp: %s', self.Mmp.shape)
-        logging.debug('Wm: %s', self.Wm.shape)
-        logging.debug('bm: %s', self.bm.shape)
-        logging.debug('Wm * bm: %s', (self.Mmp * self.Wp).shape)
-
-        # h: (batch, hidden)
-        # self.Mmp * self.Wm: (hidden, u, components)
-        # self.bm: (u, components)
-        # Goal: (batch, 1, hidden) * (1, u, hidden, components) + (1, u, components)
-
+        # Gaussian mean
         h = h.unsqueeze(1).unsqueeze(2)
-        weight = (self.Mmp * self.Wm).transpose(0, 1)
-        weight = weight.contiguous().unsqueeze(0)
-        logging.debug('h just before: %s', h.shape)
-        logging.debug('weight: %s', weight.shape)
-        self.m = torch.matmul(h, weight)
-        self.m = self.m.squeeze()
-        self.m = self.m + self.bm
-        logging.debug('m: %s', self.m.shape)
+        weight = (self.Mmp * self.Wm).transpose(0, 1).contiguous().unsqueeze(0)
+        self.m = torch.matmul(h, weight).squeeze() + self.bm
 
-        weight = (self.Mmp * self.Wp).transpose(0, 1)
-        weight = weight.contiguous().unsqueeze(0)
-        self.logp = torch.matmul(h, weight)
-        self.logp = self.logp.squeeze()
-        self.logp = self.logp + self.bp
-        logging.debug('logp: %s', self.logp.shape)
+        # Gaussian variance
+        weight = (self.Mmp * self.Wp).transpose(0, 1).contiguous().unsqueeze(0)
+        self.logp = torch.matmul(h, weight).squeeze() + self.bp
 
         # mixing coefficients
-        weight = (self.Mmp * self.Wa).transpose(0, 1)
-        weight = weight.contiguous().unsqueeze(0)
-        self.loga = torch.matmul(h, weight)
-        self.loga = self.loga.squeeze()
-        self.loga = self.loga + self.ba
-        logging.debug('loga: %s', self.loga.shape)
-
+        weight = (self.Mmp * self.Wa).transpose(0, 1).contiguous().unsqueeze(0)
+        self.loga = torch.matmul(h, weight).squeeze() + self.ba
         self.loga -= torch.log(torch.sum(torch.exp(self.loga), dim=2, keepdim=True))
 
         # u(x)
+        x = x.unsqueeze(2)
         u = torch.exp(0.5 * self.logp) * (x - self.m)
 
         # log det du/dx
-        logdet_dudx = 0.5 * torch.sum(self.logp, dim=1)
+        logdet_dudx = 0.5 * self.logp  # torch.sum(self.logp, dim=1)
 
         return u, logdet_dudx, self.loga
 
@@ -130,7 +105,9 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
         u, logdet_dudx, log_a = self.forward(theta, x, **kwargs)
 
         constant = float(- 0.5 * self.n_inputs * np.log(2. * np.pi))
-        log_likelihood = constant + torch.sum(log_a - 0.5 * u ** 2, dim=1) + logdet_dudx
+        # log_likelihood = torch.log(torch.sum(torch.exp(log_a - 0.5 * u ** 2 + logdet_dudx), dim=2))
+        log_likelihood = torch.logsumexp(log_a - 0.5 * u ** 2 + logdet_dudx, dim=2)
+        log_likelihood = constant + torch.sum(log_likelihood, dim=1)
 
         return u, log_likelihood
 
