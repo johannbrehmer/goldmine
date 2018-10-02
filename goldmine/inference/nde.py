@@ -5,6 +5,7 @@ from torch import tensor
 
 from goldmine.inference.base import Inference
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
+from goldmine.ml.models.maf_mog import ConditionalMixtureMaskedAutoregressiveFlow
 from goldmine.ml.trainer import train_model
 from goldmine.ml.losses import negative_log_likelihood
 from goldmine.various.utils import expand_array_2d
@@ -22,6 +23,7 @@ class MAFInference(Inference):
             # Parameters for new MAF
             n_parameters = params['n_parameters']
             n_observables = params['n_observables']
+            n_components = params.get('n_components', 1)
             n_mades = params.get('n_mades', 2)
             n_made_hidden_layers = params.get('n_made_hidden_layers', 2)
             n_made_units_per_layer = params.get('n_made_units_per_layer', 20)
@@ -29,26 +31,41 @@ class MAFInference(Inference):
             batch_norm = params.get('batch_norm', False)
 
             logging.info('Initialized NDE (MAF) with the following settings:')
-            logging.info('  Parameters:    %s', n_parameters)
-            logging.info('  Observables:   %s', n_observables)
-            logging.info('  MADEs:         %s', n_mades)
-            logging.info('  Hidden layers: %s', n_made_hidden_layers)
-            logging.info('  Units:         %s', n_made_units_per_layer)
-            logging.info('  Activation:    %s', activation)
-            logging.info('  Batch norm:    %s', batch_norm)
+            logging.info('  Parameters:      %s', n_parameters)
+            logging.info('  Observables:     %s', n_observables)
+            logging.info('  Base components: %s', n_components)
+            logging.info('  MADEs:           %s', n_mades)
+            logging.info('  Hidden layers:   %s', n_made_hidden_layers)
+            logging.info('  Units:           %s', n_made_units_per_layer)
+            logging.info('  Activation:      %s', activation)
+            logging.info('  Batch norm:      %s', batch_norm)
 
             # MAF
-            self.maf = ConditionalMaskedAutoregressiveFlow(
-                n_conditionals=n_parameters,
-                n_inputs=n_observables,
-                n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
-                n_mades=n_mades,
-                activation=activation,
-                batch_norm=batch_norm,
-                input_order='random',
-                mode='sequential',
-                alpha=0.1
-            )
+            if n_components is not None and n_components > 1:
+                self.maf = ConditionalMaskedAutoregressiveFlow(
+                    n_conditionals=n_parameters,
+                    n_inputs=n_observables,
+                    n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
+                    n_mades=n_mades,
+                    activation=activation,
+                    batch_norm=batch_norm,
+                    input_order='random',
+                    mode='sequential',
+                    alpha=0.1
+                )
+            else:
+                self.maf = ConditionalMixtureMaskedAutoregressiveFlow(
+                    n_components=n_components,
+                    n_conditionals=n_parameters,
+                    n_inputs=n_observables,
+                    n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
+                    n_mades=n_mades,
+                    activation=activation,
+                    batch_norm=batch_norm,
+                    input_order='random',
+                    mode='sequential',
+                    alpha=0.1
+                )
 
         else:
             self.maf = torch.load(filename + '.pt', map_location='cpu')
@@ -57,6 +74,10 @@ class MAFInference(Inference):
             logging.info('  Filename:      %s', filename)
             logging.info('  Parameters:    %s', self.maf.n_conditionals)
             logging.info('  Observables:   %s', self.maf.n_inputs)
+            try:
+                logging.info('  Components:    %s', self.maf.n_components)
+            except NameError:
+                logging.info('  Components:    1')
             logging.info('  MADEs:         %s', self.maf.n_mades)
             logging.info('  Hidden layers: %s', self.maf.n_hiddens)
             logging.info('  Activation:    %s', self.maf.activation)
@@ -132,15 +153,7 @@ class MAFInference(Inference):
     def save(self, filename):
         # Fix a bug in pyTorch, see https://github.com/pytorch/text/issues/350
         self.maf.to()
-
-        # self.maf.to_args = None
-        # self.maf.to_kwargs = None
-        # for made in self.maf.mades:
-        #     made.to_args = None
-        #     made.to_kwargs = None
-
         torch.save(self.maf, filename + '.pt')
-
         self.maf.to(self.device, self.dtype)
 
     def predict_density(self, theta, x, log=False):
