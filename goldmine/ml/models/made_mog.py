@@ -66,6 +66,8 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
             logging.info('MADE settings: n_inputs = %s, n_conditionals = %s', self.n_inputs, self.n_conditionals)
             logging.info('Shapes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
                          theta.shape, self.Wx.shape, x.shape, self.Ms[0].shape, self.Ws[0].shape, self.bs[0].shape)
+            logging.info('dtypes: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
+                         theta.dtype, self.Wx.dtype, x.dtype, self.Ms[0].dtype, self.Ws[0].dtype, self.bs[0].dtype)
             logging.info('Types: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
                          type(theta), type(self.Wx), type(x), type(self.Ms[0]), type(self.Ws[0]), type(self.bs[0]))
             logging.info('CUDA: theta %s, Wx %s, x %s, Ms %s, Ws %s, bs %s',
@@ -113,8 +115,6 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
 
     def generate_samples(self, theta, u=None, **kwargs):
 
-        raise NotImplementedError
-
         n_samples = theta.shape[0]
 
         x = torch.zeros([n_samples, self.n_inputs])
@@ -126,17 +126,25 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
             u = u.to(*self.to_args, **self.to_kwargs)
 
         for i in range(1, self.n_inputs + 1):
-            self.forward(theta, x)  # Sets Gaussian parameters: self.m and self.logp
+            self.forward(theta, x)  # Sets Gaussian parameters (self.m and self.logp) and mixture coeffs (self.loga)
 
-            idx = np.argwhere(self.input_order == i)[0, 0]
+            ix = np.argwhere(self.input_order == i)[0, 0]
 
-            mask = torch.zeros([n_samples, self.n_inputs])
-            if self.to_args is not None or self.to_kwargs is not None:
-                mask = mask.to(*self.to_args, **self.to_kwargs)
+            for i_sample in range(n_samples):
+                # Mask
+                mask = torch.zeros([n_samples, self.n_inputs])
+                if self.to_args is not None or self.to_kwargs is not None:
+                    mask = mask.to(*self.to_args, **self.to_kwargs)
+                mask[i_sample, ix] = 1.
 
-            mask[:, idx] = 1.
+                # Mixture component
+                p_components = np.exp(self.loga[i_sample, ix].detach().numpy())
+                cum_p_components = np.cumsum(p_components[:-1])
+                r = np.random.rand(1)
+                c = np.sum((r > cum_p_components).astype(int))
 
-            x = (1. - mask) * x + mask * (self.m + torch.exp(torch.clamp(-0.5 * self.logp, -10., 10.)) * u)
+                x = ((1. - mask) * x
+                     + mask * (self.m[:, :, c] + torch.exp(torch.clamp(-0.5 * self.logp[:, :, c], -10., 10.)) * u))
 
         return x
 
@@ -146,7 +154,7 @@ class ConditionalMixtureMADE(BaseConditionalFlow):
 
         self = super().to(*args, **kwargs)
 
-        for i, (M, W, b) in enumerate(zip(self.Ms, self.Ws, self.bs)):
+        for i, M in enumerate(self.Ms):
             self.Ms[i] = M.to(*args, **kwargs)
         self.Mmp = self.Mmp.to(*args, **kwargs)
 
