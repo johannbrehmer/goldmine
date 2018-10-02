@@ -326,7 +326,7 @@ def main():
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
     parser.add_argument('--model', type=str, default='model',
-                        help='Trained model name. Default: "model"'.)
+                        help='Trained model name. Default: "model".')
     parser.add_argument('--testsample', type=str, default='test',
                         help='Label (filename) for the test sample.')
     parser.add_argument('-i', type=int, default=0,
@@ -359,7 +359,7 @@ def main():
     test(
         args.simulator,
         args.inference,
-        model_label=args.modellabel,
+        model_label=args.model,
         test_sample=args.testsample,
         run=args.i,
         alpha=args.alpha,
