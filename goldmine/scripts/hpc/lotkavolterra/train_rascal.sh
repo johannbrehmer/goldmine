@@ -18,6 +18,3 @@ cd /scratch/jb6504/goldmine/goldmine
 ./train.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --alpha 1 --trainsample train_zoom --modellabel model_zoom --hidden 3
 ./train.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --alpha 1 --trainsample train_zoom --modellabel model_zoom --hidden 3
 ./train.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --alpha 1 --trainsample train_zoom --modellabel model_zoom --hidden 3
-./train.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --alpha 1 --trainsample train_zoom --modellabel model_zoom --hidden 3
-./train.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 500000 --alpha 1 --trainsample train_zoom --modellabel model_zoom --hidden 3
-./train.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000000 --alpha 1 --trainsample train_zoom --modellabel model_zoom --hidden 3
