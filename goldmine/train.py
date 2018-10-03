@@ -261,8 +261,8 @@ def main():
     # Training settings
     parser.add_argument('--batchsize', type=int, default=512,
                         help='Batch size. Default: 512.')
-    parser.add_argument('--epochs', type=int, default=25,
-                        help='Number of epochs. Default: 25.')
+    parser.add_argument('--epochs', type=int, default=30,
+                        help='Number of epochs. Default: 30.')
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
