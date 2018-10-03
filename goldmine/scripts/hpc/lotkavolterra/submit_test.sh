@@ -10,12 +10,12 @@ sbatch --array=0-9 test_mafmog.sh
 sbatch --array=0-9 test_scandalmog.sh
 sbatch --array=0-9 test_rascandalmog.sh
 
-sbatch --array=0-9 test_rascal.sh
-sbatch --array=0-9 test_cascal.sh
-sbatch --array=0-9 test_rolr.sh
-sbatch --array=0-9 test_carl.sh
+sbatch --array=0-4 test_rascal.sh
+sbatch --array=0-4 test_cascal.sh
+sbatch --array=0-4 test_rolr.sh
+sbatch --array=0-4 test_carl.sh
 
-sbatch --array=0-9 test_scandal_largealpha.sh
-sbatch --array=0-9 test_scandalmog_largealpha.sh
+#sbatch --array=0-9 test_scandal_largealpha.sh
+#sbatch --array=0-9 test_scandalmog_largealpha.sh
 
-sbatch --array=0-9 test_groundtruth.sh
+#sbatch --array=0-9 test_groundtruth.sh
