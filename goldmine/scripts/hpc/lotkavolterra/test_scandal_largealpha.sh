@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=test_scandal
-#SBATCH --output=log_test_scandal_%a.log
+#SBATCH --job-name=test_scandal_largealpha
+#SBATCH --output=log_test_scandal_largealpha_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
