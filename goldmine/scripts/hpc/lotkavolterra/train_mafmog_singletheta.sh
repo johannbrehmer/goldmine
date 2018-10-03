@@ -11,10 +11,4 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine
 
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
-./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
+./train.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --singletheta --trainsample train_zoom --modellabel model_zoom_mog --components 10
