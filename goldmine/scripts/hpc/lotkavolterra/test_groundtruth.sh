@@ -11,4 +11,4 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine
 
-./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --densitygrid --ratiogrid --density --score --classifiertest --testsample test_zoom --modellabel model_zoom_groundtruth
+./test.py lotkavolterra maf -i ${SLURM_ARRAY_TASK_ID} --densitygrid --ratiogrid --density --score --classifiertest --testsample test_zoom --model model_zoom_groundtruth
