@@ -18,4 +18,4 @@ sbatch --array=0-9 test_carl.sh
 sbatch --array=0-9 test_scandal_largealpha.sh
 sbatch --array=0-9 test_scandalmog_largealpha.sh
 
-sbatch --array=0-0 test_mafmog_singletheta.sh
+sbatch --array=0-9 test_groundtruth.sh
