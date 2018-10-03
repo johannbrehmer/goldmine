@@ -11,11 +11,10 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine
 
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --ratiogrid --score --testsample test_focus --modellabel model_focus
-./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --ratiogrid --score --testsample test_focus --modellabel model_focus
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --ratiogrid --testsample test_zoom --modellabel model_zoom
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --ratiogrid --testsample test_zoom --modellabel model_zoom
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --ratiogrid --testsample test_zoom --modellabel model_zoom
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --ratiogrid --testsample test_zoom --modellabel model_zoom
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --ratiogrid --testsample test_zoom --modellabel model_zoom
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --ratiogrid --testsample test_zoom --modellabel model_zoom
+./test.py lotkavolterra rascal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --ratiogrid --testsample test_zoom --modellabel model_zoom
