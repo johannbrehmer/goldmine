@@ -228,7 +228,7 @@ def test(simulator_name,
             log_r_hat_grid = []
 
             for theta in theta_grid_points:
-                logging.debug('Grid point %s', theta)
+                logging.debug('Grid point %s vs %s', theta, theta1_grid)
                 log_r_hat_grid.append(inference.predict_ratio(theta, theta1_grid, xs_singletheta[:grid_n_samples],
                                                               log=True))
 
