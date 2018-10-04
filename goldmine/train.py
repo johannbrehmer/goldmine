@@ -282,8 +282,8 @@ def main():
                         help='Validation split. Default: 0.2.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
-    parser.add_argument('--gradientclip', default=10.,
-                        help='Gradient norm clipping threshold. Default: 10.')
+    #parser.add_argument('--gradientclip', default=10.,
+    #                    help='Gradient norm clipping threshold. Default: 10.')
 
     parser.add_argument('--debug', action='store_true', help='Print debug output')
 
