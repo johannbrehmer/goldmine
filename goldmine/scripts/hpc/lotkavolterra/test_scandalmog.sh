@@ -11,10 +11,11 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine
 
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --densitygrid --ratiogrid --density --score  --testsample test_zoom --model model_zoom_mog
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
-./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 1000 --densitygrid --ratiogrid --density --score  --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 2000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 5000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 10000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+#./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
+./test.py lotkavolterra scandal -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --densitygrid --ratiogrid --density --score --testsample test_zoom --model model_zoom_mog
