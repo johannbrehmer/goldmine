@@ -18,4 +18,4 @@ cd /scratch/jb6504/goldmine/goldmine
 #./test.py lotkavolterra carl -i ${SLURM_ARRAY_TASK_ID} --samplesize 20000 --ratiogrid  --testsample test_zoom --model model_zoom
 #./test.py lotkavolterra carl -i ${SLURM_ARRAY_TASK_ID} --samplesize 50000 --ratiogrid  --testsample test_zoom --model model_zoom
 #./test.py lotkavolterra carl -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --ratiogrid  --testsample test_zoom --model model_zoom
-./test.py lotkavolterra carl -i ${SLURM_ARRAY_TASK_ID} --samplesize 100000 --ratiogrid  --testsample test_zoom --model model_zoom
+./test.py lotkavolterra carl -i ${SLURM_ARRAY_TASK_ID} --samplesize 200000 --ratiogrid  --testsample test_zoom --model model_zoom
