@@ -4,9 +4,9 @@ from goldmine.inference.base import CheckpointedInference
 from goldmine.ml.models.score import CheckpointScoreEstimator
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
 from goldmine.ml.models.maf_mog import ConditionalMixtureMaskedAutoregressiveFlow
-from goldmine.ml.trainer import train_model
-from goldmine.ml.losses import negative_log_likelihood, score_mse
-from goldmine.various.utils import expand_array_2d
+from goldmine.ml.models.checkpoint import FlowCheckpointScoreModel
+from goldmine.ml.trainer_checkpoint import train_checkpointed_model
+from goldmine.ml.losses_checkpoint import negative_log_likelihood, score_mse, score_checkpoint_mse
 
 
 class CheckpointedSCANDALInference(CheckpointedInference):
@@ -52,16 +52,16 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             logging.info('    Batch norm:      %s', batch_norm)
 
             # Step model
-            self.checkpoint_score_model = CheckpointScoreEstimator(
+            checkpoint_score_model = CheckpointScoreEstimator(
                 n_parameters=n_parameters,
                 n_latent=n_latent,
                 n_hidden=tuple([n_step_units_per_layer] * n_step_hidden_layers),
-                activation = step_activation
+                activation=step_activation
             )
 
             # Global model
             if n_components is not None and n_components > 1:
-                self.maf = ConditionalMixtureMaskedAutoregressiveFlow(
+                maf = ConditionalMixtureMaskedAutoregressiveFlow(
                     n_components=n_components,
                     n_conditionals=n_parameters,
                     n_inputs=n_observables,
@@ -74,7 +74,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
                     alpha=0.1
                 )
             else:
-                self.maf = ConditionalMaskedAutoregressiveFlow(
+                maf = ConditionalMaskedAutoregressiveFlow(
                     n_conditionals=n_parameters,
                     n_inputs=n_observables,
                     n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
@@ -86,10 +86,11 @@ class CheckpointedSCANDALInference(CheckpointedInference):
                     alpha=0.1
                 )
 
+            # Wrapper
+            self.model = FlowCheckpointScoreModel(maf, checkpoint_score_model)
+
         else:
             raise NotImplementedError
-
-
 
     def requires_class_label(self):
         return False
@@ -98,15 +99,76 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         return False
 
     def requires_joint_score(self):
-        return False
+        return True
 
-    def fit(self, theta=None, x=None, y=None, r_xz=None, t_xz=None, theta1=None,
-            z_checkpoints=None, r_xz_checkpoints=None, t_xz_checkpoints=None,
-            batch_size=64, initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
-            early_stopping=True, **params):
+    def fit(
+            self,
+            theta=None,
+            x=None,
+            y=None,
+            r_xz=None,
+            t_xz=None,
+            theta1=None,
+            z_checkpoints=None,
+            r_xz_checkpoints=None,
+            t_xz_checkpoints=None,
+            batch_size=64,
+            trainer='adam',
+            initial_learning_rate=0.001,
+            final_learning_rate=0.0001,
+            n_epochs=50,
+            validation_split=0.2,
+            early_stopping=True,
+            alpha=1.,
+            beta=1.,
+            learning_curve_folder=None,
+            learning_curve_filename=None,
+            **params
+    ):
+        """ Trains checkpointed flow """
 
+        logging.info('Training checkpointed SCANDAL with settings:')
+        logging.info('  alpha:                  %s', alpha)
+        logging.info('  beta:                   %s', beta)
+        logging.info('  theta given:            %s', theta is not None)
+        logging.info('  theta1 given:           %s', theta1 is not None)
+        logging.info('  x given:                %s', x is not None)
+        logging.info('  y given:                %s', y is not None)
+        logging.info('  r_xz given:             %s', r_xz is not None)
+        logging.info('  t_xz given:             %s', t_xz is not None)
+        logging.info('  z_checkpoints given:    %s', z_checkpoints is not None)
+        logging.info('  r_xz_checkpoints given: %s', r_xz_checkpoints is not None)
+        logging.info('  t_xz_checkpoints given: %s', t_xz_checkpoints is not None)
+        logging.info('  Samples:                %s', x.shape[0])
+        logging.info('  Parameters:             %s', theta.shape[1])
+        logging.info('  Obserables:             %s', x.shape[1])
+        logging.info('  Checkpoints:            %s', z_checkpoints.shape[1])
+        logging.info('  Latent variables:       %s', z_checkpoints.shape[2])
+        logging.info('  Batch size:             %s', batch_size)
+        logging.info('  Optimizer:              %s', trainer)
+        logging.info('  Learning rate:          %s initially, decaying to %s', initial_learning_rate, final_learning_rate)
+        logging.info('  Valid. split:           %s', validation_split)
+        logging.info('  Early stopping:         %s', early_stopping)
+        logging.info('  Epochs:                 %s', n_epochs)
 
-        raise NotImplementedError()
+        train_checkpointed_model(
+            model=self.maf,
+            loss_functions=[negative_log_likelihood, score_mse, score_checkpoint_mse],
+            loss_weights=[1., alpha, beta],
+            loss_labels=['nll', 'score', 'checkpoint_score'],
+            thetas=theta,
+            xs=x,
+            ys=None,
+            batch_size=batch_size,
+            trainer=trainer,
+            initial_learning_rate=initial_learning_rate,
+            final_learning_rate=final_learning_rate,
+            n_epochs=n_epochs,
+            validation_split=validation_split,
+            early_stopping=early_stopping,
+            learning_curve_folder=learning_curve_folder,
+            learning_curve_filename=learning_curve_filename
+        )
 
     def save(self, filename):
         raise NotImplementedError()

@@ -13,7 +13,8 @@ from goldmine.various.utils import check_for_nans_in_parameters
 
 class CheckpointedGoldDataset(torch.utils.data.Dataset):
 
-    def __init__(self, theta, x, y=None, r_xz=None, t_xz=None):
+    def __init__(self, theta, x, y=None, r_xz=None, t_xz=None, z_checkpoints=None, r_xz_checkpoints=None,
+                 t_xz_checkpoints=None):
         self.n = theta.shape[0]
 
         placeholder = torch.stack([tensor([0.]) for _ in range(self.n)])
@@ -23,29 +24,36 @@ class CheckpointedGoldDataset(torch.utils.data.Dataset):
         self.y = placeholder if y is None else y
         self.r_xz = placeholder if r_xz is None else r_xz
         self.t_xz = placeholder if t_xz is None else t_xz
+        self.z_checkpoints = placeholder if z_checkpoints is None else z_checkpoints
+        self.r_xz_checkpoints = placeholder if r_xz_checkpoints is None else r_xz_checkpoints
+        self.t_xz_checkpoints = placeholder if t_xz_checkpoints is None else t_xz_checkpoints
 
         assert len(self.theta) == self.n
         assert len(self.x) == self.n
         assert len(self.y) == self.n
         assert len(self.r_xz) == self.n
         assert len(self.t_xz) == self.n
+        assert len(self.z_checkpoints) == self.n
+        assert len(self.r_xz_checkpoints) == self.n
+        assert len(self.t_xz_checkpoints) == self.n
 
     def __getitem__(self, index):
         return (self.theta[index],
                 self.x[index],
                 self.y[index],
                 self.r_xz[index],
-                self.t_xz[index])
+                self.t_xz[index],
+                self.z_checkpoints[index],
+                self.r_xz_checkpoints[index],
+                self.t_xz_checkpoints[index])
 
     def __len__(self):
         return self.n
 
 
 def train_checkpointed_model(
-        step_model,
-        global_model,
-        loss_functions_step_model,
-        loss_functions_global_model,
+        model,
+        loss_functions,
         thetas, xs, ys=None, r_xzs=None, t_xzs=None,
         theta1=None,
         z_checkpoints=None, r_xz_checkpoints=None, t_xz_checkpoints=None,
@@ -53,8 +61,6 @@ def train_checkpointed_model(
         global_mode='flow',
         loss_weights=None,
         loss_labels=None,
-        pre_loss_transformer=None,
-        pre_loss_transform_coefficients=None,
         batch_size=64,
         trainer='adam',
         initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
@@ -74,11 +80,6 @@ def train_checkpointed_model(
     # Move model to device
     model = model.to(device, dtype)
 
-    if pre_loss_transform_coefficients is not None:
-        pre_loss_transform_coefficients = torch.tensor(pre_loss_transform_coefficients).to(device, dtype)
-
-    logging.debug('Transform coefficients: %s', pre_loss_transform_coefficients)
-
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
     xs = torch.stack([tensor(i) for i in xs])
@@ -88,12 +89,19 @@ def train_checkpointed_model(
         r_xzs = torch.stack([tensor(i) for i in r_xzs])
     if t_xzs is not None:
         t_xzs = torch.stack([tensor(i) for i in t_xzs])
+    if z_checkpoints is not None:
+        z_checkpoints = torch.stack([tensor(i) for i in z_checkpoints])
+    if r_xz_checkpoints is not None:
+        r_xz_checkpoints = torch.stack([tensor(i) for i in r_xz_checkpoints])
+    if t_xz_checkpoints is not None:
+        t_xz_checkpoints = torch.stack([tensor(i) for i in t_xz_checkpoints])
 
     # Dataset
-    dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
+    dataset = CheckpointedGoldDataset(thetas, xs, ys, r_xzs, t_xzs, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints)
 
     # Mode
     assert global_mode in ['flow', 'ratio']
+    assert step_mode in ['score', 'ratio']
 
     # Val split
     if validation_split is not None and validation_split <= 0.:
@@ -185,7 +193,8 @@ def train_checkpointed_model(
                 param_group['lr'] = lr
 
         # Loop over batches
-        for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(train_loader):
+        for i_batch, batch_data in enumerate(train_loader):
+            theta, x, y, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints = batch_data
 
             # Put on device
             theta = theta.to(device, dtype)
@@ -199,6 +208,18 @@ def train_checkpointed_model(
                 t_xz = t_xz.to(device, dtype)
             except NameError:
                 pass
+            try:
+                z_checkpoints = z_checkpoints.to(device, dtype)
+            except NameError:
+                pass
+            try:
+                r_xz_checkpoints = r_xz_checkpoints.to(device, dtype)
+            except NameError:
+                pass
+            try:
+                t_xz_checkpoints = t_xz_checkpoints.to(device, dtype)
+            except NameError:
+                pass
             if theta1 is not None:
                 theta1_tensor = torch.tensor(theta1).to(device, dtype)
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
@@ -207,51 +228,26 @@ def train_checkpointed_model(
 
             # Evaluate model
             if global_mode == 'flow':
-                if t_xz is not None:
-                    _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
-                else:
-                    _, log_likelihood = model.log_likelihood(theta, x)
-                    score = None
+                _, log_likelihood, score, score_checkpoints = model(theta, x, z_checkpoints)
+
                 if theta1 is not None:
-                    _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
+                    _, log_likelihood_theta1, _, _ = model(theta1_tensor, x, z_checkpoints)
                     log_r = log_likelihood - log_likelihood_theta1
             elif global_mode == 'ratio':
-                _, log_r, score = model(theta, x, track_score=(t_xz is not None))
-                log_r = log_r.view(-1)
-                log_likelihood = None
+                raise NotImplementedError
+                # _, log_r, score = model(theta, x, track_score=(t_xz is not None))
+                # log_r = log_r.view(-1)
+                # log_likelihood = None
             else:
                 raise ValueError('Unknown method type {}'.format(global_mode))
 
-            # Pre-loss transformation
-            if pre_loss_transformer is not None:
-                log_likelihood, log_r, score, y, r_xz, t_xz = pre_loss_transformer(
-                    log_likelihood, log_r, score, y, r_xz, t_xz, coefficients=pre_loss_transform_coefficients
-                )
-
             # Evaluate loss
             try:
-                losses = [fn(log_likelihood, log_r, score, y, r_xz, t_xz) for fn in loss_functions]
+                losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
             except RuntimeError:
-                logging.error('Error in evaluating loss functions! Variables:')
-                logging.info('log_likelihood: %s', log_likelihood)
-                if log_likelihood is not None:
-                    logging.info('  Shape: %s', log_likelihood.shape)
-                logging.info('log_r: %s', log_likelihood)
-                if log_r is not None:
-                    logging.info('  Shape: %s', log_r.shape)
-                logging.info('score: %s', score)
-                if score is not None:
-                    logging.info('  Shape: %s', score.shape)
-                logging.info('y: %s', y)
-                if y is not None:
-                    logging.info('  Shape: %s', y.shape)
-                logging.info('r_xz: %s', r_xz)
-                if r_xz is not None:
-                    logging.info('  Shape: %s', r_xz.shape)
-                logging.info('t_xz: %s', t_xz)
-                if t_xz is not None:
-                    logging.info('  Shape: %s', t_xz.shape)
+                logging.error('Error in evaluating loss functions!')
                 raise
+
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
@@ -293,7 +289,8 @@ def train_checkpointed_model(
         individual_val_loss = np.zeros(n_losses)
         total_val_loss = 0.0
 
-        for i_batch, (theta, x, y, r_xz, t_xz) in enumerate(validation_loader):
+        for i_batch, batch_data in enumerate(validation_loader):
+            theta, x, y, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints = batch_data
 
             # Put on device
             theta = theta.to(device, dtype)
@@ -307,36 +304,40 @@ def train_checkpointed_model(
                 t_xz = t_xz.to(device, dtype)
             except NameError:
                 pass
+            try:
+                z_checkpoints = z_checkpoints.to(device, dtype)
+            except NameError:
+                pass
+            try:
+                r_xz_checkpoints = r_xz_checkpoints.to(device, dtype)
+            except NameError:
+                pass
+            try:
+                t_xz_checkpoints = t_xz_checkpoints.to(device, dtype)
+            except NameError:
+                pass
             if theta1 is not None:
                 theta1_tensor = torch.tensor(theta1).to(device, dtype)
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
             # Evaluate model
             if global_mode == 'flow':
-                if t_xz is not None:
-                    _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
-                else:
-                    _, log_likelihood = model.log_likelihood(theta, x)
-                    score = None
+                _, log_likelihood, score, score_checkpoints = model(theta, x, z_checkpoints)
+
                 if theta1 is not None:
-                    _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
+                    _, log_likelihood_theta1, _, _ = model(theta1_tensor, x, z_checkpoints)
                     log_r = log_likelihood - log_likelihood_theta1
             elif global_mode == 'ratio':
-                _, log_r, score = model(theta, x, track_score=(t_xz is not None))
-                log_r = log_r.view(-1)
-                log_likelihood = None
+                raise NotImplementedError
+                # _, log_r, score = model(theta, x, track_score=(t_xz is not None))
+                # log_r = log_r.view(-1)
+                # log_likelihood = None
             else:
                 raise ValueError('Unknown method type {}'.format(global_mode))
 
-            # Pre-loss transformation
-            if pre_loss_transformer is not None:
-                log_likelihood, log_r, score, y, r_xz, t_xz = pre_loss_transformer(
-                    log_likelihood, log_r, score, y, r_xz, t_xz, coefficients=pre_loss_transform_coefficients
-                )
-
             # Evaluate losses
             try:
-                losses = [fn(log_likelihood, log_r, score, y, r_xz, t_xz) for fn in loss_functions]
+                losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
             except RuntimeError:
                 logging.error('Error in evaluating loss functions in validation! Variables:')
                 logging.info('log_likelihood: %s', log_likelihood)
