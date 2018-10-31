@@ -16,7 +16,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
     prey numbers in the differential equation are the components of exp(theta).
     """
 
-    def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2, checkpoint_steps=5,
+    def __init__(self, initial_predators=50, initial_prey=100, duration=30., delta_t=0.2,
                  use_summary_statistics=True, normalize_summary_statistics=True, use_full_time_series=False,
                  smear_summary_statistics=False, zoom_in=True):
 
@@ -27,9 +27,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         self.initial_prey = initial_prey
         self.duration = duration
         self.delta_t = delta_t
-        self.checkpoint_steps = int(checkpoint_steps)
         self.n_time_series = int(self.duration / self.delta_t) + 1
-        self.n_checkpoints = self.n_time_series // self.checkpoint_steps
         self.use_summary_statistics = use_summary_statistics
         self.normalize_summary_statistics = normalize_summary_statistics
         self.use_full_time_series = use_full_time_series
@@ -145,8 +143,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         logp_xz = [0. for _ in thetas_eval]
 
         # Checkpoint information
-        z_checkpoints = np.zeros((self.n_checkpoints, 2), dtype=np.int)
-        logp_xz_checkpoints = np.zeros((self.n_checkpoints, n_eval))
+        logp_xz_checkpoints = np.zeros((self.n_time_series, n_eval))
 
         # Possible events
         event_effects = np.array([
@@ -218,39 +215,31 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             # Save state
             time_series[i] = state.copy()
 
-            # Checkpoint
-            if i % self.checkpoint_steps == 0:
-                k_checkpoint = i // self.checkpoint_steps
-
-                # Checkpoint z
-                z_checkpoints[k_checkpoint] = state.copy()
-
-                # Checkpoint p(x,z)
-                for j_theta in range(n_eval):
-                    try:
-                        logp_xz_checkpoints[k_checkpoint, j_theta] = logp_xz[j_theta]
-                    except ValueError:
-                        logp_xz_checkpoints[k_checkpoint, j_theta] = logp_xz[j_theta]._value
+            # Checkpoint log p / t
+            for j_theta in range(n_eval):
+                try:
+                    logp_xz_checkpoints[i, j_theta] = logp_xz[j_theta]
+                except ValueError:
+                    logp_xz_checkpoints[i, j_theta] = logp_xz[j_theta]._value
 
             # Prepare for next step
             next_recorded_time += self.delta_t
 
         return logp_xz[0], (
-            logp_xz[1:], time_series, z_checkpoints, logp_xz_checkpoints[:, 0], logp_xz_checkpoints[:, 1:])
+            logp_xz[1:], time_series, logp_xz_checkpoints[:, 0], logp_xz_checkpoints[:, 1:])
 
     def _simulate_until_success(self, theta, rng, thetas_additional=None, max_steps=100000, steps_warning=10000,
                                 epsilon=1.e-9, max_tries=5):
 
         time_series = None
         logp_xz = None
-        z_checkpoints = None
         logp_xz_checkpoints = None
         tries = 0
 
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                _, (logp_xz, time_series, z_checkpoints, _, logp_xz_checkpoints) = self._simulate(
+                _, (logp_xz, time_series, _, logp_xz_checkpoints) = self._simulate(
                     theta_score=theta,
                     rng=rng,
                     theta=theta,
@@ -269,7 +258,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
 
-        return logp_xz, time_series, logp_xz_checkpoints, z_checkpoints
+        return logp_xz, time_series, logp_xz_checkpoints
 
     def _d_simulate_until_success(self, theta, rng, theta_score=None, thetas_additional=None, max_steps=100000,
                                   steps_warning=10000, epsilon=1.e-9, max_tries=5):
@@ -279,7 +268,6 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         time_series = None
         t_xz = None
         logp_xz = None
-        z_checkpoints = None
         t_xz_checkpoints = None
         logp_xz_checkpoints = None
         tries = 0
@@ -287,7 +275,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                t_xz, (logp_xz, time_series, z_checkpoints, t_xz_checkpoints, logp_xz_checkpoints) = self._d_simulate(
+                t_xz, (logp_xz, time_series, t_xz_checkpoints, logp_xz_checkpoints) = self._d_simulate(
                     theta_score,
                     rng,
                     theta,
@@ -306,7 +294,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
 
-        return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints, z_checkpoints
+        return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints
 
     def _calculate_observables(self, time_series, rng):
         """ Calculates observables: a combination of summary statistics and the full time series  """
@@ -396,7 +384,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            _, time_series, _, _ = self._simulate_until_success(theta, rng)
+            _, time_series, _ = self._simulate_until_success(theta, rng)
             if return_histories:
                 histories.append(time_series)
 
@@ -409,27 +397,23 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             return all_x, histories
         return all_x
 
-    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
+    def rvs_score(self, theta, theta_score, n, random_state=None):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint score', n, theta)
 
         rng = check_random_state(random_state, use_autograd=True)
 
         all_x = []
         all_t_xz = []
-        all_z_checkpoints = []
         all_t_xz_checkpoints = []
-        histories = []
+        all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            _, t_xz, time_series, _, t_xz_checkpoints, z_checkpoints = self._d_simulate_until_success(theta, rng,
-                                                                                                      theta_score)
+            _, t_xz, time_series, _, t_xz_checkpoints = self._d_simulate_until_success(theta, rng, theta_score)
             all_t_xz.append(t_xz)
-            all_z_checkpoints.append(z_checkpoints)
             all_t_xz_checkpoints.append(t_xz_checkpoints)
-            if return_histories:
-                histories.append(time_series)
+            all_histories.append(time_series)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
@@ -437,13 +421,11 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         all_x = np.asarray(all_x)
         all_t_xz = np.asarray(all_t_xz)
         all_t_xz_checkpoints = np.asarray(all_t_xz_checkpoints)
-        all_z_checkpoints = np.asarray(all_z_checkpoints)
+        all_histories = np.asarray(all_histories)
 
-        if return_histories:
-            return all_x, all_t_xz, all_z_checkpoints, all_t_xz_checkpoints, histories
-        return all_x, all_t_xz, all_z_checkpoints, all_t_xz_checkpoints
+        return all_x, all_t_xz, all_histories, all_t_xz_checkpoints
 
-    def rvs_ratio(self, theta, theta0, theta1, n, random_state=None, return_histories=False):
+    def rvs_ratio(self, theta, theta0, theta1, n, random_state=None):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s',
                       n, theta, theta0, theta1)
 
@@ -451,21 +433,17 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
 
         all_x = []
         all_log_r_xz = []
-        all_z_checkpoints = []
         all_log_r_xz_checkpoints = []
-        histories = []
+        all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            log_p_xzs, time_series, log_p_xz_checkpoints, z_checkpoints = self._simulate_until_success(theta, rng,
-                                                                                                       [theta0, theta1])
+            log_p_xzs, time_series, log_p_xz_checkpoints = self._simulate_until_success(theta, rng, [theta0, theta1])
 
             all_log_r_xz.append(log_p_xzs[0] - log_p_xzs[1])
-            all_z_checkpoints.append(z_checkpoints)
             all_log_r_xz_checkpoints.append(log_p_xz_checkpoints[:, 0] - log_p_xz_checkpoints[:, 1])
-            if return_histories:
-                histories.append(time_series)
+            all_histories.append(time_series)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
@@ -473,13 +451,11 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         all_x = np.asarray(all_x)
         all_r_xz = np.exp(np.asarray(all_log_r_xz))
         all_r_xz_checkpoints = np.exp(np.asarray(all_log_r_xz_checkpoints))
-        all_z_checkpoints = np.asarray(all_z_checkpoints)
+        all_histories = np.asarray(all_histories)
 
-        if return_histories:
-            return all_x, all_r_xz, all_z_checkpoints, all_r_xz_checkpoints, histories
-        return all_x, all_r_xz, all_z_checkpoints, all_r_xz_checkpoints
+        return all_x, all_r_xz, all_histories, all_r_xz_checkpoints
 
-    def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None, return_histories=False):
+    def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s and joint'
                       ' score at  %s', n, theta, theta0, theta1, theta_score)
 
@@ -488,24 +464,21 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         all_x = []
         all_log_r_xz = []
         all_t_xz = []
-        all_z_checkpoints = []
         all_t_xz_checkpoints = []
         all_log_r_xz_checkpoints = []
-        histories = []
+        all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
             results = self._d_simulate_until_success(theta, rng, theta_score, [theta0, theta1])
-            log_p_xzs, t_xz, time_series, log_p_xz_checkpoints, t_xz_checkpoints, z_checkpoints = results
+            log_p_xzs, t_xz, time_series, log_p_xz_checkpoints, t_xz_checkpoints = results
 
             all_t_xz.append(t_xz)
             all_log_r_xz.append(log_p_xzs[0] - log_p_xzs[1])
-            all_z_checkpoints.append(z_checkpoints)
             all_t_xz_checkpoints.append(t_xz_checkpoints)
             all_log_r_xz_checkpoints.append(log_p_xz_checkpoints[:, 0] - log_p_xz_checkpoints[:, 1])
-            if return_histories:
-                histories.append(time_series)
+            all_histories.append(time_series)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
@@ -515,8 +488,6 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         all_r_xz = np.exp(np.asarray(all_log_r_xz))
         all_r_xz_checkpoints = np.exp(np.asarray(all_log_r_xz_checkpoints))
         all_t_xz_checkpoints = np.asarray(all_t_xz_checkpoints)
-        all_z_checkpoints = np.asarray(all_z_checkpoints)
+        all_histories = np.asarray(all_histories)
 
-        if return_histories:
-            return all_x, all_r_xz, all_t_xz, all_z_checkpoints, all_r_xz_checkpoints, all_t_xz_checkpoints, histories
-        return all_x, all_r_xz, all_t_xz, all_z_checkpoints, all_r_xz_checkpoints, all_t_xz_checkpoints
+        return all_x, all_r_xz, all_t_xz, all_histories, all_r_xz_checkpoints, all_t_xz_checkpoints
