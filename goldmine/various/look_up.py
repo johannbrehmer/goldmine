@@ -1,6 +1,7 @@
 from goldmine.simulators.epidemiology import Epidemiology
 from goldmine.simulators.epidemiology2d import Epidemiology2D
 from goldmine.simulators.lotka_volterra import LotkaVolterra
+from goldmine.simulators.lotka_volterra_checkpointed import CheckpointedLotkaVolterra
 from goldmine.simulators.galton import GeneralizedGaltonBoard
 from goldmine.simulators.gaussian import GaussianSimulator
 from goldmine.simulators.chutes_ladders import ChutesLaddersSimulator
@@ -15,21 +16,27 @@ from goldmine.inference.cascal import CASCALInference
 from goldmine.inference.rascal import RASCALInference
 
 
-def create_simulator(simulator_name):
-    if simulator_name == 'gaussian':
-        return GaussianSimulator()
-    elif simulator_name == 'epidemiology':
-        return Epidemiology()
-    elif simulator_name == 'epidemiology2d':
-        return Epidemiology2D()
-    elif simulator_name == 'lotkavolterra':
-        return LotkaVolterra()
-    elif simulator_name == 'galton':
-        return GeneralizedGaltonBoard()
-    elif simulator_name == 'chutes_ladders':
-        return ChutesLaddersSimulator()
+def create_simulator(simulator_name, checkpoint=False):
+    if checkpoint:
+        if simulator_name == 'lotkavolterra':
+            return CheckpointedLotkaVolterra()
+        else:
+            raise RuntimeError('Checkpointed simulator name {} unknown'.format(simulator_name))
     else:
-        raise RuntimeError('Simulator name {} unknown'.format(simulator_name))
+        if simulator_name == 'gaussian':
+            return GaussianSimulator()
+        elif simulator_name == 'epidemiology':
+            return Epidemiology()
+        elif simulator_name == 'epidemiology2d':
+            return Epidemiology2D()
+        elif simulator_name == 'lotkavolterra':
+            return LotkaVolterra()
+        elif simulator_name == 'galton':
+            return GeneralizedGaltonBoard()
+        elif simulator_name == 'chutes_ladders':
+            return ChutesLaddersSimulator()
+        else:
+            raise RuntimeError('Simulator name {} unknown'.format(simulator_name))
 
 
 def create_inference(inference_name, **params):
