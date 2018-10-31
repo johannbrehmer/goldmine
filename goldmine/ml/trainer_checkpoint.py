@@ -41,24 +41,31 @@ class CheckpointedGoldDataset(torch.utils.data.Dataset):
         return self.n
 
 
-def train_checkpointed_model(model,
-                loss_functions,
-                thetas, xs, ys=None, r_xzs=None, t_xzs=None,
-                theta1=None,
-                mode='flow',
-                loss_weights=None,
-                loss_labels=None,
-                pre_loss_transformer=None,
-                pre_loss_transform_coefficients=None,
-                batch_size=64,
-                trainer='adam',
-                initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
-                clip_gradient=1.,
-                run_on_gpu=True,
-                double_precision=False,
-                validation_split=0.2, early_stopping=True, early_stopping_patience=None,
-                learning_curve_folder=None, learning_curve_filename=None,
-                verbose='some'):
+def train_checkpointed_model(
+        step_model,
+        global_model,
+        loss_functions_step_model,
+        loss_functions_global_model,
+        thetas, xs, ys=None, r_xzs=None, t_xzs=None,
+        theta1=None,
+        z_checkpoints=None, r_xz_checkpoints=None, t_xz_checkpoints=None,
+        step_mode='score',
+        global_mode='flow',
+        loss_weights=None,
+        loss_labels=None,
+        pre_loss_transformer=None,
+        pre_loss_transform_coefficients=None,
+        batch_size=64,
+        trainer='adam',
+        initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
+        clip_gradient=1.,
+        run_on_gpu=True,
+        double_precision=False,
+        validation_split=0.2, early_stopping=True, early_stopping_patience=None,
+        learning_curve_folder=None, learning_curve_filename=None,
+        verbose='some'
+
+):
     # CPU or GPU?
     run_on_gpu = run_on_gpu and torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
@@ -86,7 +93,7 @@ def train_checkpointed_model(model,
     dataset = GoldDataset(thetas, xs, ys, r_xzs, t_xzs)
 
     # Mode
-    assert mode in ['flow', 'ratio']
+    assert global_mode in ['flow', 'ratio']
 
     # Val split
     if validation_split is not None and validation_split <= 0.:
@@ -199,7 +206,7 @@ def train_checkpointed_model(model,
             optimizer.zero_grad()
 
             # Evaluate model
-            if mode == 'flow':
+            if global_mode == 'flow':
                 if t_xz is not None:
                     _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
                 else:
@@ -208,12 +215,12 @@ def train_checkpointed_model(model,
                 if theta1 is not None:
                     _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
-            elif mode == 'ratio':
+            elif global_mode == 'ratio':
                 _, log_r, score = model(theta, x, track_score=(t_xz is not None))
                 log_r = log_r.view(-1)
                 log_likelihood = None
             else:
-                raise ValueError('Unknown method type {}'.format(mode))
+                raise ValueError('Unknown method type {}'.format(global_mode))
 
             # Pre-loss transformation
             if pre_loss_transformer is not None:
@@ -305,7 +312,7 @@ def train_checkpointed_model(model,
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
             # Evaluate model
-            if mode == 'flow':
+            if global_mode == 'flow':
                 if t_xz is not None:
                     _, log_likelihood, score = model.log_likelihood_and_score(theta, x)
                 else:
@@ -314,12 +321,12 @@ def train_checkpointed_model(model,
                 if theta1 is not None:
                     _, log_likelihood_theta1 = model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
-            elif mode == 'ratio':
+            elif global_mode == 'ratio':
                 _, log_r, score = model(theta, x, track_score=(t_xz is not None))
                 log_r = log_r.view(-1)
                 log_likelihood = None
             else:
-                raise ValueError('Unknown method type {}'.format(mode))
+                raise ValueError('Unknown method type {}'.format(global_mode))
 
             # Pre-loss transformation
             if pre_loss_transformer is not None:
