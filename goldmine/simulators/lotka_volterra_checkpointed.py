@@ -139,11 +139,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         simulated_time = 0.
         n_steps = 0
 
-        # Track log p(x, z) (to calculate the joint ratio and the joint score)
-        logp_xz = [0. for _ in thetas_eval]
-
-        # Checkpoint information
-        logp_xz_checkpoints = np.zeros((self.n_time_series, n_eval))
+        # Track log p(x, z) (to calculate the joint ratio and the joint score) (2nd index does checkpoints
+        logp_xz = [[0. for j in range(self.n_time_series)] for i in thetas_eval]
 
         # Possible events
         event_effects = np.array([
@@ -196,8 +193,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                     ])
                     total_rate_eval = np.sum(rates_eval)
 
-                    logp_xz[k] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
-                                   + np.log(rates_eval[event]) - np.log(total_rate_eval))
+                    logp_xz[k][i] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
+                                      + np.log(rates_eval[event]) - np.log(total_rate_eval))
 
                 # Resolve event
                 simulated_time += interaction_time
@@ -215,31 +212,23 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             # Save state
             time_series[i] = state.copy()
 
-            # Checkpoint log p / t
-            for j_theta in range(n_eval):
-                try:
-                    logp_xz_checkpoints[i, j_theta] = logp_xz[j_theta]
-                except ValueError:
-                    logp_xz_checkpoints[i, j_theta] = logp_xz[j_theta]._value
-
             # Prepare for next step
             next_recorded_time += self.delta_t
 
-        return logp_xz[0], (
-            logp_xz[1:], time_series, logp_xz_checkpoints[:, 0], logp_xz_checkpoints[:, 1:])
+        return logp_xz[0], (logp_xz[1:], time_series)
 
     def _simulate_until_success(self, theta, rng, thetas_additional=None, max_steps=100000, steps_warning=10000,
                                 epsilon=1.e-9, max_tries=5):
 
         time_series = None
-        logp_xz = None
         logp_xz_checkpoints = None
+        logp_xz = None
         tries = 0
 
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                _, (logp_xz, time_series, _, logp_xz_checkpoints) = self._simulate(
+                _, (logp_xz_checkpoints, time_series) = self._simulate(
                     theta_score=theta,
                     rng=rng,
                     theta=theta,
@@ -248,6 +237,10 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                     steps_warning=steps_warning,
                     epsilon=epsilon
                 )
+
+                # Sum over checkpoints
+                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (thetas, checkpoints)
+                logp_xz = np.sum(logp_xz_checkpoints, axis=1)
             except SimulationTooLongException:
                 pass
             else:
@@ -257,9 +250,6 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         if time_series is None:
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
-
-        # Only want steps
-        logp_xz_checkpoints[1:] -= logp_xz_checkpoints[:-1]
 
         return logp_xz, time_series, logp_xz_checkpoints
 
@@ -278,7 +268,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                t_xz, (logp_xz, time_series, t_xz_checkpoints, logp_xz_checkpoints) = self._d_simulate(
+                t_xz_checkpoints, (logp_xz_checkpoints, time_series) = self._d_simulate(
                     theta_score,
                     rng,
                     theta,
@@ -287,6 +277,12 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                     steps_warning,
                     epsilon
                 )
+
+                # Sum over checkpoints
+                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (thetas, checkpoints)
+                t_xz_checkpoints = np.array(t_xz_checkpoints)    # (checkpoints,)
+                logp_xz = np.sum(logp_xz_checkpoints, axis=1)
+                t_xz = np.sum(logp_xz_checkpoints)
             except SimulationTooLongException:
                 pass
             else:
@@ -298,9 +294,6 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
 
         # Only want steps
-        logp_xz_checkpoints[1:] -= logp_xz_checkpoints[:-1]
-        t_xz_checkpoints[1:] -= t_xz_checkpoints[:-1]
-
         return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints
 
     def _calculate_observables(self, time_series, rng):

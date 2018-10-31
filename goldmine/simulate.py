@@ -254,7 +254,7 @@ def simulate(simulator_name,
             all_t_xz_checkpoints = np.array(all_t_xz_checkpoints)
 
     # Debug output
-    for i_event in range(10):
+    for i_event in range(min(10, len(all_z_checkpoints))):
         logging.debug('Checkpoint information for event %s:', i_event + 1)
         for i_checkpoint in range(all_z_checkpoints.shape[1]):
             logging.debug('  CP %s: z = %s, r = %s, t = %s',
@@ -262,6 +262,9 @@ def simulate(simulator_name,
                           all_z_checkpoints[i_event, i_checkpoint],
                           all_r_xz_checkpoints[i_event, i_checkpoint],
                           all_t_xz_checkpoints[i_event, i_checkpoint])
+        logging.debug('Sum:   r = %s, t = %s', np.prod(all_r_xz_checkpoints[i_event]),
+                      np.sum(all_t_xz_checkpoints[i_event], axis=0))
+        logging.debug('Total: r = %s, t = %s', all_r_xz[i_event], all_t_xz[i_event])
 
     logging.info('Saving results')
 
@@ -277,10 +280,10 @@ def simulate(simulator_name,
 
     if checkpoint and (generate_joint_ratio or generate_joint_score):
         np.save(folder + '/z_checkpoints_' + filename + '.npy', all_z_checkpoints)
-        if generate_joint_ratio:
-            np.save(folder + '/r_xz_checkpoints_' + filename + '.npy', all_r_xz_checkpoints)
-        if generate_joint_score:
-            np.save(folder + '/t_xz_checkpoints_' + filename + '.npy', all_t_xz_checkpoints)
+    if generate_joint_ratio:
+        np.save(folder + '/r_xz_checkpoints_' + filename + '.npy', all_r_xz_checkpoints)
+    if generate_joint_score:
+        np.save(folder + '/t_xz_checkpoints_' + filename + '.npy', all_t_xz_checkpoints)
 
 
 def main():
