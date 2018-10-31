@@ -238,6 +238,31 @@ def simulate(simulator_name,
                 else:
                     raise
 
+    all_theta0 = np.array(all_theta0)
+    all_theta1 = np.array(all_theta1)
+    all_x = np.array(all_x)
+    all_y = np.array(all_y)
+    if generate_joint_ratio:
+        all_r_xz = np.array(all_r_xz)
+    if generate_joint_score:
+        all_t_xz = np.array(all_t_xz)
+    if checkpoint and (generate_joint_ratio or generate_joint_score):
+        all_z_checkpoints = np.array(all_z_checkpoints)
+        if generate_joint_ratio:
+            all_r_xz_checkpoints = np.array(all_r_xz_checkpoints)
+        if generate_joint_score:
+            all_t_xz_checkpoints = np.array(all_t_xz_checkpoints)
+
+    # Debug output
+    for i_event in range(10):
+        logging.debug('Checkpoint information for event %s:', i_event + 1)
+        for i_checkpoint in range(all_z_checkpoints.shape[1]):
+            logging.debug('  CP %s: z = %s, r = %s, t = %s',
+                          i_checkpoint + 1,
+                          all_z_checkpoints[i_event, i_checkpoint],
+                          all_r_xz_checkpoints[i_event, i_checkpoint],
+                          all_t_xz_checkpoints[i_event, i_checkpoint])
+
     logging.info('Saving results')
 
     # Save results
@@ -291,6 +316,7 @@ def main():
     simulate(
         args.simulator,
         args.sample,
+        checkpoint=args.checkpoint,
         theta0=args.theta0,
         theta1=args.theta1,
         single_theta=args.singletheta,

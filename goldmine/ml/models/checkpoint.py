@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 class FlowCheckpointScoreModel(nn.Module):
@@ -14,8 +15,9 @@ class FlowCheckpointScoreModel(nn.Module):
         t_checkpoints = []
         for z_initial, z_final in zip(z_checkpoints[:, -1], z_checkpoints[:, 1:]):
             t_checkpoints.append(
-                self.step_model.forward(z_initial, z_final, theta)
+                self.step_model.forward(z_initial, z_final, theta).unsqueeze(1)
             )
+        t_checkpoints = torch.cat(t_checkpoints, 1)  # Shape (n_batch, n_checkpoints, n_params)
 
         # Call global model forward
         u, log_likelihood, score = self.global_model(theta, x).log_likelihood_and_score

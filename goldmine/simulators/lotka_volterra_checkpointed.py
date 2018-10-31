@@ -258,6 +258,9 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
 
+        # Only want steps
+        logp_xz_checkpoints[1:] -= logp_xz_checkpoints[:-1]
+
         return logp_xz, time_series, logp_xz_checkpoints
 
     def _d_simulate_until_success(self, theta, rng, theta_score=None, thetas_additional=None, max_steps=100000,
@@ -293,6 +296,10 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         if time_series is None:
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
+
+        # Only want steps
+        logp_xz_checkpoints[1:] -= logp_xz_checkpoints[:-1]
+        t_xz_checkpoints[1:] -= t_xz_checkpoints[:-1]
 
         return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints
 
