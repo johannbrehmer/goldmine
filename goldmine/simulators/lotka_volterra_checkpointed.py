@@ -38,7 +38,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         self.n_parameters = 4
 
         # Autograd
-        self._d_simulate_step = ag.elementwise_grad_and_aux(self._simulate_step)
+        self._d_simulate_step = ag.grad_and_aux(self._simulate_step)
 
     def theta_defaults(self, n_thetas=1000, single_theta=False, random=True):
 
@@ -113,14 +113,23 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
 
         return grid
 
-    def _simulate_step(self, theta, rng, exp_thetas_eval,
+    def _simulate_step(self, theta_score,
                        start_state, start_time, next_recorded_time, start_steps,
+                       rng, theta=None, thetas_additional=None,
                        max_steps=100000, steps_warning=10000,
                        epsilon=1.e-9):
 
-        # Theta
+        # Thetas for the evaluation of the likelihood (ratio / score)
+        if theta is None:
+            theta = np.copy(theta_score)
+
+        thetas_eval = [theta_score]
+        if thetas_additional is not None:
+            thetas_eval += thetas_additional
+        n_eval = len(thetas_eval)
+
         exp_theta = np.exp(theta)
-        n_eval = len(exp_thetas_eval)
+        exp_thetas_eval = [np.exp(theta_eval) for theta_eval in thetas_eval]
 
         # Initial state
         state = np.copy(start_state)
@@ -128,7 +137,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         n_steps = start_steps
 
         # Track log p(x, z)
-        logp_xz = [0. for i in exp_thetas_eval]
+        logp_xz = [0. for _ in exp_thetas_eval]
 
         # Possible events
         event_effects = np.array([
@@ -179,8 +188,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                 ])
                 total_rate_eval = np.sum(rates_eval)
 
-                logp_xz[k][i] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
-                                  + np.log(rates_eval[event]) - np.log(total_rate_eval))
+                logp_xz[k] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
+                               + np.log(rates_eval[event]) - np.log(total_rate_eval))
 
             # Resolve event
             simulated_time += interaction_time
@@ -201,17 +210,9 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
     def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000,
                   epsilon=1.e-9, extract_score=True):
 
-        # Thetas for the evaluation of the likelihood (ratio / score)
-        if theta is None:
-            theta = np.copy(theta_score)
-
-        thetas_eval = [theta_score]
-        if thetas_additional is not None:
-            thetas_eval += thetas_additional
-
-        exp_thetas_eval = [np.exp(theta_eval) for theta_eval in thetas_eval]
-
-        # Prepare recorded time series of states
+        # Output
+        t_xz_steps = []
+        logp_xz_steps = []
         time_series = np.zeros([self.n_time_series, 2], dtype=np.int)
 
         # Initial state
@@ -220,58 +221,48 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         simulated_time = 0.
         n_steps = 0
 
-        # Track log p(x, z) and score
-        t_xz_steps = []
-        logp_xz_steps = []
-
-        # Possible events
-        event_effects = np.array([
-            [1, 0],  # Predator born
-            [-1, 0],  # Predator dies
-            [0, 1],  # Prey born
-            [0, -1]  # Predator eats prey
-        ], dtype=np.int)
-
         # Gillespie algorithm
         for i in range(self.n_time_series):
+            # Run step
             if extract_score:
                 t_xz_step, (logp_xz_step, state, simulated_time, n_steps) = self._d_simulate_step(
-                    theta=theta,
-                    rng=rng,
-                    exp_thetas_eval=exp_thetas_eval,
+                    theta_score,
                     start_state=state,
                     start_time=simulated_time,
                     next_recorded_time=next_recorded_time,
                     start_steps=n_steps,
+                    theta=theta,
+                    rng=rng,
+                    thetas_additional=thetas_additional,
                     max_steps=max_steps,
                     steps_warning=steps_warning,
                     epsilon=epsilon
                 )
             else:
                 _, (logp_xz_step, state, simulated_time, n_steps) = self._simulate_step(
-                    theta=theta,
-                    rng=rng,
-                    exp_thetas_eval=exp_thetas_eval,
+                    theta_score,
                     start_state=state,
                     start_time=simulated_time,
                     next_recorded_time=next_recorded_time,
                     start_steps=n_steps,
+                    theta=theta,
+                    rng=rng,
+                    thetas_additional=thetas_additional,
                     max_steps=max_steps,
                     steps_warning=steps_warning,
                     epsilon=epsilon
                 )
                 t_xz_step = None
 
-            # Save state
+            # Save state, joint ratio, score
             time_series[i] = state.copy()
 
-            # Prepare for next step
-            next_recorded_time += self.delta_t
-
-            # Save joint probabilities and score
             if extract_score:
                 t_xz_steps.append(t_xz_step)
             logp_xz_steps.append(t_xz_step)
+
+            # Prepare for next step
+            next_recorded_time += self.delta_t
 
         if extract_score:
             t_xz_steps = np.array(t_xz_steps)
@@ -299,7 +290,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                     thetas_additional=thetas_additional,
                     max_steps=max_steps,
                     steps_warning=steps_warning,
-                    epsilon=epsilon
+                    epsilon=epsilon,
+                    extract_score=False
                 )
 
                 # Sum over checkpoints
@@ -332,14 +324,15 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                time_series, t_xz_checkpoints, logp_xz_checkpoints = self._d_simulate(
+                time_series, t_xz_checkpoints, logp_xz_checkpoints = self._simulate(
                     theta_score,
                     rng,
                     theta,
                     thetas_additional,
                     max_steps,
                     steps_warning,
-                    epsilon
+                    epsilon,
+                    extract_score=True
                 )
 
                 logging.debug(t_xz_checkpoints)
