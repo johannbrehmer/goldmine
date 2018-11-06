@@ -31,6 +31,7 @@ def simulate(simulator_name,
              grid_sampling=False,
              generate_joint_ratio=True,
              generate_joint_score=True,
+             checkpoint=False,
              n_thetas=1000,
              n_samples_per_theta=1000,
              random_state=None,
@@ -51,6 +52,7 @@ def simulate(simulator_name,
                       the sampling.
     :param generate_joint_ratio: bool, whether to ask the simulator for the joint ratio (only if theta1 is given).
     :param generate_joint_score: bool, whether to ask the simulator for the joint score.
+    :param checkpoint: bool, whether to use a checkpointed version of the simulator.
     :param n_thetas: int, number of thetas samples of theta0 is None and single_theta is False
     :param n_samples_per_theta: Number of samples per combination of theta0 and theta1.
     :param random_state: Numpy random state.
@@ -58,6 +60,7 @@ def simulate(simulator_name,
 
     logging.info('Starting simulation')
     logging.info('  Simulator:                 %s', simulator_name)
+    logging.info('  Checkpoint:                %s', checkpoint)
     logging.info('  Sample:                    %s', sample_label)
     logging.info('  theta0:                    %s', 'default' if theta0 is None else theta0)
     logging.info('  theta1:                    %s', 'default' if theta1 is None else theta1)
@@ -75,7 +78,7 @@ def simulate(simulator_name,
     # Check paths
     create_missing_folders(base_dir, simulator_name)
 
-    simulator = create_simulator(simulator_name)
+    simulator = create_simulator(simulator_name, checkpoint)
 
     # Load data
     if theta0 is not None:
@@ -129,6 +132,9 @@ def simulate(simulator_name,
     all_y = []
     all_r_xz = []
     all_t_xz = []
+    all_z_checkpoints = []
+    all_r_xz_checkpoints = []
+    all_t_xz_checkpoints = []
 
     logging.info('Parameter points:')
     logging.info('  theta0 = %s', theta0)
@@ -147,8 +153,38 @@ def simulate(simulator_name,
 
         for y in draw_from:
 
+            t_xz = None
+            r_xz = None
+            z_checkpoints = None
+            r_xz_checkpoints = None
+            t_xz_checkpoints = None
+
             try:
-                if generate_joint_ratio and generate_joint_score:
+                if checkpoint and generate_joint_ratio and generate_joint_score:
+                    x, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints = simulator.rvs_ratio_score(
+                        theta=theta0_,
+                        theta0=theta0_,
+                        theta1=theta1_,
+                        theta_score=theta0_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                elif checkpoint and generate_joint_ratio:
+                    x, r_xz, z_checkpoints, r_xz_checkpoints = simulator.rvs_ratio(
+                        theta=theta0_,
+                        theta0=theta0_,
+                        theta1=theta1_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                elif checkpoint and generate_joint_score:
+                    x, t_xz, z_checkpoints, t_xz_checkpoints = simulator.rvs_score(
+                        theta=theta0_,
+                        theta_score=theta0_,
+                        n=n_samples_per_theta_and_draw,
+                        random_state=random_state
+                    )
+                elif generate_joint_ratio and generate_joint_score:
                     x, r_xz, t_xz = simulator.rvs_ratio_score(
                         theta=theta0_,
                         theta0=theta0_,
@@ -165,7 +201,6 @@ def simulate(simulator_name,
                         n=n_samples_per_theta_and_draw,
                         random_state=random_state
                     )
-                    t_xz = None
                 elif generate_joint_score:
                     x, t_xz = simulator.rvs_score(
                         theta=theta0_,
@@ -173,14 +208,12 @@ def simulate(simulator_name,
                         n=n_samples_per_theta_and_draw,
                         random_state=random_state
                     )
-                    r_xz = None
                 else:
                     x = simulator.rvs(
                         theta=theta0_,
                         n=n_samples_per_theta_and_draw,
                         random_state=random_state
                     )
-                    r_xz, t_xz = None, None
 
                 all_theta0 += [theta0_] * n_samples_per_theta_and_draw
                 all_theta1 += [theta1_] * n_samples_per_theta_and_draw
@@ -190,15 +223,48 @@ def simulate(simulator_name,
                     all_r_xz += list(r_xz)
                 if generate_joint_score:
                     all_t_xz += list(t_xz)
+                if checkpoint and (generate_joint_ratio or generate_joint_score):
+                    all_z_checkpoints += list(z_checkpoints)
+                    if generate_joint_ratio:
+                        all_r_xz_checkpoints += list(r_xz_checkpoints)
+                    if generate_joint_score:
+                        all_t_xz_checkpoints += list(t_xz_checkpoints)
 
             except SimulatorException as e:
-
                 logging.warning('Simulator raised exception: %s', e)
 
                 if continue_after_exceptions:
                     logging.info('Ignoring this parameter point and continuing with others.')
                 else:
                     raise
+
+    all_theta0 = np.array(all_theta0)
+    all_theta1 = np.array(all_theta1)
+    all_x = np.array(all_x)
+    all_y = np.array(all_y)
+    if generate_joint_ratio:
+        all_r_xz = np.array(all_r_xz)
+    if generate_joint_score:
+        all_t_xz = np.array(all_t_xz)
+    if checkpoint and (generate_joint_ratio or generate_joint_score):
+        all_z_checkpoints = np.array(all_z_checkpoints)
+        if generate_joint_ratio:
+            all_r_xz_checkpoints = np.array(all_r_xz_checkpoints)
+        if generate_joint_score:
+            all_t_xz_checkpoints = np.array(all_t_xz_checkpoints)
+
+    # Debug output
+    for i_event in range(min(10, len(all_z_checkpoints))):
+        logging.debug('Checkpoint information for event %s:', i_event + 1)
+        for i_checkpoint in range(all_z_checkpoints.shape[1]):
+            logging.debug('  CP %s: z = %s, r = %s, t = %s',
+                          i_checkpoint + 1,
+                          all_z_checkpoints[i_event, i_checkpoint],
+                          all_r_xz_checkpoints[i_event, i_checkpoint],
+                          all_t_xz_checkpoints[i_event, i_checkpoint])
+        logging.debug('Sum:   r = %s, t = %s', np.prod(all_r_xz_checkpoints[i_event]),
+                      np.sum(all_t_xz_checkpoints[i_event], axis=0))
+        logging.debug('Total: r = %s, t = %s', all_r_xz[i_event], all_t_xz[i_event])
 
     logging.info('Saving results')
 
@@ -212,6 +278,13 @@ def simulate(simulator_name,
     if generate_joint_score:
         np.save(folder + '/t_xz_' + filename + '.npy', all_t_xz)
 
+    if checkpoint and (generate_joint_ratio or generate_joint_score):
+        np.save(folder + '/z_checkpoints_' + filename + '.npy', all_z_checkpoints)
+    if generate_joint_ratio:
+        np.save(folder + '/r_xz_checkpoints_' + filename + '.npy', all_r_xz_checkpoints)
+    if generate_joint_score:
+        np.save(folder + '/t_xz_checkpoints_' + filename + '.npy', all_t_xz_checkpoints)
+
 
 def main():
     """ Starts simulation """
@@ -222,6 +295,7 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('sample', help='Sample label (like "train" or "test")')
+    parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--theta0', default=None, help='Theta0 file, defaults to standard parameters')
     parser.add_argument('--theta1', default=None, help='Theta1 file, defaults to standard parameters')
     parser.add_argument('--singletheta', action='store_true', help='If argument theta0 is not set, generates sample'
@@ -245,6 +319,7 @@ def main():
     simulate(
         args.simulator,
         args.sample,
+        checkpoint=args.checkpoint,
         theta0=args.theta0,
         theta1=args.theta1,
         single_theta=args.singletheta,

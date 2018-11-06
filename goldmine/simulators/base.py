@@ -7,7 +7,6 @@ class SimulationTooLongException(SimulatorException):
 
 
 class Simulator:
-
     """ Base class for simulators with access to joint score and joint likelihood ratios. """
 
     def __init__(self):
@@ -33,3 +32,9 @@ class Simulator:
 
     def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None):
         raise NotImplementedError()
+
+
+class CheckpointedSimulator(Simulator):
+    """ Base class for simulators with access to joint score and joint likelihood ratios and some latent states (checkpoints) """
+
+    pass

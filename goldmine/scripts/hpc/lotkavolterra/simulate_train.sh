@@ -10,4 +10,4 @@
 source activate goldmine
 cd /scratch/jb6504/goldmine/goldmine/
 
-./simulate.py --nthetas 2000 --nsamples 1 lotkavolterra train_zoom_${SLURM_ARRAY_TASK_ID}
+./simulate.py --nthetas 2000 --nsamples 1 --checkpoint lotkavolterra train_zoom_${SLURM_ARRAY_TASK_ID}
