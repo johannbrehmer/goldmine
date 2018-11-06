@@ -38,7 +38,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         self.n_parameters = 4
 
         # Autograd
-        self._d_simulate = ag.grad_and_aux(self._simulate)
+        self._d_simulate_step = ag.elementwise_grad_and_aux(self._simulate_step)
 
     def theta_defaults(self, n_thetas=1000, single_theta=False, random=True):
 
@@ -113,21 +113,102 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
 
         return grid
 
-    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000,
-                  epsilon=1.e-9):
+    def _simulate_step(self, theta, rng, exp_thetas_eval,
+                       start_state, start_time, next_recorded_time, start_steps,
+                       max_steps=100000, steps_warning=10000,
+                       epsilon=1.e-9):
 
-        # Thetas for the evaluation of the likelihood (ratio / score). The first one is used for the first return
-        # value (and thus for the score)
+        # Theta
+        exp_theta = np.exp(theta)
+        n_eval = len(exp_thetas_eval)
+
+        # Initial state
+        state = np.copy(start_state)
+        simulated_time = start_time
+        n_steps = start_steps
+
+        # Track log p(x, z)
+        logp_xz = [0. for i in exp_thetas_eval]
+
+        # Possible events
+        event_effects = np.array([
+            [1, 0],  # Predator born
+            [-1, 0],  # Predator dies
+            [0, 1],  # Prey born
+            [0, -1]  # Predator eats prey
+        ], dtype=np.int)
+
+        # Gillespie algorithm
+        while next_recorded_time > simulated_time:
+
+            # Rates of different possible events
+            rates = np.array([
+                exp_theta[0] * state[0] * state[1],  # Predator born
+                exp_theta[1] * state[0],  # Predator dies
+                exp_theta[2] * state[1],  # Prey born
+                exp_theta[3] * state[0] * state[1]  # Predator eats prey
+            ])
+            total_rate = np.sum(rates)
+
+            if total_rate <= epsilon:  # Everyone is dead. Nothing will ever happen again.
+                simulated_time = self.duration + 1.
+                break
+
+            # Time of next event
+            try:
+                interaction_time = rng.exponential(scale=1. / total_rate)
+            except ValueError:  # Raised when done in autograd mode for score
+                interaction_time = rng.exponential(scale=1. / total_rate._value)
+
+            # Choose next event
+            event = -1
+            while event < 0:
+                dice = rng.rand(1)
+                for j in range(4):
+                    if dice < np.sum(rates[:j + 1]) / total_rate:
+                        event = j
+                        break
+
+            # Calculate and sum log probability
+            for k in range(n_eval):
+                rates_eval = np.array([
+                    exp_thetas_eval[k][0] * state[0] * state[1],  # Predator born
+                    exp_thetas_eval[k][1] * state[0],  # Predator dies
+                    exp_thetas_eval[k][2] * state[1],  # Prey born
+                    exp_thetas_eval[k][3] * state[0] * state[1]  # Predator eats prey
+                ])
+                total_rate_eval = np.sum(rates_eval)
+
+                logp_xz[k][i] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
+                                  + np.log(rates_eval[event]) - np.log(total_rate_eval))
+
+            # Resolve event
+            simulated_time += interaction_time
+            state += event_effects[event]
+            n_steps += 1
+
+            # Handling long simulations
+            if (n_steps + 1) % steps_warning == 0:
+                logging.debug('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
+
+            if n_steps > max_steps:
+                logging.warning('Too many steps in simulation. Total rate: %s', total_rate)
+                raise SimulationTooLongException()
+
+        # Return state and everything else
+        return logp_xz[0], (logp_xz[1:], state, simulated_time, n_steps)
+
+    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000,
+                  epsilon=1.e-9, extract_score=True):
+
+        # Thetas for the evaluation of the likelihood (ratio / score)
         if theta is None:
             theta = np.copy(theta_score)
 
         thetas_eval = [theta_score]
         if thetas_additional is not None:
             thetas_eval += thetas_additional
-        n_eval = len(thetas_eval)
 
-        # Exponentiated theta
-        exp_theta = np.exp(theta)
         exp_thetas_eval = [np.exp(theta_eval) for theta_eval in thetas_eval]
 
         # Prepare recorded time series of states
@@ -139,8 +220,9 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         simulated_time = 0.
         n_steps = 0
 
-        # Track log p(x, z) (to calculate the joint ratio and the joint score) (2nd index does checkpoints
-        logp_xz = [[0. for j in range(self.n_time_series)] for i in thetas_eval]
+        # Track log p(x, z) and score
+        t_xz_steps = []
+        logp_xz_steps = []
 
         # Possible events
         event_effects = np.array([
@@ -152,62 +234,33 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
 
         # Gillespie algorithm
         for i in range(self.n_time_series):
-
-            while next_recorded_time > simulated_time:
-
-                # Rates of different possible events
-                rates = np.array([
-                    exp_theta[0] * state[0] * state[1],  # Predator born
-                    exp_theta[1] * state[0],  # Predator dies
-                    exp_theta[2] * state[1],  # Prey born
-                    exp_theta[3] * state[0] * state[1]  # Predator eats prey
-                ])
-                total_rate = np.sum(rates)
-
-                if total_rate <= epsilon:  # Everyone is dead. Nothing will ever happen again.
-                    simulated_time = self.duration + 1.
-                    break
-
-                # Time of next event
-                try:
-                    interaction_time = rng.exponential(scale=1. / total_rate)
-                except ValueError:  # Raised when done in autograd mode for score
-                    interaction_time = rng.exponential(scale=1. / total_rate._value)
-
-                # Choose next event
-                event = -1
-                while event < 0:
-                    dice = rng.rand(1)
-                    for j in range(4):
-                        if dice < np.sum(rates[:j + 1]) / total_rate:
-                            event = j
-                            break
-
-                # Calculate and sum log probability
-                for k in range(n_eval):
-                    rates_eval = np.array([
-                        exp_thetas_eval[k][0] * state[0] * state[1],  # Predator born
-                        exp_thetas_eval[k][1] * state[0],  # Predator dies
-                        exp_thetas_eval[k][2] * state[1],  # Prey born
-                        exp_thetas_eval[k][3] * state[0] * state[1]  # Predator eats prey
-                    ])
-                    total_rate_eval = np.sum(rates_eval)
-
-                    logp_xz[k][i] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
-                                      + np.log(rates_eval[event]) - np.log(total_rate_eval))
-
-                # Resolve event
-                simulated_time += interaction_time
-                state += event_effects[event]
-                n_steps += 1
-
-                # Handling long simulations
-                if (n_steps + 1) % steps_warning == 0:
-                    logging.debug('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
-
-                if n_steps > max_steps:
-                    logging.warning('Too many steps in simulation. Total rate: %s', total_rate)
-                    raise SimulationTooLongException()
+            if extract_score:
+                t_xz_step, (logp_xz_step, state, simulated_time, n_steps) = self._d_simulate_step(
+                    theta=theta,
+                    rng=rng,
+                    exp_thetas_eval=exp_thetas_eval,
+                    start_state=state,
+                    start_time=simulated_time,
+                    next_recorded_time=next_recorded_time,
+                    start_steps=n_steps,
+                    max_steps=max_steps,
+                    steps_warning=steps_warning,
+                    epsilon=epsilon
+                )
+            else:
+                _, (logp_xz_step, state, simulated_time, n_steps) = self._simulate_step(
+                    theta=theta,
+                    rng=rng,
+                    exp_thetas_eval=exp_thetas_eval,
+                    start_state=state,
+                    start_time=simulated_time,
+                    next_recorded_time=next_recorded_time,
+                    start_steps=n_steps,
+                    max_steps=max_steps,
+                    steps_warning=steps_warning,
+                    epsilon=epsilon
+                )
+                t_xz_step = None
 
             # Save state
             time_series[i] = state.copy()
@@ -215,7 +268,18 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             # Prepare for next step
             next_recorded_time += self.delta_t
 
-        return logp_xz[0], (logp_xz[1:], time_series)
+            # Save joint probabilities and score
+            if extract_score:
+                t_xz_steps.append(t_xz_step)
+            logp_xz_steps.append(t_xz_step)
+
+        if extract_score:
+            t_xz_steps = np.array(t_xz_steps)
+        else:
+            t_xz_steps = None
+        logp_xz_steps = np.array(logp_xz_steps)
+
+        return time_series, t_xz_steps, logp_xz_steps
 
     def _simulate_until_success(self, theta, rng, thetas_additional=None, max_steps=100000, steps_warning=10000,
                                 epsilon=1.e-9, max_tries=5):
@@ -228,7 +292,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                _, (logp_xz_checkpoints, time_series) = self._simulate(
+                time_series, _, logp_xz_checkpoints = self._simulate(
                     theta_score=theta,
                     rng=rng,
                     theta=theta,
@@ -239,8 +303,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                 )
 
                 # Sum over checkpoints
-                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (thetas, checkpoints)
-                logp_xz = np.sum(logp_xz_checkpoints, axis=1)
+                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (checkpoints, thetas)
+                logp_xz = np.sum(logp_xz_checkpoints, axis=0)
             except SimulationTooLongException:
                 pass
             else:
@@ -268,7 +332,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                t_xz_checkpoints, (logp_xz_checkpoints, time_series) = self._d_simulate(
+                time_series, t_xz_checkpoints, logp_xz_checkpoints = self._d_simulate(
                     theta_score,
                     rng,
                     theta,
@@ -278,11 +342,13 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                     epsilon
                 )
 
+                logging.debug(t_xz_checkpoints)
+
                 # Sum over checkpoints
-                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (thetas, checkpoints)
-                t_xz_checkpoints = np.array(t_xz_checkpoints)    # (checkpoints,)
-                logp_xz = np.sum(logp_xz_checkpoints, axis=1)
-                t_xz = np.sum(logp_xz_checkpoints)
+                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (checkpoints, thetas)
+                t_xz_checkpoints = np.array(t_xz_checkpoints)  # (checkpoints, parameters)
+                logp_xz = np.sum(logp_xz_checkpoints, axis=0)
+                t_xz = np.sum(logp_xz_checkpoints, axis=0)
             except SimulationTooLongException:
                 pass
             else:
