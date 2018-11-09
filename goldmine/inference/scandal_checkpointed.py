@@ -152,7 +152,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('  Epochs:                 %s', n_epochs)
 
         train_checkpointed_model(
-            model=self.maf,
+            model=self.model,
             loss_functions=[negative_log_likelihood, score_mse, score_checkpoint_mse],
             loss_weights=[1., alpha, beta],
             loss_labels=['nll', 'score', 'checkpoint_score'],

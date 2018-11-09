@@ -21,6 +21,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          checkpoint=False,
           model_label='model',
           run=0,
           n_components=1,
@@ -59,6 +60,7 @@ def train(simulator_name,
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
     logging.info('  Inference method:      %s', inference_name)
+    logging.info('  Checkpoint:            %s', checkpoint)
     logging.info('  ML model name:         %s', model_label)
     logging.info('  Run number:            %s', run)
     logging.info('  Mixture components:    %s', n_components)
@@ -125,6 +127,7 @@ def train(simulator_name,
 
     inference = create_inference(
         inference_name,
+        checkpoint=checkpoint,
         n_mades=n_mades,
         n_components=n_components,
         n_made_hidden_layers=hidden_layers,
@@ -164,9 +167,18 @@ def train(simulator_name,
     else:
         t_xz = None
 
+    if checkpoint:
+        z_checkpoints = load_and_check(sample_folder + '/z_checkpoints_' + sample_filename + '.npy')
+        if inference.requires_joint_ratio():
+            r_xz_checkpoints = load_and_check(sample_folder + '/r_xz_checkpoints_' + sample_filename + '.npy')
+        if inference.requires_joint_score():
+            t_xz_checkpoints = load_and_check(sample_folder + '/t_xz_checkpoints_' + sample_filename + '.npy')
+
     # Restricted training sample size
     if training_sample_size is not None and training_sample_size < n_samples:
-        thetas, xs, ys, r_xz, t_xz = shuffle(thetas, xs, ys, r_xz, t_xz)
+        thetas, xs, ys, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints = shuffle(
+            thetas, xs, ys, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints
+        )
 
         thetas = thetas[:training_sample_size]
         xs = xs[:training_sample_size]
@@ -176,6 +188,12 @@ def train(simulator_name,
             r_xz = r_xz[:training_sample_size]
         if t_xz is not None:
             t_xz = t_xz[:training_sample_size]
+        if z_checkpoints is not None:
+            z_checkpoints = z_checkpoints[:training_sample_size]
+        if r_xz_checkpoints is not None:
+            r_xz_checkpoints = r_xz_checkpoints[:training_sample_size]
+        if t_xz_checkpoints is not None:
+            t_xz_checkpoints = t_xz_checkpoints[:training_sample_size]
 
         logging.info('Only using %s of %s training samples', training_sample_size, n_samples)
 
@@ -186,23 +204,47 @@ def train(simulator_name,
 
     # Train model
     logging.info('Training model %s on %s data', inference_name, simulator_name)
-    inference.fit(
-        thetas, xs,
-        ys, r_xz, t_xz,
-        theta1=theta1,
-        n_epochs=n_epochs,
-        batch_size=batch_size,
-        trainer=trainer,
-        initial_learning_rate=initial_lr,
-        final_learning_rate=final_lr,
-        alpha=alpha,
-        beta=beta,
-        learning_curve_folder=result_folder,
-        learning_curve_filename=output_filename,
-        validation_split=validation_split,
-        early_stopping=early_stopping,
-        fill_empty_bins=fill_empty_bins
-    )
+
+    if checkpoint:
+        inference.fit(
+            thetas, xs,
+            ys, r_xz, t_xz,
+            theta1=theta1,
+            z_checkpoints=z_checkpoints,
+            r_xz_checkpoints=r_xz_checkpoints,
+            t_xz_checkpoints=t_xz_checkpoints,
+            n_epochs=n_epochs,
+            batch_size=batch_size,
+            trainer=trainer,
+            initial_learning_rate=initial_lr,
+            final_learning_rate=final_lr,
+            alpha=alpha,
+            beta=beta,
+            learning_curve_folder=result_folder,
+            learning_curve_filename=output_filename,
+            validation_split=validation_split,
+            early_stopping=early_stopping,
+            fill_empty_bins=fill_empty_bins
+        )
+
+    else:
+        inference.fit(
+            thetas, xs,
+            ys, r_xz, t_xz,
+            theta1=theta1,
+            n_epochs=n_epochs,
+            batch_size=batch_size,
+            trainer=trainer,
+            initial_learning_rate=initial_lr,
+            final_learning_rate=final_lr,
+            alpha=alpha,
+            beta=beta,
+            learning_curve_folder=result_folder,
+            learning_curve_filename=output_filename,
+            validation_split=validation_split,
+            early_stopping=early_stopping,
+            fill_empty_bins=fill_empty_bins
+        )
 
     # Save models
     logging.info('Saving learned model to %s', model_folder + '/' + output_filename + '.*')
@@ -219,6 +261,7 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
+    parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--modellabel', type=str, default='model',
                         help='Additional name for the trained model.')
     parser.add_argument('--trainsample', type=str, default='train',
@@ -282,8 +325,6 @@ def main():
                         help='Validation split. Default: 0.2.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
-    #parser.add_argument('--gradientclip', default=10.,
-    #                    help='Gradient norm clipping threshold. Default: 10.')
 
     parser.add_argument('--debug', action='store_true', help='Print debug output')
 
@@ -296,6 +337,7 @@ def main():
     train(
         args.simulator,
         args.inference,
+        checkpoint=args.checkpoint,
         model_label=args.modellabel,
         run=args.i,
         n_mades=args.nades,
