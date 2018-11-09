@@ -112,7 +112,7 @@ def main():
     """ Shuffles different samples """
 
     # Set up logging and numpy
-    general_init()
+    general_init(debug=True)
 
     # Parse arguments
     parser = argparse.ArgumentParser(
