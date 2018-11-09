@@ -41,7 +41,7 @@ def shuffle_and_combine(simulator, input_samples, output_sample, regex=False):
         input_samples = []
         for expr in input_expressions:
 
-            logging.debug('Parsing regex %s', expr)
+            logging.debug('Parsing regex %s in folder %s', 'x_(' + expr + ')\.npy', folder)
 
             regex = re.compile('x_(' + expr + ')\.npy')
 
