@@ -14,6 +14,7 @@ from goldmine.inference.rolr import ROLRInference
 from goldmine.inference.carl import CARLInference
 from goldmine.inference.cascal import CASCALInference
 from goldmine.inference.rascal import RASCALInference
+from goldmine.inference.scandal_checkpointed import CheckpointedSCANDALInference
 
 
 def create_simulator(simulator_name, checkpoint=False):
@@ -39,7 +40,13 @@ def create_simulator(simulator_name, checkpoint=False):
             raise RuntimeError('Simulator name {} unknown'.format(simulator_name))
 
 
-def create_inference(inference_name, **params):
+def create_inference(inference_name, checkpoint=False, **params):
+    if checkpoint:
+        if inference_name == 'scandal':
+            return CheckpointedSCANDALInference(**params)
+        else:
+            raise RuntimeError('Checkpointed inference technique name {} unknown'.format(inference_name))
+
     if inference_name == 'histogram':
         return HistogramInference(**params)
     elif inference_name == 'maf':
