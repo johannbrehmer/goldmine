@@ -100,6 +100,8 @@ def train(simulator_name,
 
     sample_filename = training_sample
     output_filename = model_label
+    if checkpoint:
+        output_filename += '_checkpoint'
     if single_theta:
         output_filename += '_singletheta'
         sample_filename += '_singletheta'
