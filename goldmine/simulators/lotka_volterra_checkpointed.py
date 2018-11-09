@@ -218,7 +218,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         # Initial state
         state = np.array([self.initial_predators, self.initial_prey], dtype=np.int)
         next_recorded_time = 0.
-        simulated_time = 0.
+        simulated_time = epsilon
         n_steps = 0
 
         # Gillespie algorithm
@@ -255,7 +255,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                 t_xz_step = None
 
             # Save state, joint ratio, score
-            time_series[i] = state.copy()
+            time_series[i,0] = int(state[0])
+            time_series[i,1] = int(state[1])
 
             if extract_score:
                 t_xz_steps.append(t_xz_step)
