@@ -1,4 +1,5 @@
 import logging
+import torch
 
 from goldmine.inference.base import CheckpointedInference
 from goldmine.ml.models.score import CheckpointScoreEstimator
@@ -90,7 +91,30 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             self.model = FlowCheckpointScoreModel(maf, checkpoint_score_model)
 
         else:
-            raise NotImplementedError
+            self.model = torch.load(filename + '.pt', map_location='cpu')
+
+            logging.info('Loaded checkpointed SCANDAL from file:')
+            logging.info('  Filename:        %s', filename)
+            logging.info('  Checkpoint score estimator:')
+            logging.info('    Hidden layers: %s', self.step_model.n_hiddens)
+            logging.info('    Activation:    %s', self.step_model.activation)
+            logging.info('    Parameters:    %s', self.step_model.n_parameters)
+            logging.info('    Latents:       %s', self.step_model.n_latent)
+            logging.info('  Global flow:')
+            logging.info('    Parameters:    %s', self.model.global_model.n_conditionals)
+            logging.info('    Observables:   %s', self.model.global_model.n_inputs)
+            try:
+                logging.info('    Components:    %s', self.model.global_model.n_components)
+            except AttributeError:
+                logging.info('    Components:    1')
+            logging.info('    MADEs:         %s', self.model.global_model.n_mades)
+            logging.info('    Hidden layers: %s', self.model.global_model.n_hiddens)
+            logging.info('    Activation:    %s', self.model.global_model.activation)
+            logging.info('    Batch norm:    %s', self.model.global_model.batch_norm)
+
+        # Have everything on CPU (unless training)
+        self.device = torch.device("cpu")
+        self.dtype = torch.float
 
     def requires_class_label(self):
         return False
@@ -152,7 +176,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('  Epochs:                 %s', n_epochs)
 
         train_checkpointed_model(
-            model=self.maf,
+            model=self.model,
             loss_functions=[negative_log_likelihood, score_mse, score_checkpoint_mse],
             loss_weights=[1., alpha, beta],
             loss_labels=['nll', 'score', 'checkpoint_score'],
@@ -171,7 +195,10 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         )
 
     def save(self, filename):
-        raise NotImplementedError()
+        # Fix a bug in pyTorch, see https://github.com/pytorch/text/issues/350
+        self.maf.to()
+        torch.save(self.maf, filename + '.pt')
+        self.maf.to(self.device, self.dtype)
 
     def predict_density(self, theta, x):
         raise NotImplementedError()

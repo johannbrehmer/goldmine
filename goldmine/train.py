@@ -21,6 +21,7 @@ except ImportError:
 
 def train(simulator_name,
           inference_name,
+          checkpoint=False,
           model_label='model',
           run=0,
           n_components=1,
@@ -59,6 +60,7 @@ def train(simulator_name,
     logging.info('Starting training')
     logging.info('  Simulator:             %s', simulator_name)
     logging.info('  Inference method:      %s', inference_name)
+    logging.info('  Checkpoint:            %s', checkpoint)
     logging.info('  ML model name:         %s', model_label)
     logging.info('  Run number:            %s', run)
     logging.info('  Mixture components:    %s', n_components)
@@ -98,6 +100,8 @@ def train(simulator_name,
 
     sample_filename = training_sample
     output_filename = model_label
+    if checkpoint:
+        output_filename += '_checkpoint'
     if single_theta:
         output_filename += '_singletheta'
         sample_filename += '_singletheta'
@@ -116,15 +120,26 @@ def train(simulator_name,
     logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_' + sample_filename + '.npy')
     thetas = load_and_check(sample_folder + '/theta0_' + sample_filename + '.npy')
     xs = load_and_check(sample_folder + '/x_' + sample_filename + '.npy')
+    z_checkpoints = None
+    if checkpoint:
+        z_checkpoints = load_and_check(sample_folder + '/z_checkpoints_' + sample_filename + '.npy')
 
     n_samples = thetas.shape[0]
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
+    n_latent = None
+    if checkpoint:
+        n_latent = z_checkpoints.shape[2]
 
-    logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
+    if checkpoint:
+        logging.info('Found %s samples with %s parameters, %s observables, and checkpoints with %s latent variables',
+                     n_samples, n_parameters, n_observables, n_latent)
+    else:
+        logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
 
     inference = create_inference(
         inference_name,
+        checkpoint=checkpoint,
         n_mades=n_mades,
         n_components=n_components,
         n_made_hidden_layers=hidden_layers,
@@ -135,12 +150,14 @@ def train(simulator_name,
         activation=activation,
         n_parameters=n_parameters,
         n_observables=n_observables,
+        n_latent=n_latent,
         n_bins_theta=n_bins_theta,
         n_bins_x=n_bins_x,
         separate_1d_x_histos=separate_1d_x_histos,
         observables=histogram_observables
     )
 
+    # Load more data
     if inference.requires_class_label():
         ys = load_and_check(sample_folder + '/y_' + sample_filename + '.npy')
     else:
@@ -149,12 +166,9 @@ def train(simulator_name,
     if inference.requires_joint_ratio():
         r_xz = load_and_check(sample_folder + '/r_xz_' + sample_filename + '.npy')
         theta1 = load_and_check(sample_folder + '/theta1_' + sample_filename + '.npy')
-
         if len(theta1.shape) > 1:  # For now, we just want one constant theta1. Might be changed in later versions
             theta1 = theta1[0]
-
         assert theta1.shape == thetas[0].shape, 'Shape mismatch between theta0 and theta1'
-
     else:
         r_xz = None
         theta1 = None
@@ -164,9 +178,17 @@ def train(simulator_name,
     else:
         t_xz = None
 
+    if checkpoint:
+        if inference.requires_joint_ratio():
+            r_xz_checkpoints = load_and_check(sample_folder + '/r_xz_checkpoints_' + sample_filename + '.npy')
+        if inference.requires_joint_score():
+            t_xz_checkpoints = load_and_check(sample_folder + '/t_xz_checkpoints_' + sample_filename + '.npy')
+
     # Restricted training sample size
     if training_sample_size is not None and training_sample_size < n_samples:
-        thetas, xs, ys, r_xz, t_xz = shuffle(thetas, xs, ys, r_xz, t_xz)
+        thetas, xs, ys, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints = shuffle(
+            thetas, xs, ys, r_xz, t_xz, z_checkpoints, r_xz_checkpoints, t_xz_checkpoints
+        )
 
         thetas = thetas[:training_sample_size]
         xs = xs[:training_sample_size]
@@ -176,6 +198,12 @@ def train(simulator_name,
             r_xz = r_xz[:training_sample_size]
         if t_xz is not None:
             t_xz = t_xz[:training_sample_size]
+        if z_checkpoints is not None:
+            z_checkpoints = z_checkpoints[:training_sample_size]
+        if r_xz_checkpoints is not None:
+            r_xz_checkpoints = r_xz_checkpoints[:training_sample_size]
+        if t_xz_checkpoints is not None:
+            t_xz_checkpoints = t_xz_checkpoints[:training_sample_size]
 
         logging.info('Only using %s of %s training samples', training_sample_size, n_samples)
 
@@ -186,23 +214,47 @@ def train(simulator_name,
 
     # Train model
     logging.info('Training model %s on %s data', inference_name, simulator_name)
-    inference.fit(
-        thetas, xs,
-        ys, r_xz, t_xz,
-        theta1=theta1,
-        n_epochs=n_epochs,
-        batch_size=batch_size,
-        trainer=trainer,
-        initial_learning_rate=initial_lr,
-        final_learning_rate=final_lr,
-        alpha=alpha,
-        beta=beta,
-        learning_curve_folder=result_folder,
-        learning_curve_filename=output_filename,
-        validation_split=validation_split,
-        early_stopping=early_stopping,
-        fill_empty_bins=fill_empty_bins
-    )
+
+    if checkpoint:
+        inference.fit(
+            thetas, xs,
+            ys, r_xz, t_xz,
+            theta1=theta1,
+            z_checkpoints=z_checkpoints,
+            r_xz_checkpoints=r_xz_checkpoints,
+            t_xz_checkpoints=t_xz_checkpoints,
+            n_epochs=n_epochs,
+            batch_size=batch_size,
+            trainer=trainer,
+            initial_learning_rate=initial_lr,
+            final_learning_rate=final_lr,
+            alpha=alpha,
+            beta=beta,
+            learning_curve_folder=result_folder,
+            learning_curve_filename=output_filename,
+            validation_split=validation_split,
+            early_stopping=early_stopping,
+            fill_empty_bins=fill_empty_bins
+        )
+
+    else:
+        inference.fit(
+            thetas, xs,
+            ys, r_xz, t_xz,
+            theta1=theta1,
+            n_epochs=n_epochs,
+            batch_size=batch_size,
+            trainer=trainer,
+            initial_learning_rate=initial_lr,
+            final_learning_rate=final_lr,
+            alpha=alpha,
+            beta=beta,
+            learning_curve_folder=result_folder,
+            learning_curve_filename=output_filename,
+            validation_split=validation_split,
+            early_stopping=early_stopping,
+            fill_empty_bins=fill_empty_bins
+        )
 
     # Save models
     logging.info('Saving learned model to %s', model_folder + '/' + output_filename + '.*')
@@ -219,6 +271,7 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
+    parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--modellabel', type=str, default='model',
                         help='Additional name for the trained model.')
     parser.add_argument('--trainsample', type=str, default='train',
@@ -282,8 +335,6 @@ def main():
                         help='Validation split. Default: 0.2.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
-    #parser.add_argument('--gradientclip', default=10.,
-    #                    help='Gradient norm clipping threshold. Default: 10.')
 
     parser.add_argument('--debug', action='store_true', help='Print debug output')
 
@@ -296,6 +347,7 @@ def main():
     train(
         args.simulator,
         args.inference,
+        checkpoint=args.checkpoint,
         model_label=args.modellabel,
         run=args.i,
         n_mades=args.nades,

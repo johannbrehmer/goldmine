@@ -54,6 +54,8 @@ class CheckpointScoreEstimator(nn.Module):
         super(CheckpointScoreEstimator, self).__init__()
 
         # Save input
+        self.n_latent = n_latent
+        self.n_parameters = n_parameters
         self.n_hidden = n_hidden
         self.activation = get_activation_function(activation)
 
