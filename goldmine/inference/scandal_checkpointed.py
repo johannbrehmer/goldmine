@@ -1,5 +1,7 @@
 import logging
+import numpy as np
 import torch
+from torch import tensor
 
 from goldmine.inference.base import CheckpointedInference
 from goldmine.ml.models.score import CheckpointScoreEstimator
@@ -8,6 +10,7 @@ from goldmine.ml.models.maf_mog import ConditionalMixtureMaskedAutoregressiveFlo
 from goldmine.ml.models.checkpoint import FlowCheckpointScoreModel
 from goldmine.ml.trainer_checkpoint import train_checkpointed_model
 from goldmine.ml.losses_checkpoint import negative_log_likelihood, score_mse, score_checkpoint_mse
+from goldmine.various.utils import expand_array_2d
 
 
 class CheckpointedSCANDALInference(CheckpointedInference):
@@ -170,7 +173,8 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('  Latent variables:       %s', z_checkpoints.shape[2])
         logging.info('  Batch size:             %s', batch_size)
         logging.info('  Optimizer:              %s', trainer)
-        logging.info('  Learning rate:          %s initially, decaying to %s', initial_learning_rate, final_learning_rate)
+        logging.info('  Learning rate:          %s initially, decaying to %s', initial_learning_rate,
+                     final_learning_rate)
         logging.info('  Valid. split:           %s', validation_split)
         logging.info('  Early stopping:         %s', early_stopping)
         logging.info('  Epochs:                 %s', n_epochs)
@@ -196,18 +200,76 @@ class CheckpointedSCANDALInference(CheckpointedInference):
 
     def save(self, filename):
         # Fix a bug in pyTorch, see https://github.com/pytorch/text/issues/350
-        self.maf.to()
-        torch.save(self.maf, filename + '.pt')
-        self.maf.to(self.device, self.dtype)
+        self.model.to()
+        torch.save(self.model, filename + '.pt')
+        self.model.to(self.device, self.dtype)
 
-    def predict_density(self, theta, x):
-        raise NotImplementedError()
+    def predict_score_conditional_on_checkpoints(self, theta, z_checkpoints):
+        # If just one theta given, broadcast to number of samples
+        theta = expand_array_2d(theta, z_checkpoints.shape[0])
 
-    def predict_ratio(self, theta0, theta1, x):
-        raise NotImplementedError()
+        self.model = self.model.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
+
+        t_checkpoints = self.model.forward_checkpoints(theta, z_checkpoints)
+        t_checkpoints = torch.sum(t_checkpoints, dim=1)
+        t_checkpoints = t_checkpoints.detach().numpy()
+
+        return t_checkpoints
+
+    def predict_density(self, theta, x, log=False):
+        # If just one theta given, broadcast to number of samples
+        theta = expand_array_2d(theta, x.shape[0])
+
+        self.model = self.model.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        x_tensor = tensor(x).to(self.device, self.dtype)
+
+        _, log_likelihood = self.model.global_model.log_likelihood(theta_tensor, x_tensor)
+        log_likelihood = log_likelihood.detach().numpy()
+
+        if log:
+            return log_likelihood
+        return np.exp(log_likelihood)
+
+    def predict_ratio(self, theta0, theta1, x, log=False):
+        # If just one theta given, broadcast to number of samples
+        theta0 = expand_array_2d(theta0, x.shape[0])
+        theta1 = expand_array_2d(theta1, x.shape[0])
+
+        self.model = self.model.to(self.device, self.dtype)
+        theta0_tensor = tensor(theta0).to(self.device, self.dtype)
+        theta1_tensor = tensor(theta1).to(self.device, self.dtype)
+        x_tensor = tensor(x).to(self.device, self.dtype)
+
+        _, log_likelihood_theta0 = self.model.global_model.log_likelihood(theta0_tensor, x_tensor)
+        _, log_likelihood_theta1 = self.model.global_model.log_likelihood(theta1_tensor, x_tensor)
+
+        log_likelihood_theta0 = log_likelihood_theta0.detach().numpy()
+        log_likelihood_theta1 = log_likelihood_theta1.detach().numpy()
+
+        if log:
+            return log_likelihood_theta0 - log_likelihood_theta1
+        return np.exp(log_likelihood_theta0 - log_likelihood_theta1)
 
     def predict_score(self, theta, x):
-        raise NotImplementedError()
+        # If just one theta given, broadcast to number of samples
+        theta = expand_array_2d(theta, x.shape[0])
+
+        self.model = self.model.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        x_tensor = tensor(x).to(self.device, self.dtype)
+
+        _, _, score = self.model.global_model.log_likelihood_and_score(theta_tensor, x_tensor)
+
+        score = score.detach().numpy()
+
+        return score
 
     def generate_samples(self, theta):
-        raise NotImplementedError()
+        self.model = self.model.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+
+        samples = self.model.global_model.generate_samples(theta_tensor).detach().numpy()
+        return samples
