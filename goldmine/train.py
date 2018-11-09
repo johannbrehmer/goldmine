@@ -120,12 +120,22 @@ def train(simulator_name,
     logging.info('Loading %s training data from %s', simulator_name, sample_folder + '/*_' + sample_filename + '.npy')
     thetas = load_and_check(sample_folder + '/theta0_' + sample_filename + '.npy')
     xs = load_and_check(sample_folder + '/x_' + sample_filename + '.npy')
+    z_checkpoints = None
+    if checkpoint:
+        z_checkpoints = load_and_check(sample_folder + '/z_checkpoints_' + sample_filename + '.npy')
 
     n_samples = thetas.shape[0]
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
+    n_latent = None
+    if checkpoint:
+        n_latent = z_checkpoints.shape[2]
 
-    logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
+    if checkpoint:
+        logging.info('Found %s samples with %s parameters, %s observables, and checkpoints with %s latent variables',
+                     n_samples, n_parameters, n_observables, n_latent)
+    else:
+        logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
 
     inference = create_inference(
         inference_name,
@@ -140,12 +150,14 @@ def train(simulator_name,
         activation=activation,
         n_parameters=n_parameters,
         n_observables=n_observables,
+        n_latent=n_latent,
         n_bins_theta=n_bins_theta,
         n_bins_x=n_bins_x,
         separate_1d_x_histos=separate_1d_x_histos,
         observables=histogram_observables
     )
 
+    # Load more data
     if inference.requires_class_label():
         ys = load_and_check(sample_folder + '/y_' + sample_filename + '.npy')
     else:
@@ -154,12 +166,9 @@ def train(simulator_name,
     if inference.requires_joint_ratio():
         r_xz = load_and_check(sample_folder + '/r_xz_' + sample_filename + '.npy')
         theta1 = load_and_check(sample_folder + '/theta1_' + sample_filename + '.npy')
-
         if len(theta1.shape) > 1:  # For now, we just want one constant theta1. Might be changed in later versions
             theta1 = theta1[0]
-
         assert theta1.shape == thetas[0].shape, 'Shape mismatch between theta0 and theta1'
-
     else:
         r_xz = None
         theta1 = None
@@ -170,7 +179,6 @@ def train(simulator_name,
         t_xz = None
 
     if checkpoint:
-        z_checkpoints = load_and_check(sample_folder + '/z_checkpoints_' + sample_filename + '.npy')
         if inference.requires_joint_ratio():
             r_xz_checkpoints = load_and_check(sample_folder + '/r_xz_checkpoints_' + sample_filename + '.npy')
         if inference.requires_joint_score():
