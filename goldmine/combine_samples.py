@@ -33,7 +33,7 @@ def shuffle_and_combine(simulator, input_samples, output_sample, regex=False):
 
     # Path and filenames
     folder = base_dir + '/goldmine/data/samples/' + simulator
-    filenames = ['theta0', 'theta1', 'x', 'y', 'r_xz', 't_xz']
+    filenames = ['theta0', 'theta1', 'x', 'y', 'r_xz', 't_xz', 'z_checkpoints', 'r_xz_checkpoints', 't_xz_checkpoints']
 
     # Parse regular expressions
     if regex:
