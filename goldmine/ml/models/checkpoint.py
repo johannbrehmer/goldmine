@@ -22,7 +22,7 @@ class FlowCheckpointScoreModel(nn.Module):
         z_final = z_checkpoints[:, 1:, :].contiguous().view(-1, n_latent)
 
         theta_step = theta.clone()
-        theta_step.unsqeeze(1)  # (n_batch, 1, n_parameters)
+        theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
         theta_step = theta_step.repeat(1, n_steps - 1, 1)
         theta_step = theta_step.contiguous().view(-1, n_latent)
 
