@@ -270,6 +270,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
         else:
             t_xz_steps = None
         logp_xz_steps = np.array(logp_xz_steps)
+        time_series = time_series.astype(np.int)
 
         return time_series, t_xz_steps, logp_xz_steps
 
