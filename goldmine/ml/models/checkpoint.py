@@ -19,8 +19,8 @@ class FlowCheckpointScoreModel(nn.Module):
 
         n_batch, n_steps, n_latent = z_checkpoints.size()
 
-        z_initial = z_checkpoints[:,:-1,:].view(-1,n_latent)
-        z_final = z_checkpoints[:,1:,:].view(-1,n_latent)
+        z_initial = z_checkpoints[:,:-1,:].contiguous().view(-1,n_latent)
+        z_final = z_checkpoints[:,1:,:].contiguous().view(-1,n_latent)
 
         logging.debug("  z_initial = %s", z_initial)
         logging.debug("  z_final = %s", z_final)
