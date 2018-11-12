@@ -9,9 +9,9 @@ def negative_log_likelihood(log_p_pred, t_pred, t_true, t_checkpoints_pred, t_ch
 
 
 def score_mse(log_p_pred, t_pred, t_true, t_checkpoints_pred, t_checkpoints_true):
-    t_pred
-    return MSELoss()(t_pred, t_true)
+    t_from_checkpoints = torch.sum(t_checkpoints_pred, dim=1)
+    return MSELoss()(t_pred, t_from_checkpoints)
 
 
 def score_checkpoint_mse(log_p_pred, t_pred, t_true, t_checkpoints_pred, t_checkpoints_true):
-    return MSELoss()(t_checkpoints_pred, t_checkpoints_true[1:])
+    return MSELoss()(t_checkpoints_pred, t_checkpoints_true[:, 1:])

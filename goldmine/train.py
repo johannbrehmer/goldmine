@@ -178,6 +178,8 @@ def train(simulator_name,
     else:
         t_xz = None
 
+    r_xz_checkpoints = None
+    t_xz_checkpoints = None
     if checkpoint:
         if inference.requires_joint_ratio():
             r_xz_checkpoints = load_and_check(sample_folder + '/r_xz_checkpoints_' + sample_filename + '.npy')
