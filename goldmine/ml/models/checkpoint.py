@@ -28,7 +28,7 @@ class FlowCheckpointScoreModel(nn.Module):
         return t_checkpoints
 
     def forward_global(self, theta, x):
-        u, log_likelihood, score = self.global_model(theta, x).log_likelihood_and_score
+        u, log_likelihood, score = self.global_model.log_likelihood_and_score(theta, x)
 
         return u, log_likelihood, score
 
