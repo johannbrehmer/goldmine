@@ -17,6 +17,7 @@ class FlowCheckpointScoreModel(nn.Module):
         logging.debug("  z_checkpoints: %s, %s", z_checkpoints.size(), z_checkpoints)
 
         n_batch, n_steps, n_latent = z_checkpoints.size()
+        n_parameters = theta.size()[-1]
 
         z_initial = z_checkpoints[:, :-1, :].contiguous().view(-1, n_latent)
         z_final = z_checkpoints[:, 1:, :].contiguous().view(-1, n_latent)
@@ -24,16 +25,16 @@ class FlowCheckpointScoreModel(nn.Module):
         theta_step = theta.clone()
         theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
         theta_step = theta_step.repeat(1, n_steps - 1, 1)
-        theta_step = theta_step.contiguous().view(-1, n_latent)
+        theta_step = theta_step.contiguous().view(-1, n_parameters)
 
         logging.debug("  theta_step: %s, %s", theta_step.size(), theta_step)
         logging.debug("  z_initial: %s, %s", z_initial.size(), z_initial)
         logging.debug("  z_final: %s, %s", z_final.size(), z_final)
 
-        t_checkpoints = self.step_model.forward(z_initial, z_final, theta)
+        t_checkpoints = self.step_model.forward(z_initial, z_final, theta_step)
         logging.debug("  that: %s, %s", t_checkpoints.size(), t_checkpoints)
 
-        t_checkpoints = t_checkpoints.view(n_batch, n_steps - 1, n_latent)
+        t_checkpoints = t_checkpoints.view(n_batch, n_steps - 1, n_latent).contiguous()
         logging.debug("  that: %s, %s", t_checkpoints.size(), t_checkpoints)
 
         return t_checkpoints
