@@ -347,7 +347,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                 logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (checkpoints, thetas)
                 t_xz_checkpoints = np.array(t_xz_checkpoints)  # (checkpoints, parameters)
                 logp_xz = np.sum(logp_xz_checkpoints, axis=0)
-                t_xz = np.sum(logp_xz_checkpoints, axis=0)
+                t_xz = np.sum(t_xz_checkpoints, axis=0)
             except SimulationTooLongException:
                 pass
             else:

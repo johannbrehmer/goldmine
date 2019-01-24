@@ -35,9 +35,9 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
     def theta_defaults(self, n_thetas=1000, single_theta=False, random=True):
 
         # Parameters
-        tmin, tmax = 0.001, 0.1
-        theta0_default = 0.01
-        theta1_value = 0.01
+        tmin, tmax = 10., 10000.
+        theta0_default = 100.
+        theta1_value = 100.
 
         # Single benchmark point
         if single_theta:
@@ -66,8 +66,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
     def _simulate_step(self, theta_score,
                        start_state, start_time, next_recorded_time, start_steps,
                        rng, theta=None, thetas_additional=None,
-                       max_steps=100000, steps_warning=10000,
-                       epsilon=1.e-9):
+                       max_steps=100000, steps_warning=10000):
 
         # Thetas for the evaluation of the likelihood (ratio / score)
         if theta is None:
@@ -93,7 +92,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         while next_recorded_time > simulated_time:
 
             # Rates of different possible events
-            rates = np.array([0.01, theta[0]])
+            rates = np.array([100., theta[0]])
             total_rate = np.sum(rates)
 
             # Time of next event
@@ -105,9 +104,11 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             # Choose next event
             event = 0 if rng.rand(1) < rates[0] / total_rate else 1
 
+            logging.debug("Step %s at t = %s", "up" if event == 1 else "down", interaction_time)
+
             # Calculate and sum log probability
             for k in range(n_eval):
-                rates_eval = np.array([0.01, thetas_eval[k][0]])
+                rates_eval = np.array([100., thetas_eval[k][0]])
                 total_rate_eval = np.sum(rates_eval)
 
                 logp_xz[k] += (np.log(total_rate_eval) - interaction_time * total_rate_eval
@@ -129,8 +130,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         # Return state and everything else
         return logp_xz[0], (logp_xz[1:], state, simulated_time, n_steps)
 
-    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000,
-                  epsilon=1.e-9, extract_score=True):
+    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000, epsilon=1.e-9, extract_score=True):
 
         # Output
         t_xz_steps = []
@@ -158,7 +158,6 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                     thetas_additional=thetas_additional,
                     max_steps=max_steps,
                     steps_warning=steps_warning,
-                    epsilon=epsilon
                 )
             else:
                 _, (logp_xz_step, state, simulated_time, n_steps) = self._simulate_step(
@@ -172,7 +171,6 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                     thetas_additional=thetas_additional,
                     max_steps=max_steps,
                     steps_warning=steps_warning,
-                    epsilon=epsilon
                 )
                 t_xz_step = None
 
@@ -268,7 +266,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                 logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (checkpoints, thetas)
                 t_xz_checkpoints = np.array(t_xz_checkpoints)  # (checkpoints, parameters)
                 logp_xz = np.sum(logp_xz_checkpoints, axis=0)
-                t_xz = np.sum(logp_xz_checkpoints, axis=0)
+                t_xz = np.sum(t_xz_checkpoints, axis=0)
             except SimulationTooLongException:
                 pass
             else:
