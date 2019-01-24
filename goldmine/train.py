@@ -128,12 +128,14 @@ def train(simulator_name,
     n_parameters = thetas.shape[1]
     n_observables = xs.shape[1]
     n_latent = None
+    n_checkpoints = None
     if checkpoint:
+        n_checkpoints = z_checkpoints.shape[1]
         n_latent = z_checkpoints.shape[2]
 
     if checkpoint:
-        logging.info('Found %s samples with %s parameters, %s observables, and checkpoints with %s latent variables',
-                     n_samples, n_parameters, n_observables, n_latent)
+        logging.info('Found %s samples with %s parameters, %s observables, and %s  checkpoints with %s latent variables',
+                     n_samples, n_parameters, n_observables, n_checkpoints, n_latent)
     else:
         logging.info('Found %s samples with %s parameters and %s observables', n_samples, n_parameters, n_observables)
 

@@ -260,7 +260,7 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
 
             if extract_score:
                 t_xz_steps.append(t_xz_step)
-            logp_xz_steps.append(t_xz_step)
+            logp_xz_steps.append(logp_xz_step)
 
             # Prepare for next step
             next_recorded_time += self.delta_t
@@ -269,7 +269,11 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             t_xz_steps = np.array(t_xz_steps)
         else:
             t_xz_steps = None
-        logp_xz_steps = np.array(logp_xz_steps)
+
+        if logp_xz_steps is None or None in logp_xz_steps:
+            logp_xz_steps = None
+        else:
+            logp_xz_steps = np.array(logp_xz_steps)  # (checkpoints, thetas)
         time_series = time_series.astype(np.int)
 
         return time_series, t_xz_steps, logp_xz_steps
@@ -297,8 +301,8 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
                 )
 
                 # Sum over checkpoints
-                logp_xz_checkpoints = np.array(logp_xz_checkpoints)  # (checkpoints, thetas)
-                logp_xz = np.sum(logp_xz_checkpoints, axis=0)
+                if logp_xz_checkpoints is not None:
+                    logp_xz = np.sum(logp_xz_checkpoints, axis=0)
             except SimulationTooLongException:
                 pass
             else:
