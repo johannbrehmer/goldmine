@@ -5,6 +5,8 @@ from goldmine.simulators.lotka_volterra_checkpointed import CheckpointedLotkaVol
 from goldmine.simulators.galton import GeneralizedGaltonBoard
 from goldmine.simulators.gaussian import GaussianSimulator
 from goldmine.simulators.chutes_ladders import ChutesLaddersSimulator
+from goldmine.simulators.random_walk_checkpointed import CheckpointedRandomWalk
+
 from goldmine.inference.histograms import HistogramInference
 from goldmine.inference.nde import MAFInference
 from goldmine.inference.scandal import SCANDALInference
@@ -21,6 +23,8 @@ def create_simulator(simulator_name, checkpoint=False):
     if checkpoint:
         if simulator_name == 'lotkavolterra':
             return CheckpointedLotkaVolterra()
+        if simulator_name == 'randomwalk':
+            return CheckpointedRandomWalk()
         else:
             raise RuntimeError('Checkpointed simulator name {} unknown'.format(simulator_name))
     else:
