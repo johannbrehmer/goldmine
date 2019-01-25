@@ -1,0 +1,51 @@
+11:14  
+11:14  ------------------------------------------------------------
+11:14  |                                                          |
+11:14  |  goldmine                                                |
+11:14  |                                                          |
+11:14  |              Experiments with simulator-based inference  |
+11:14  |                                                          |
+11:14  ------------------------------------------------------------
+11:14  
+11:14  Hi! How are you today?
+11:14  Starting training
+11:14    Simulator:             lotkavolterra
+11:14    Inference method:      scandal
+11:14    Checkpoint:            True
+11:14    ML model name:         model_zoom_mog
+11:14    Run number:            0
+11:14    Mixture components:    10
+11:14    MADEs:                 5
+11:14    Hidden layers:         1
+11:14    Units / layer:         100
+11:14    Batch norm:            False
+11:14    Activation function:   tanh
+11:14    Histogram theta bins:  3
+11:14    Histogram observables: all
+11:14    Histogram x bins:      False
+11:14    1d x histograms:       3
+11:14    Fill empty bins:       False
+11:14    SCANDAL/RASCAL alpha:  0.01
+11:14    RASCANDAL beta:        0.01
+11:14    Training sample name:  train_zoom
+11:14    Train on single theta: False
+11:14    Training sample size:  100000
+11:14    Epochs:                30
+11:14    Batch size:            512
+11:14    Optimizer:             adam
+11:14    Learning rate:         0.001 initially, decaying to 0.0001
+11:14    Validation split:      0.2
+11:14    Early stopping:        True
+11:14  Folder /scratch/jb6504/goldmine/goldmine/data/models/lotkavolterra/scandal does not exist, will be created
+11:14  Folder /scratch/jb6504/goldmine/goldmine/data/results/lotkavolterra/scandal does not exist, will be created
+11:14  Loading lotkavolterra training data from /scratch/jb6504/goldmine/goldmine/data/samples/lotkavolterra/*_train_zoom.npy
+Traceback (most recent call last):
+  File "./train.py", line 387, in <module>
+    main()
+  File "./train.py", line 380, in main
+    early_stopping=not args.noearlystopping
+  File "./train.py", line 125, in train
+    z_checkpoints = load_and_check(sample_folder + '/z_checkpoints_' + sample_filename + '.npy')
+  File "/scratch/jb6504/goldmine/goldmine/various/utils.py", line 96, in load_and_check
+    n_nans = np.sum(np.isnan(data))
+TypeError: ufunc 'isnan' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
