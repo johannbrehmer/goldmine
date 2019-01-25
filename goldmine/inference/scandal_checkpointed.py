@@ -221,6 +221,19 @@ class CheckpointedSCANDALInference(CheckpointedInference):
 
         return t_checkpoints
 
+    def predict_checkpoint_scores(self, theta, z_checkpoints):
+        # If just one theta given, broadcast to number of samples
+        theta = expand_array_2d(theta, z_checkpoints.shape[0])
+
+        self.model = self.model.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
+
+        t_checkpoints = self.model.forward_checkpoints(theta_tensor, z_checkpoints)
+        t_checkpoints = t_checkpoints.detach().numpy()
+
+        return t_checkpoints
+
     def predict_density(self, theta, x, log=False):
         # If just one theta given, broadcast to number of samples
         theta = expand_array_2d(theta, x.shape[0])
