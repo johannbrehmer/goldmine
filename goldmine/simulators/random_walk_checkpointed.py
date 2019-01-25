@@ -1,5 +1,6 @@
 import autograd.numpy as np
 import autograd as ag
+import numpy as np_
 from itertools import product
 import logging
 
@@ -145,7 +146,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         # Output
         t_xz_steps = []
         logp_xz_steps = []
-        time_series = np.zeros(self.n_time_series, dtype=np.int)
+        time_series = np.zeros((self.n_time_series, 1), dtype=np.int)
 
         # Initial state
         state = np.array([self.initial_state], dtype=np.int)
@@ -186,7 +187,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                 t_xz_step = None
 
             # Save state, joint ratio, score
-            time_series[i] = int(state)
+            time_series[i, 0] = int(state)
 
             if extract_score:
                 t_xz_steps.append(t_xz_step)
@@ -207,7 +208,9 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             logp_xz_steps = None
         else:
             logp_xz_steps = np.array(logp_xz_steps)  # (checkpoints, thetas)
-        time_series = time_series.astype(np.int)
+
+        # Convert to proper numpy int
+        time_series = np_.array(time_series).astype(np_.int)
 
         if return_history:
             return time_series, t_xz_steps, logp_xz_steps, history
@@ -331,7 +334,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints
 
     def _calculate_observables(self, time_series, rng):
-        return np.array(time_series[-1]).reshape((1,1))
+        return np.array(time_series[-1, :])
 
     def rvs(self, theta, n, random_state=None, return_z_checkpoints=False, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s', n, theta)
