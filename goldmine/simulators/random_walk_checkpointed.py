@@ -66,7 +66,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
     def _simulate_step(self, theta_score,
                        start_state, start_time, next_recorded_time, start_steps,
                        rng, theta=None, thetas_additional=None,
-                       max_steps=100000, steps_warning=10000):
+                       max_steps=100000, steps_warning=10000, epsilon=1.e-9):
 
         # Thetas for the evaluation of the likelihood (ratio / score)
         if theta is None:
@@ -84,6 +84,9 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
 
         # Track log p(x, z)
         logp_xz = [0. for _ in thetas_eval]
+
+        # Keep track of micro-level history
+        step_history = []
 
         # Possible events
         event_effects = np.array([-1, 1], dtype=np.int)
@@ -104,8 +107,6 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             # Choose next event
             event = 0 if rng.rand(1) < rates[0] / total_rate else 1
 
-            logging.debug("Step %s at t = %s", "up" if event == 1 else "down", interaction_time)
-
             # Calculate and sum log probability
             for k in range(n_eval):
                 rates_eval = np.array([100., thetas_eval[k][0]])
@@ -119,6 +120,14 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             state += event_effects[event]
             n_steps += 1
 
+            # Record in history
+            #try:
+            step_history.append([simulated_time - epsilon, int(state)])
+            step_history.append([simulated_time, int(state)])
+            # except:
+            #     step_history.append([simulated_time - epsilon, state])
+            #     step_history.append([simulated_time, state])
+
             # Handling long simulations
             if (n_steps + 1) % steps_warning == 0:
                 logging.debug('Simulation is exceeding %s steps, simulated time: %s', n_steps, simulated_time)
@@ -128,9 +137,10 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                 raise SimulationTooLongException()
 
         # Return state and everything else
-        return logp_xz[0], (logp_xz[1:], state, simulated_time, n_steps)
+        return logp_xz[0], (logp_xz[1:], state, simulated_time, n_steps, step_history)
 
-    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000, epsilon=1.e-9, extract_score=True):
+    def _simulate(self, theta_score, rng, theta=None, thetas_additional=None, max_steps=100000, steps_warning=10000,
+                  epsilon=1.e-9, extract_score=True, return_history=False):
 
         # Output
         t_xz_steps = []
@@ -139,6 +149,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
 
         # Initial state
         state = np.array([self.initial_state], dtype=np.int)
+        history = [[0., self.initial_state]]
         next_recorded_time = 0.
         simulated_time = epsilon
         n_steps = 0
@@ -147,7 +158,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         for i in range(self.n_time_series):
             # Run step
             if extract_score:
-                t_xz_step, (logp_xz_step, state, simulated_time, n_steps) = self._d_simulate_step(
+                t_xz_step, (logp_xz_step, state, simulated_time, n_steps, step_history) = self._d_simulate_step(
                     theta_score,
                     start_state=state,
                     start_time=simulated_time,
@@ -160,7 +171,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                     steps_warning=steps_warning,
                 )
             else:
-                _, (logp_xz_step, state, simulated_time, n_steps) = self._simulate_step(
+                _, (logp_xz_step, state, simulated_time, n_steps, step_history) = self._simulate_step(
                     theta_score,
                     start_state=state,
                     start_time=simulated_time,
@@ -181,6 +192,9 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
                 t_xz_steps.append(t_xz_step)
             logp_xz_steps.append(logp_xz_step)
 
+            if return_history:
+                history += step_history
+
             # Prepare for next step
             next_recorded_time += self.delta_t
 
@@ -195,29 +209,47 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             logp_xz_steps = np.array(logp_xz_steps)  # (checkpoints, thetas)
         time_series = time_series.astype(np.int)
 
+        if return_history:
+            return time_series, t_xz_steps, logp_xz_steps, history
+
         return time_series, t_xz_steps, logp_xz_steps
 
     def _simulate_until_success(self, theta, rng, thetas_additional=None, max_steps=100000, steps_warning=10000,
-                                epsilon=1.e-9, max_tries=5):
+                                epsilon=1.e-9, max_tries=5, return_history=False):
 
         time_series = None
         logp_xz_checkpoints = None
         logp_xz = None
         tries = 0
+        history = None
 
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                time_series, _, logp_xz_checkpoints = self._simulate(
-                    theta_score=theta,
-                    rng=rng,
-                    theta=theta,
-                    thetas_additional=thetas_additional,
-                    max_steps=max_steps,
-                    steps_warning=steps_warning,
-                    epsilon=epsilon,
-                    extract_score=False
-                )
+                if return_history:
+                    time_series, _, logp_xz_checkpoints, history = self._simulate(
+                        theta_score=theta,
+                        rng=rng,
+                        theta=theta,
+                        thetas_additional=thetas_additional,
+                        max_steps=max_steps,
+                        steps_warning=steps_warning,
+                        epsilon=epsilon,
+                        extract_score=False,
+                        return_history=True,
+                    )
+                else:
+                    time_series, _, logp_xz_checkpoints = self._simulate(
+                        theta_score=theta,
+                        rng=rng,
+                        theta=theta,
+                        thetas_additional=thetas_additional,
+                        max_steps=max_steps,
+                        steps_warning=steps_warning,
+                        epsilon=epsilon,
+                        extract_score=False,
+                        return_history=False,
+                    )
 
                 # Sum over checkpoints
                 if logp_xz_checkpoints is not None:
@@ -232,10 +264,12 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
 
+        if return_history:
+            return logp_xz, time_series, logp_xz_checkpoints, history
         return logp_xz, time_series, logp_xz_checkpoints
 
     def _d_simulate_until_success(self, theta, rng, theta_score=None, thetas_additional=None, max_steps=100000,
-                                  steps_warning=10000, epsilon=1.e-9, max_tries=5):
+                                  steps_warning=10000, epsilon=1.e-9, max_tries=5, return_history=False):
         if theta_score is None:
             theta_score = theta
 
@@ -245,20 +279,35 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         t_xz_checkpoints = None
         logp_xz_checkpoints = None
         tries = 0
+        history = None
 
         while time_series is None and (max_tries is None or max_tries <= 0 or tries < max_tries):
             tries += 1
             try:
-                time_series, t_xz_checkpoints, logp_xz_checkpoints = self._simulate(
-                    theta_score,
-                    rng,
-                    theta,
-                    thetas_additional,
-                    max_steps,
-                    steps_warning,
-                    epsilon,
-                    extract_score=True
-                )
+                if return_history:
+                    time_series, t_xz_checkpoints, logp_xz_checkpoints, history = self._simulate(
+                        theta_score,
+                        rng,
+                        theta,
+                        thetas_additional,
+                        max_steps,
+                        steps_warning,
+                        epsilon,
+                        extract_score=True,
+                        return_history=True
+                    )
+                else:
+                    time_series, t_xz_checkpoints, logp_xz_checkpoints = self._simulate(
+                        theta_score,
+                        rng,
+                        theta,
+                        thetas_additional,
+                        max_steps,
+                        steps_warning,
+                        epsilon,
+                        extract_score=True,
+                        return_history=False
+                    )
 
                 logging.debug(t_xz_checkpoints)
 
@@ -277,57 +326,49 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             raise SimulationTooLongException(
                 'Simulation exceeded {} steps in {} consecutive trials'.format(max_steps, max_tries))
 
-        # Only want steps
+        if return_history:
+            return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints, history
         return logp_xz, t_xz, time_series, logp_xz_checkpoints, t_xz_checkpoints
 
     def _calculate_observables(self, time_series, rng):
-        """ Calculates observables: a combination of summary statistics and the full time series  """
+        return np.array(time_series[-1]).reshape((1,1))
 
-        n = time_series.shape[0]
-        x = time_series[:].astype(np.float)
-
-        # Mean of time series
-        mean_x = np.mean(x)
-
-        # Variance of time series
-        var_x = np.var(x, ddof=1)
-
-        # Normalize for correlation coefficients
-        x_norm = (x - mean_x) / np.sqrt(var_x)
-
-        # auto correlation coefficient
-        autocorr_x = []
-        for lag in [1, 2]:
-            autocorr_x.append(np.dot(x_norm[:-lag], x_norm[lag:]) / (n - 1))
-
-        summary_statistics = [mean_x, np.log(var_x + 1)] + autocorr_x
-        return np.array(summary_statistics)
-
-    def rvs(self, theta, n, random_state=None, return_histories=False):
+    def rvs(self, theta, n, random_state=None, return_z_checkpoints=False, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s', n, theta)
 
         rng = check_random_state(random_state)
 
         all_x = []
-        histories = []
+        all_z_checkpoints = []
+        all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            _, time_series, _ = self._simulate_until_success(theta, rng)
             if return_histories:
-                histories.append(time_series)
+                _, time_series, _, history = self._simulate_until_success(theta, rng, return_history=True)
+            else:
+                _, time_series, _ = self._simulate_until_success(theta, rng)
+
+            if return_z_checkpoints or return_histories:
+                all_z_checkpoints.append(time_series)
+            if return_histories:
+                all_histories.append(history)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
 
         all_x = np.asarray(all_x)
+        all_z_checkpoints = np.asarray(all_z_checkpoints)
 
         if return_histories:
-            return all_x, histories
+            all_z_checkpoints = np.asarray(all_z_checkpoints)
+            return all_x, all_z_checkpoints, all_histories
+        if return_z_checkpoints:
+            return all_x, all_z_checkpoints
         return all_x
 
-    def rvs_score(self, theta, theta_score, n, random_state=None):
+    def rvs_score(self, theta, theta_score, n, random_state=None, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint score', n, theta)
 
         rng = check_random_state(random_state, use_autograd=True)
@@ -335,15 +376,24 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         all_x = []
         all_t_xz = []
         all_t_xz_checkpoints = []
+        all_z_checkpoints = []
         all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            _, t_xz, time_series, _, t_xz_checkpoints = self._d_simulate_until_success(theta, rng, theta_score)
+            if return_histories:
+                _, t_xz, time_series, _, t_xz_checkpoints, history = self._d_simulate_until_success(theta, rng,
+                                                                                                    theta_score,
+                                                                                                    return_history=True)
+            else:
+                _, t_xz, time_series, _, t_xz_checkpoints = self._d_simulate_until_success(theta, rng, theta_score)
+
             all_t_xz.append(t_xz)
             all_t_xz_checkpoints.append(t_xz_checkpoints)
-            all_histories.append(time_series)
+            all_z_checkpoints.append(time_series)
+            if return_histories:
+                all_histories.append(history)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
@@ -351,11 +401,14 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         all_x = np.asarray(all_x)
         all_t_xz = np.asarray(all_t_xz)
         all_t_xz_checkpoints = np.asarray(all_t_xz_checkpoints)
-        all_histories = np.asarray(all_histories)
+        all_z_checkpoints = np.asarray(all_z_checkpoints)
 
-        return all_x, all_t_xz, all_histories, all_t_xz_checkpoints
+        if return_histories:
+            return all_x, all_t_xz, all_z_checkpoints, all_t_xz_checkpoints, all_histories
 
-    def rvs_ratio(self, theta, theta0, theta1, n, random_state=None):
+        return all_x, all_t_xz, all_z_checkpoints, all_t_xz_checkpoints
+
+    def rvs_ratio(self, theta, theta0, theta1, n, random_state=None, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s',
                       n, theta, theta0, theta1)
 
@@ -364,16 +417,25 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         all_x = []
         all_log_r_xz = []
         all_log_r_xz_checkpoints = []
+        all_z_checkpoints = []
         all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            log_p_xzs, time_series, log_p_xz_checkpoints = self._simulate_until_success(theta, rng, [theta0, theta1])
+            if return_histories:
+                log_p_xzs, time_series, log_p_xz_checkpoints, history = self._simulate_until_success(theta, rng,
+                                                                                                     [theta0, theta1],
+                                                                                                     return_history=True)
+            else:
+                log_p_xzs, time_series, log_p_xz_checkpoints = self._simulate_until_success(theta, rng,
+                                                                                            [theta0, theta1])
 
             all_log_r_xz.append(log_p_xzs[0] - log_p_xzs[1])
             all_log_r_xz_checkpoints.append(log_p_xz_checkpoints[:, 0] - log_p_xz_checkpoints[:, 1])
-            all_histories.append(time_series)
+            all_z_checkpoints.append(time_series)
+            if return_histories:
+                all_histories.append(histories)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
@@ -381,11 +443,14 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         all_x = np.asarray(all_x)
         all_r_xz = np.exp(np.asarray(all_log_r_xz))
         all_r_xz_checkpoints = np.exp(np.asarray(all_log_r_xz_checkpoints))
-        all_histories = np.asarray(all_histories)
+        all_z_checkpoints = np.asarray(all_z_checkpoints)
 
-        return all_x, all_r_xz, all_histories, all_r_xz_checkpoints
+        if return_histories:
+            return all_x, all_r_xz, all_z_checkpoints, all_r_xz_checkpoints, all_histories
 
-    def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None):
+        return all_x, all_r_xz, all_z_checkpoints, all_r_xz_checkpoints
+
+    def rvs_ratio_score(self, theta, theta0, theta1, theta_score, n, random_state=None, return_histories=False):
         logging.debug('Simulating %s evolutions for theta = %s, augmenting with joint ratio between %s and %s and joint'
                       ' score at  %s', n, theta, theta0, theta1, theta_score)
 
@@ -396,19 +461,26 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         all_t_xz = []
         all_t_xz_checkpoints = []
         all_log_r_xz_checkpoints = []
+        all_z_checkpoints = []
         all_histories = []
 
         for i in range(n):
             logging.debug('  Starting sample %s of %s', i + 1, n)
 
-            results = self._d_simulate_until_success(theta, rng, theta_score, [theta0, theta1])
-            log_p_xzs, t_xz, time_series, log_p_xz_checkpoints, t_xz_checkpoints = results
+            results = self._d_simulate_until_success(theta, rng, theta_score, [theta0, theta1],
+                                                     return_history=return_histories)
+            if return_histories:
+                log_p_xzs, t_xz, time_series, log_p_xz_checkpoints, t_xz_checkpoints, history = results
+            else:
+                log_p_xzs, t_xz, time_series, log_p_xz_checkpoints, t_xz_checkpoints = results
 
             all_t_xz.append(t_xz)
             all_log_r_xz.append(log_p_xzs[0] - log_p_xzs[1])
             all_t_xz_checkpoints.append(t_xz_checkpoints)
             all_log_r_xz_checkpoints.append(log_p_xz_checkpoints[:, 0] - log_p_xz_checkpoints[:, 1])
-            all_histories.append(time_series)
+            all_z_checkpoints.append(time_series)
+            if return_histories:
+                all_histories.append(history)
 
             x = self._calculate_observables(time_series, rng=rng)
             all_x.append(x)
@@ -418,6 +490,9 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         all_r_xz = np.exp(np.asarray(all_log_r_xz))
         all_r_xz_checkpoints = np.exp(np.asarray(all_log_r_xz_checkpoints))
         all_t_xz_checkpoints = np.asarray(all_t_xz_checkpoints)
-        all_histories = np.asarray(all_histories)
+        all_z_checkpoints = np.asarray(all_z_checkpoints)
 
-        return all_x, all_r_xz, all_t_xz, all_histories, all_r_xz_checkpoints, all_t_xz_checkpoints
+        if return_histories:
+            return all_x, all_r_xz, all_t_xz, all_z_checkpoints, all_r_xz_checkpoints, all_t_xz_checkpoints, all_histories
+
+        return all_x, all_r_xz, all_t_xz, all_z_checkpoints, all_r_xz_checkpoints, all_t_xz_checkpoints
