@@ -1,5 +1,6 @@
 import autograd.numpy as np
 import autograd as ag
+import numpy as np_
 from itertools import product
 import logging
 
@@ -274,7 +275,9 @@ class CheckpointedLotkaVolterra(CheckpointedSimulator):
             logp_xz_steps = None
         else:
             logp_xz_steps = np.array(logp_xz_steps)  # (checkpoints, thetas)
-        time_series = time_series.astype(np.int)
+
+        # Convert to proper numpy int
+        time_series = np_.array(time_series).astype(np_.int)
 
         return time_series, t_xz_steps, logp_xz_steps
 
