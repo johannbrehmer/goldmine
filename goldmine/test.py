@@ -25,6 +25,7 @@ except ImportError:
 
 def test(simulator_name,
          inference_name,
+          checkpoint=False,
          run=0,
          alpha=1.,
          model_label='model',
@@ -46,6 +47,7 @@ def test(simulator_name,
     logging.info('Starting evaluation')
     logging.info('  Simulator:                        %s', simulator_name)
     logging.info('  Inference method:                 %s', inference_name)
+    logging.info('  Checkpoint:                       %s', checkpoint)
     logging.info('  ML model name:                    %s', model_label)
     logging.info('  Run number:                       %s', run)
     logging.info('  Test sample:                      %s', test_sample)
@@ -86,6 +88,8 @@ def test(simulator_name,
     # Filenames
     model_filename = model_label
     result_filename = ''
+    if checkpoint:
+        model_filename += '_checkpoint'
     if model_label != 'model':
         result_filename = '_' + model_label
     if trained_on_single_theta:
@@ -325,6 +329,7 @@ def main():
     parser.add_argument('simulator',
                         help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
+    parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--model', type=str, default='model',
                         help='Trained model name. Default: "model".')
     parser.add_argument('--testsample', type=str, default='test',
@@ -359,6 +364,7 @@ def main():
     test(
         args.simulator,
         args.inference,
+        checkpoint=args.checkpoint,
         model_label=args.model,
         test_sample=args.testsample,
         run=args.i,
