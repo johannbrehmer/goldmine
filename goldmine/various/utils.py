@@ -93,7 +93,7 @@ def shuffle(*arrays):
 def load_and_check(filename, warning_threshold=1.e9, min_value=- np.exp(25.), max_value=np.exp(25.)):
     data = np.load(filename)
 
-    if not (np.issubdtype(data.dtype, np.floating) or np.ussubdtype(data.dtype, np.integer)):
+    if not (np.issubdtype(data.dtype, np.floating) or np.issubdtype(data.dtype, np.integer)):
         data = data.astype(np.float)
 
     n_nans = np.sum(np.isnan(data))
