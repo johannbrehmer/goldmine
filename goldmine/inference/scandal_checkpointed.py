@@ -99,10 +99,10 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             logging.info('Loaded checkpointed SCANDAL from file:')
             logging.info('  Filename:        %s', filename)
             logging.info('  Checkpoint score estimator:')
-            logging.info('    Hidden layers: %s', self.step_model.n_hiddens)
-            logging.info('    Activation:    %s', self.step_model.activation)
-            logging.info('    Parameters:    %s', self.step_model.n_parameters)
-            logging.info('    Latents:       %s', self.step_model.n_latent)
+            logging.info('    Hidden layers: %s', self.model.step_model.n_hiddens)
+            logging.info('    Activation:    %s', self.model.step_model.activation)
+            logging.info('    Parameters:    %s', self.model.step_model.n_parameters)
+            logging.info('    Latents:       %s', self.model.step_model.n_latent)
             logging.info('  Global flow:')
             logging.info('    Parameters:    %s', self.model.global_model.n_conditionals)
             logging.info('    Observables:   %s', self.model.global_model.n_inputs)
@@ -217,6 +217,19 @@ class CheckpointedSCANDALInference(CheckpointedInference):
 
         t_checkpoints = self.model.forward_checkpoints(theta_tensor, z_checkpoints)
         t_checkpoints = torch.sum(t_checkpoints, dim=1)
+        t_checkpoints = t_checkpoints.detach().numpy()
+
+        return t_checkpoints
+
+    def predict_checkpoint_scores(self, theta, z_checkpoints):
+        # If just one theta given, broadcast to number of samples
+        theta = expand_array_2d(theta, z_checkpoints.shape[0])
+
+        self.model = self.model.to(self.device, self.dtype)
+        theta_tensor = tensor(theta).to(self.device, self.dtype)
+        z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
+
+        t_checkpoints = self.model.forward_checkpoints(theta_tensor, z_checkpoints)
         t_checkpoints = t_checkpoints.detach().numpy()
 
         return t_checkpoints
