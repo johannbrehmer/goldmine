@@ -163,6 +163,7 @@ def test(simulator_name,
     logging.info('Loading trained model from %s', model_folder + '/' + model_filename + '.*')
     inference = create_inference(
         inference_name,
+        checkpoint=checkpoint,
         filename=model_folder + '/' + model_filename
     )
 

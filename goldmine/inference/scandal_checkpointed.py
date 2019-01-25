@@ -215,7 +215,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         theta_tensor = tensor(theta).to(self.device, self.dtype)
         z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
 
-        t_checkpoints = self.model.forward_checkpoints(theta, z_checkpoints)
+        t_checkpoints = self.model.forward_checkpoints(theta_tensor, z_checkpoints)
         t_checkpoints = torch.sum(t_checkpoints, dim=1)
         t_checkpoints = t_checkpoints.detach().numpy()
 
