@@ -293,7 +293,8 @@ def main():
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
     parser.add_argument('simulator',
-                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
+                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra", '
+                        'or "randomwalk".')
     parser.add_argument('sample', help='Sample label (like "train" or "test")')
     parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--theta0', default=None, help='Theta0 file, defaults to standard parameters')

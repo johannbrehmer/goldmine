@@ -36,7 +36,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
     def theta_defaults(self, n_thetas=1000, single_theta=False, random=True):
 
         # Parameters
-        tmin, tmax = 10., 10000.
+        tmin, tmax = 50., 200.
         theta0_default = 100.
         theta1_value = 100.
 
@@ -49,7 +49,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
         if random:
             benchmarks = np.random.rand(n_thetas, self.n_parameters)
         else:
-            benchmarks = np.linspace(0., 1., n_thetas)
+            benchmarks = np.linspace(0., 1., n_thetas).reshape((n_thetas, 1))
 
         # Rescale and exponentiate to correct ranges
         benchmarks[:] *= (np.log(tmax) - np.log(tmin))
@@ -60,9 +60,12 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
 
         return benchmarks, theta1
 
-    def theta_grid_default(self, n_points_per_dim=5):
+    def theta_grid_default(self, n_points_per_dim=None):
 
-        return self.theta_defaults(n_thetas=n_points_per_dim, random=False)
+        if n_points_per_dim is None:
+            n_points_per_dim = 100
+
+        return self.theta_defaults(n_thetas=n_points_per_dim, random=False)[0].T
 
     def _simulate_step(self, theta_score,
                        start_state, start_time, next_recorded_time, start_steps,
@@ -122,7 +125,7 @@ class CheckpointedRandomWalk(CheckpointedSimulator):
             n_steps += 1
 
             # Record in history
-            #try:
+            # try:
             step_history.append([simulated_time - epsilon, int(state)])
             step_history.append([simulated_time, int(state)])
             # except:

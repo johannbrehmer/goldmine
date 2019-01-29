@@ -25,7 +25,7 @@ except ImportError:
 
 def test(simulator_name,
          inference_name,
-          checkpoint=False,
+         checkpoint=False,
          run=0,
          alpha=1.,
          model_label='model',
@@ -113,12 +113,14 @@ def test(simulator_name,
     # Theta grid
     simulator = None
     if (evaluate_densities_on_grid or evaluate_ratios_on_grid) and (theta_grid is None or isinstance(theta_grid, int)):
-        simulator = create_simulator(simulator_name)
+        simulator = create_simulator(simulator_name, checkpoint=checkpoint)
         theta_grid = simulator.theta_grid_default(n_points_per_dim=theta_grid)
+
+        logging.info("Created theta grid with %s parameters and %s points each", theta_grid.shape[0], theta_grid.shape[1])
 
     if evaluate_ratios_on_grid and theta1_grid is None:
         if simulator is None:
-            simulator = create_simulator(simulator_name)
+            simulator = create_simulator(simulator_name, checkpoint=checkpoint)
         _, theta1_grid = simulator.theta_defaults(single_theta=True)
         theta1_grid = theta1_grid[0]
 
@@ -321,15 +323,13 @@ def test(simulator_name,
 def main():
     """ Starts training """
 
-    # Set up logging and numpy
-    general_init()
-
     # Parse arguments
     parser = argparse.ArgumentParser(description='Likelihood-free inference experiments with gold from the simulator')
 
     # General setup
     parser.add_argument('simulator',
-                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
+                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra", '
+                        'or "randomwalk".')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
     parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--model', type=str, default='model',
@@ -360,7 +360,12 @@ def main():
     parser.add_argument('--gridnx', default=1000, type=int,
                         help='Number of phase-space points saved for the grid evaluation. Default: 1000.')
 
+    parser.add_argument('--debug', action='store_true', help='Print debug output')
+
     args = parser.parse_args()
+
+    # Set up logging and numpy
+    general_init(debug=args.debug)
 
     # Start simulation
     test(

@@ -91,7 +91,7 @@ def train(simulator_name,
     logging.info('  Early stopping:        %s', early_stopping)
 
     # Check paths
-    create_missing_folders(base_dir, simulator_name, inference_name)
+    create_missing_folders(base_dir, simulator_name, inference_name + '_checkpoint' if checkpoint else inference_name)
 
     # Folders and filenames
     sample_folder = base_dir + '/goldmine/data/samples/' + simulator_name
@@ -274,7 +274,8 @@ def main():
 
     # Basic run settings and labels
     parser.add_argument('simulator',
-                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra"')
+                        help='Simulator: "gaussian", "galton", "epidemiology", "epidemiology2d", "lotkavolterra", '
+                        'or "randomwalk".')
     parser.add_argument('inference', help='Inference method: "histogram", "maf", "scandal", "rascandal", "scandalcv"')
     parser.add_argument('--checkpoint', action='store_true', help='Checkpoint z states')
     parser.add_argument('--modellabel', type=str, default='model',
