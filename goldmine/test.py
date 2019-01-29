@@ -90,6 +90,7 @@ def test(simulator_name,
     result_filename = ''
     if checkpoint:
         model_filename += '_checkpoint'
+        result_folder += '_checkpoint'
     if model_label != 'model':
         result_filename = '_' + model_label
     if trained_on_single_theta:
