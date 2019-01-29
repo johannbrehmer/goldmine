@@ -99,7 +99,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             logging.info('Loaded checkpointed SCANDAL from file:')
             logging.info('  Filename:        %s', filename)
             logging.info('  Checkpoint score estimator:')
-            logging.info('    Hidden layers: %s', self.model.step_model.n_hiddens)
+            logging.info('    Hidden layers: %s', self.model.step_model.n_hidden)
             logging.info('    Activation:    %s', self.model.step_model.activation)
             logging.info('    Parameters:    %s', self.model.step_model.n_parameters)
             logging.info('    Latents:       %s', self.model.step_model.n_latent)
