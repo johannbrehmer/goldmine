@@ -89,7 +89,7 @@ def test(simulator_name,
     model_filename = model_label
     result_filename = ''
     if checkpoint:
-        model_filename += '_checkpoint'
+        model_folder += '_checkpoint'
         result_folder += '_checkpoint'
     if model_label != 'model':
         result_filename = '_' + model_label
