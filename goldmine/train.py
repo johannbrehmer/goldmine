@@ -37,6 +37,7 @@ def train(simulator_name,
           fill_empty_bins=False,
           alpha=0.0001,
           beta=0.0001,
+          gamma=1.,
           training_sample='train',
           single_theta=False,
           training_sample_size=None,
@@ -47,7 +48,11 @@ def train(simulator_name,
           initial_lr=0.001,
           final_lr=0.0001,
           validation_split=0.2,
-          early_stopping=True):
+          early_stopping=True,
+          pretrain=False,
+          pre_alpha=0.0001,
+          pre_beta=0.0001,
+          pre_gamma=1.):
     """ Main training function """
 
     if single_theta:
@@ -217,6 +222,55 @@ def train(simulator_name,
             logging.info('Compensating by increasing number of epochs from %s to %s', n_epochs, n_epochs_compensated)
             n_epochs = n_epochs_compensated
 
+    # Pretrain model
+    if pretrain:
+        logging.info('Pre-training model %s on %s data', inference_name, simulator_name)
+
+        if checkpoint:
+            inference.fit(
+                thetas, xs,
+                ys, r_xz, t_xz,
+                theta1=theta1,
+                z_checkpoints=z_checkpoints,
+                r_xz_checkpoints=r_xz_checkpoints,
+                t_xz_checkpoints=t_xz_checkpoints,
+                n_epochs=n_epochs,
+                batch_size=batch_size,
+                trainer=trainer,
+                initial_learning_rate=initial_lr,
+                final_learning_rate=final_lr,
+                alpha=pre_alpha,
+                beta=pre_beta,
+                gamma=pre_gamma,
+                learning_curve_folder=None,
+                learning_curve_filename=None,
+                validation_split=validation_split,
+                early_stopping=early_stopping,
+                fill_empty_bins=fill_empty_bins
+            )
+
+        else:
+            inference.fit(
+                thetas, xs,
+                ys, r_xz, t_xz,
+                theta1=theta1,
+                n_epochs=n_epochs,
+                batch_size=batch_size,
+                trainer=trainer,
+                initial_learning_rate=initial_lr,
+                final_learning_rate=final_lr,
+                alpha=pre_alpha,
+                beta=pre_beta,
+                gamma=pre_gamma,
+                learning_curve_folder=None,
+                learning_curve_filename=None,
+                validation_split=validation_split,
+                early_stopping=early_stopping,
+                fill_empty_bins=fill_empty_bins
+            )
+    else:
+        logging.info('No pre-training')
+
     # Train model
     logging.info('Training model %s on %s data', inference_name, simulator_name)
 
@@ -235,6 +289,7 @@ def train(simulator_name,
             final_learning_rate=final_lr,
             alpha=alpha,
             beta=beta,
+            gamma=gamma,
             learning_curve_folder=result_folder,
             learning_curve_filename=output_filename,
             validation_split=validation_split,
@@ -254,6 +309,7 @@ def train(simulator_name,
             final_learning_rate=final_lr,
             alpha=alpha,
             beta=beta,
+            gamma=gamma,
             learning_curve_folder=result_folder,
             learning_curve_filename=output_filename,
             validation_split=validation_split,
@@ -327,10 +383,13 @@ def main():
                              + ' compensate for the decreased sample size.')
     parser.add_argument('--alpha', type=float, default=0.01,
                         help='alpha parameter weighting the score MSE in the loss function of the SCANDAL, RASCAL, and'
-                             'and RASCANDAL inference methods. Default: 0.0001.')
+                             'and RASCANDAL inference methods. Default: 0.01.')
     parser.add_argument('--beta', type=float, default=0.01,
                         help='beta parameter weighting the likelihood ratio MSE in the loss function of the RASCANDAL'
-                             'inference method. Default: 0.0001.')
+                             'inference method. Default: 0.01.')
+    parser.add_argument('--gamma', type=float, default=1.,
+                        help='gamma parameter weighting the negative likelihood in the checkpoint SCANDAL loss. '
+                             'Default: 1.')
     parser.add_argument('--optimizer', default='adam',
                         help='Optimizer. For now, "adam" and "sgd" are supported.')
     parser.add_argument('--lr', type=float, default=0.001,
@@ -342,6 +401,18 @@ def main():
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
 
+
+    # Pretraining
+    parser.add_argument('--pretrain', action='store_true',
+                        help='Acticate a separate pretraining phase.')
+    parser.add_argument('--prealpha', type=float, default=0.01,
+                        help='alpha parameter during pretraining. Default: 0.01.')
+    parser.add_argument('--prebeta', type=float, default=0.01,
+                        help='beta parameter during pretraining. Default: 0.01.')
+    parser.add_argument('--pregamma', type=float, default=1.,
+                        help='gamma parameter during pretraining. Default: 1.')
+
+    # Other settings
     parser.add_argument('--debug', action='store_true', help='Print debug output')
 
     args = parser.parse_args()
@@ -379,7 +450,11 @@ def main():
         initial_lr=args.lr,
         final_lr=args.lr * args.lrdecay,
         validation_split=args.validationsplit,
-        early_stopping=not args.noearlystopping
+        early_stopping=not args.noearlystopping,
+        pretrain=args.pretrain,
+        pre_alpha=args.prealpha,
+        pre_beta=args.prebeta,
+        pre_gamma=args.pregamma,
     )
 
     logging.info("That's all for now, have a nice day!")

@@ -148,6 +148,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             early_stopping=True,
             alpha=1.,
             beta=1.,
+            gamma=1.,
             learning_curve_folder=None,
             learning_curve_filename=None,
             **params
@@ -157,6 +158,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('Training checkpointed SCANDAL with settings:')
         logging.info('  alpha:                  %s', alpha)
         logging.info('  beta:                   %s', beta)
+        logging.info('  gamma:                  %s', gamma)
         logging.info('  theta given:            %s', theta is not None)
         logging.info('  theta1 given:           %s', theta1 is not None)
         logging.info('  x given:                %s', x is not None)
@@ -168,7 +170,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('  t_xz_checkpoints given: %s', t_xz_checkpoints is not None)
         logging.info('  Samples:                %s', x.shape[0])
         logging.info('  Parameters:             %s', theta.shape[1])
-        logging.info('  Obserables:             %s', x.shape[1])
+        logging.info('  Observables:            %s', x.shape[1])
         logging.info('  Checkpoints:            %s', z_checkpoints.shape[1])
         logging.info('  Latent variables:       %s', z_checkpoints.shape[2])
         logging.info('  Batch size:             %s', batch_size)
@@ -182,7 +184,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         train_checkpointed_model(
             model=self.model,
             loss_functions=[negative_log_likelihood, score_mse, score_checkpoint_mse],
-            loss_weights=[1., alpha, beta],
+            loss_weights=[gamma, alpha, beta],
             loss_labels=['nll', 'score', 'checkpoint_score'],
             thetas=theta,
             xs=x,

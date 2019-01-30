@@ -243,6 +243,7 @@ def train_checkpointed_model(
 
             # Evaluate loss
             try:
+                # log_p_pred, t_pred, t_true, t_checkpoints_pred, t_checkpoints_true
                 losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
             except RuntimeError:
                 logging.error('Error in evaluating loss functions!')
