@@ -7,9 +7,8 @@ from goldmine.inference.base import CheckpointedInference
 from goldmine.ml.models.score import CheckpointScoreEstimator
 from goldmine.ml.models.maf import ConditionalMaskedAutoregressiveFlow
 from goldmine.ml.models.maf_mog import ConditionalMixtureMaskedAutoregressiveFlow
-from goldmine.ml.models.checkpoint import FlowCheckpointScoreModel
 from goldmine.ml.trainer_checkpoint import train_checkpointed_model
-from goldmine.ml.losses_checkpoint import negative_log_likelihood, score_mse, score_checkpoint_mse
+from goldmine.ml.losses_checkpoint import negative_log_likelihood, score_checkpoint_mse, score_mse
 from goldmine.various.utils import expand_array_2d
 
 
@@ -56,7 +55,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             logging.info('    Batch norm:      %s', batch_norm)
 
             # Step model
-            checkpoint_score_model = CheckpointScoreEstimator(
+            self.step_model = CheckpointScoreEstimator(
                 n_parameters=n_parameters,
                 n_latent=n_latent,
                 n_hidden=tuple([n_step_units_per_layer] * n_step_hidden_layers),
@@ -65,7 +64,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
 
             # Global model
             if n_components is not None and n_components > 1:
-                maf = ConditionalMixtureMaskedAutoregressiveFlow(
+                self.global_model = ConditionalMixtureMaskedAutoregressiveFlow(
                     n_components=n_components,
                     n_conditionals=n_parameters,
                     n_inputs=n_observables,
@@ -78,7 +77,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
                     alpha=0.1
                 )
             else:
-                maf = ConditionalMaskedAutoregressiveFlow(
+                self.global_model = ConditionalMaskedAutoregressiveFlow(
                     n_conditionals=n_parameters,
                     n_inputs=n_observables,
                     n_hiddens=tuple([n_made_units_per_layer] * n_made_hidden_layers),
@@ -90,30 +89,28 @@ class CheckpointedSCANDALInference(CheckpointedInference):
                     alpha=0.1
                 )
 
-            # Wrapper
-            self.model = FlowCheckpointScoreModel(maf, checkpoint_score_model)
-
         else:
-            self.model = torch.load(filename + '.pt', map_location='cpu')
+            self.step_model = torch.load(filename + '_step.pt', map_location='cpu')
+            self.global_model = torch.load(filename + '_global.pt', map_location='cpu')
 
             logging.info('Loaded checkpointed SCANDAL from file:')
             logging.info('  Filename:        %s', filename)
             logging.info('  Checkpoint score estimator:')
-            logging.info('    Hidden layers: %s', self.model.step_model.n_hidden)
-            logging.info('    Activation:    %s', self.model.step_model.activation)
-            logging.info('    Parameters:    %s', self.model.step_model.n_parameters)
-            logging.info('    Latents:       %s', self.model.step_model.n_latent)
+            logging.info('    Hidden layers: %s', self.step_model.n_hidden)
+            logging.info('    Activation:    %s', self.step_model.activation)
+            logging.info('    Parameters:    %s', self.step_model.n_parameters)
+            logging.info('    Latents:       %s', self.step_model.n_latent)
             logging.info('  Global flow:')
-            logging.info('    Parameters:    %s', self.model.global_model.n_conditionals)
-            logging.info('    Observables:   %s', self.model.global_model.n_inputs)
+            logging.info('    Parameters:    %s', self.global_model.n_conditionals)
+            logging.info('    Observables:   %s', self.global_model.n_inputs)
             try:
-                logging.info('    Components:    %s', self.model.global_model.n_components)
+                logging.info('    Components:    %s', self.global_model.n_components)
             except AttributeError:
                 logging.info('    Components:    1')
-            logging.info('    MADEs:         %s', self.model.global_model.n_mades)
-            logging.info('    Hidden layers: %s', self.model.global_model.n_hiddens)
-            logging.info('    Activation:    %s', self.model.global_model.activation)
-            logging.info('    Batch norm:    %s', self.model.global_model.batch_norm)
+            logging.info('    MADEs:         %s', self.global_model.n_mades)
+            logging.info('    Hidden layers: %s', self.global_model.n_hiddens)
+            logging.info('    Activation:    %s', self.global_model.activation)
+            logging.info('    Batch norm:    %s', self.global_model.batch_norm)
 
         # Have everything on CPU (unless training)
         self.device = torch.device("cpu")
@@ -182,7 +179,8 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('  Epochs:                 %s', n_epochs)
 
         train_checkpointed_model(
-            model=self.model,
+            model=self.global_model,
+            score_model=self.step_model,
             loss_functions=[negative_log_likelihood, score_mse, score_checkpoint_mse],
             loss_weights=[gamma, alpha, beta],
             loss_labels=['nll', 'score', 'checkpoint_score'],
@@ -205,46 +203,42 @@ class CheckpointedSCANDALInference(CheckpointedInference):
 
     def save(self, filename):
         # Fix a bug in pyTorch, see https://github.com/pytorch/text/issues/350
-        self.model.to()
-        torch.save(self.model, filename + '.pt')
-        self.model.to(self.device, self.dtype)
+        self.global_model.to()
+        torch.save(self.global_model, filename + '_global.pt')
+        self.global_model.to(self.device, self.dtype)
 
-    def predict_score_conditional_on_checkpoints(self, theta, z_checkpoints):
-        # If just one theta given, broadcast to number of samples
-        theta = expand_array_2d(theta, z_checkpoints.shape[0])
-
-        self.model = self.model.to(self.device, self.dtype)
-        theta_tensor = tensor(theta).to(self.device, self.dtype)
-        z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
-
-        t_checkpoints = self.model.forward_checkpoints(theta_tensor, z_checkpoints)
-        t_checkpoints = torch.sum(t_checkpoints, dim=1)
-        t_checkpoints = t_checkpoints.detach().numpy()
-
-        return t_checkpoints
+        self.step_model.to()
+        torch.save(self.step_model, filename + '_step.pt')
+        self.step_model.to(self.device, self.dtype)
 
     def predict_checkpoint_scores(self, theta, z_checkpoints):
         # If just one theta given, broadcast to number of samples
         theta = expand_array_2d(theta, z_checkpoints.shape[0])
 
-        self.model = self.model.to(self.device, self.dtype)
+        self.step_model = self.step_model.to(self.device, self.dtype)
         theta_tensor = tensor(theta).to(self.device, self.dtype)
         z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
 
-        t_checkpoints = self.model.forward_checkpoints(theta_tensor, z_checkpoints)
-        t_checkpoints = t_checkpoints.detach().numpy()
+        that_xv_checkpoints = self.step_model.forward_checkpoints(theta_tensor, z_checkpoints)
+        that_xv_checkpoints = that_xv_checkpoints.detach().numpy()
 
-        return t_checkpoints
+        return that_xv_checkpoints
+
+    def predict_score_conditional_on_checkpoints(self, theta, z_checkpoints):
+        that_xv_checkpoints = self.predict_checkpoint_scores(theta, z_checkpoints)
+        that_xv = np.sum(that_xv_checkpoints, axis=1)
+
+        return that_xv
 
     def predict_density(self, theta, x, log=False):
         # If just one theta given, broadcast to number of samples
         theta = expand_array_2d(theta, x.shape[0])
 
-        self.model = self.model.to(self.device, self.dtype)
+        self.global_model = self.global_model.to(self.device, self.dtype)
         theta_tensor = tensor(theta).to(self.device, self.dtype)
         x_tensor = tensor(x).to(self.device, self.dtype)
 
-        _, log_likelihood = self.model.global_model.log_likelihood(theta_tensor, x_tensor)
+        _, log_likelihood = self.global_model.log_likelihood(theta_tensor, x_tensor)
         log_likelihood = log_likelihood.detach().numpy()
 
         if log:
@@ -256,13 +250,13 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         theta0 = expand_array_2d(theta0, x.shape[0])
         theta1 = expand_array_2d(theta1, x.shape[0])
 
-        self.model = self.model.to(self.device, self.dtype)
+        self.global_model = self.global_model.to(self.device, self.dtype)
         theta0_tensor = tensor(theta0).to(self.device, self.dtype)
         theta1_tensor = tensor(theta1).to(self.device, self.dtype)
         x_tensor = tensor(x).to(self.device, self.dtype)
 
-        _, log_likelihood_theta0 = self.model.global_model.log_likelihood(theta0_tensor, x_tensor)
-        _, log_likelihood_theta1 = self.model.global_model.log_likelihood(theta1_tensor, x_tensor)
+        _, log_likelihood_theta0 = self.global_model.log_likelihood(theta0_tensor, x_tensor)
+        _, log_likelihood_theta1 = self.global_model.log_likelihood(theta1_tensor, x_tensor)
 
         log_likelihood_theta0 = log_likelihood_theta0.detach().numpy()
         log_likelihood_theta1 = log_likelihood_theta1.detach().numpy()
@@ -275,19 +269,19 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         # If just one theta given, broadcast to number of samples
         theta = expand_array_2d(theta, x.shape[0])
 
-        self.model = self.model.to(self.device, self.dtype)
+        self.global_model = self.global_model.to(self.device, self.dtype)
         theta_tensor = tensor(theta).to(self.device, self.dtype)
         x_tensor = tensor(x).to(self.device, self.dtype)
 
-        _, _, score = self.model.global_model.log_likelihood_and_score(theta_tensor, x_tensor)
+        _, _, score = self.global_model.log_likelihood_and_score(theta_tensor, x_tensor)
 
         score = score.detach().numpy()
 
         return score
 
     def generate_samples(self, theta):
-        self.model = self.model.to(self.device, self.dtype)
+        self.global_model = self.global_model.to(self.device, self.dtype)
         theta_tensor = tensor(theta).to(self.device, self.dtype)
 
-        samples = self.model.global_model.generate_samples(theta_tensor).detach().numpy()
+        samples = self.global_model.generate_samples(theta_tensor).detach().numpy()
         return samples

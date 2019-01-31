@@ -53,6 +53,7 @@ class CheckpointedGoldDataset(torch.utils.data.Dataset):
 
 def train_checkpointed_model(
         model,
+        score_model,
         loss_functions,
         thetas, xs, ys=None, r_xzs=None, t_xzs=None,
         theta1=None,
@@ -226,12 +227,31 @@ def train_checkpointed_model(
 
             optimizer.zero_grad()
 
-            # Evaluate model
+            # Prepare data
+            n_batch, n_steps, n_latent = z_checkpoints.size()
+            n_parameters = theta.size()[-1]
+
+            z_initial = z_checkpoints[:, :-1, :].contiguous().view(-1, n_latent)
+            z_final = z_checkpoints[:, 1:, :].contiguous().view(-1, n_latent)
+
+            theta_step = theta.clone()
+            theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
+            theta_step = theta_step.repeat(1, n_steps - 1, 1)
+            theta_step = theta_step.contiguous().view(-1, n_parameters)
+
+            # Step model (score between checkpoints) for that_i(v_i, v_{i-1})
+            that_xv_checkpoints = score_model.forward(z_initial, z_final, theta_step)
+            that_xv_checkpoints = that_xv_checkpoints.view(n_batch, n_steps - 1, n_parameters).contiguous()
+
+            # Sum for that(x,v)
+            that_xv = torch.sum(that_xv_checkpoints, dim=1)
+
+            # Global model (flow)
             if global_mode == 'flow':
-                _, log_likelihood, score, score_checkpoints = model(theta, x, z_checkpoints)
+                _, log_likelihood, that_x = model.log_likelihood_and_score(theta, x)
 
                 if theta1 is not None:
-                    _, log_likelihood_theta1, _, _ = model(theta1_tensor, x, z_checkpoints)
+                    _, log_likelihood_theta1 = model.model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
             elif global_mode == 'ratio':
                 raise NotImplementedError
@@ -243,8 +263,9 @@ def train_checkpointed_model(
 
             # Evaluate loss
             try:
-                # log_p_pred, t_pred, t_true, t_checkpoints_pred, t_checkpoints_true
-                losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
+                # Signature: fn(log_p_pred, t_x_pred, t_xv_pred, t_xv_checkpoints_pred, t_xz_checkpoints)
+                losses = [fn(log_likelihood, that_x, that_xv, that_xv_checkpoints, t_xz_checkpoints) for fn in
+                          loss_functions]
             except RuntimeError:
                 logging.error('Error in evaluating loss functions!')
                 raise
@@ -322,12 +343,31 @@ def train_checkpointed_model(
                 theta1_tensor = torch.tensor(theta1).to(device, dtype)
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
-            # Evaluate model
+            # Prepare data
+            n_batch, n_steps, n_latent = z_checkpoints.size()
+            n_parameters = theta.size()[-1]
+
+            z_initial = z_checkpoints[:, :-1, :].contiguous().view(-1, n_latent)
+            z_final = z_checkpoints[:, 1:, :].contiguous().view(-1, n_latent)
+
+            theta_step = theta.clone()
+            theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
+            theta_step = theta_step.repeat(1, n_steps - 1, 1)
+            theta_step = theta_step.contiguous().view(-1, n_parameters)
+
+            # Step model (score between checkpoints) for that_i(v_i, v_{i-1})
+            that_xv_checkpoints = score_model.forward(z_initial, z_final, theta_step)
+            that_xv_checkpoints = that_xv_checkpoints.view(n_batch, n_steps - 1, n_parameters).contiguous()
+
+            # Sum for that(x,v)
+            that_xv = torch.sum(that_xv_checkpoints, dim=1)
+
+            # Global model (flow)
             if global_mode == 'flow':
-                _, log_likelihood, score, score_checkpoints = model(theta, x, z_checkpoints)
+                _, log_likelihood, that_x = model.log_likelihood_and_score(theta, x)
 
                 if theta1 is not None:
-                    _, log_likelihood_theta1, _, _ = model(theta1_tensor, x, z_checkpoints)
+                    _, log_likelihood_theta1 = model.model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
             elif global_mode == 'ratio':
                 raise NotImplementedError
@@ -337,30 +377,15 @@ def train_checkpointed_model(
             else:
                 raise ValueError('Unknown method type {}'.format(global_mode))
 
-            # Evaluate losses
+            # Evaluate loss
             try:
-                losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
+                # Signature: fn(log_p_pred, t_x_pred, t_xv_pred, t_xv_checkpoints_pred, t_xz_checkpoints)
+                losses = [fn(log_likelihood, that_x, that_xv, that_xv_checkpoints, t_xz_checkpoints) for fn in
+                          loss_functions]
             except RuntimeError:
-                logging.error('Error in evaluating loss functions in validation! Variables:')
-                logging.info('log_likelihood: %s', log_likelihood)
-                if log_likelihood is not None:
-                    logging.info('  Shape: %s', log_likelihood.shape)
-                logging.info('log_r: %s', log_likelihood)
-                if log_r is not None:
-                    logging.info('  Shape: %s', log_r.shape)
-                logging.info('score: %s', score)
-                if score is not None:
-                    logging.info('  Shape: %s', score.shape)
-                logging.info('y: %s', y)
-                if y is not None:
-                    logging.info('  Shape: %s', y.shape)
-                logging.info('r_xz: %s', r_xz)
-                if r_xz is not None:
-                    logging.info('  Shape: %s', r_xz.shape)
-                logging.info('t_xz: %s', t_xz)
-                if t_xz is not None:
-                    logging.info('  Shape: %s', t_xz.shape)
+                logging.error('Error in evaluating loss functions!')
                 raise
+
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
