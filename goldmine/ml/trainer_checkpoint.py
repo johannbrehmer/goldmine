@@ -280,7 +280,8 @@ def train_checkpointed_model(
 
         # Validation
         if validation_split is None:
-            if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
+            if (n_epochs_verbose is not None and n_epochs_verbose > 0 and
+                    (epoch == 0 or (epoch + 1) % n_epochs_verbose == 0)):
                 logging.info('  Epoch %d: train loss %.2f (%s)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1]))
             continue
@@ -382,7 +383,8 @@ def train_checkpointed_model(
                 early_stopping_epoch = epoch
 
         # Print out information
-        if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
+        if (n_epochs_verbose is not None and n_epochs_verbose > 0 and
+                (epoch == 0 or (epoch + 1) % n_epochs_verbose == 0)):
             if early_stopping and epoch == early_stopping_epoch:
                 logging.info('  Epoch %d: train loss %.2f (%s), validation loss %.2f (%s) (*)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
