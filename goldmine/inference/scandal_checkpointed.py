@@ -225,7 +225,7 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         theta_tensor = tensor(theta).to(self.device, self.dtype)
         z_checkpoints = tensor(z_checkpoints).to(self.device, self.dtype)
 
-        that_xv_checkpoints = self.step_model.forward_checkpoints(theta_tensor, z_checkpoints)
+        that_xv_checkpoints = self.step_model.forward_trajectory(theta_tensor, z_checkpoints)
         that_xv_checkpoints = that_xv_checkpoints.detach().numpy()
 
         return that_xv_checkpoints

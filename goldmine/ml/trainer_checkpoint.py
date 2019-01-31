@@ -240,21 +240,8 @@ def train_checkpointed_model(
 
             optimizer.zero_grad()
 
-            # Prepare data
-            n_batch, n_steps, n_latent = z_checkpoints.size()
-            n_parameters = theta.size()[-1]
-
-            z_initial = z_checkpoints[:, :-1, :].contiguous().view(-1, n_latent)
-            z_final = z_checkpoints[:, 1:, :].contiguous().view(-1, n_latent)
-
-            theta_step = theta.clone()
-            theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
-            theta_step = theta_step.repeat(1, n_steps - 1, 1)
-            theta_step = theta_step.contiguous().view(-1, n_parameters)
-
             # Step model (score between checkpoints) for that_i(v_i, v_{i-1})
-            that_xv_checkpoints = score_model.forward(z_initial, z_final, theta_step)
-            that_xv_checkpoints = that_xv_checkpoints.view(n_batch, n_steps - 1, n_parameters).contiguous()
+            that_xv_checkpoints = score_model.forward_trajectory(theta, z_checkpoints)
 
             # Sum for that(x,v)
             that_xv = torch.sum(that_xv_checkpoints, dim=1)
@@ -356,21 +343,8 @@ def train_checkpointed_model(
                 theta1_tensor = torch.tensor(theta1).to(device, dtype)
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
-            # Prepare data
-            n_batch, n_steps, n_latent = z_checkpoints.size()
-            n_parameters = theta.size()[-1]
-
-            z_initial = z_checkpoints[:, :-1, :].contiguous().view(-1, n_latent)
-            z_final = z_checkpoints[:, 1:, :].contiguous().view(-1, n_latent)
-
-            theta_step = theta.clone()
-            theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
-            theta_step = theta_step.repeat(1, n_steps - 1, 1)
-            theta_step = theta_step.contiguous().view(-1, n_parameters)
-
             # Step model (score between checkpoints) for that_i(v_i, v_{i-1})
-            that_xv_checkpoints = score_model.forward(z_initial, z_final, theta_step)
-            that_xv_checkpoints = that_xv_checkpoints.view(n_batch, n_steps - 1, n_parameters).contiguous()
+            that_xv_checkpoints = score_model.forward_trajectory(theta, z_checkpoints)
 
             # Sum for that(x,v)
             that_xv = torch.sum(that_xv_checkpoints, dim=1)

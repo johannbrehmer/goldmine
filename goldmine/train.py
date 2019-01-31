@@ -53,7 +53,7 @@ def train(simulator_name,
           pre_alpha=0.0001,
           pre_beta=0.0001,
           pre_gamma=1.,
-          freeze_checkpoint_score_model_after_pretraining=False):
+          sequential_checkpoint_training=False):
     """ Main training function """
 
     if single_theta:
@@ -248,7 +248,8 @@ def train(simulator_name,
                 learning_curve_filename=None,
                 validation_split=validation_split,
                 early_stopping=early_stopping,
-                fill_empty_bins=fill_empty_bins
+                fill_empty_bins=fill_empty_bins,
+                freeze_flow=(pretrain and sequential_checkpoint_training)
             )
 
         else:
@@ -297,7 +298,7 @@ def train(simulator_name,
             validation_split=validation_split,
             early_stopping=early_stopping,
             fill_empty_bins=fill_empty_bins,
-            freeze_score_model=(pretrain and freeze_checkpoint_score_model_after_pretraining)
+            freeze_score_model=(pretrain and sequential_checkpoint_training)
         )
 
     else:
@@ -413,8 +414,8 @@ def main():
                         help='beta parameter during pretraining. Default: 0.01.')
     parser.add_argument('--pregamma', type=float, default=1.,
                         help='gamma parameter during pretraining. Default: 1.')
-    parser.add_argument('--freezescoremodel', action='store_true',
-                        help='Freezes the checkpoint-to-checkpoint score model after pretraining.')
+    parser.add_argument('--sequential', action='store_true',
+                        help='First train only the score model, then traini only the flow.')
 
     # Other settings
     parser.add_argument('--debug', action='store_true', help='Print debug output')
@@ -459,7 +460,7 @@ def main():
         pre_alpha=args.prealpha,
         pre_beta=args.prebeta,
         pre_gamma=args.pregamma,
-        freeze_checkpoint_score_model_after_pretraining=args.freezescoremodel,
+        sequential_checkpoint_training=args.sequential,
     )
 
     logging.info("That's all for now, have a nice day!")
