@@ -112,8 +112,8 @@ class CheckpointScoreEstimator(nn.Module):
         logging.debug("z_final: %s", z_final)
 
         theta_step = theta.clone()
-        theta_step.unsqueeze(1)  # (n_batch, 1, n_parameters)
-        theta_step = theta_step.repeat(1, n_steps - 1, 1)
+        theta_step.unsqueeze(2)  # (n_batch, n_parameters, 1)
+        theta_step = theta_step.repeat(1, 1, n_steps - 1)
         theta_step = theta_step.contiguous().view(-1, n_parameters)
 
         logging.debug("theta_step: %s", theta_step)
