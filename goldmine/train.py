@@ -378,40 +378,40 @@ def main():
                              + 'samples.')
 
     # Training settings
-    parser.add_argument('--batchsize', type=int, default=512,
-                        help='Batch size. Default: 512.')
-    parser.add_argument('--epochs', type=int, default=30,
-                        help='Number of epochs. Default: 30.')
+    parser.add_argument('--batchsize', type=int, default=128,
+                        help='Batch size. Default: 128.')
+    parser.add_argument('--epochs', type=int, default=100,
+                        help='Number of epochs. Default: 100.')
     parser.add_argument('--compensate_samplesize', action='store_true',
                         help='If both this option and --samplesize are used, the number of epochs is increased to'
                              + ' compensate for the decreased sample size.')
-    parser.add_argument('--alpha', type=float, default=0.01,
+    parser.add_argument('--alpha', type=float, default=1.,
                         help='alpha parameter weighting the score MSE in the loss function of the SCANDAL, RASCAL, and'
-                             'and RASCANDAL inference methods. Default: 0.01.')
-    parser.add_argument('--beta', type=float, default=0.01,
+                             'and RASCANDAL inference methods. Default: 1.')
+    parser.add_argument('--beta', type=float, default=1.,
                         help='beta parameter weighting the likelihood ratio MSE in the loss function of the RASCANDAL'
-                             'inference method. Default: 0.01.')
+                             'inference method. Default: 1.')
     parser.add_argument('--gamma', type=float, default=1.,
                         help='gamma parameter weighting the negative likelihood in the checkpoint SCANDAL loss. '
                              'Default: 1.')
     parser.add_argument('--optimizer', default='adam',
-                        help='Optimizer. For now, "adam" and "sgd" are supported.')
+                        help='Optimizer. For now, "adam" and "sgd" are supported. Default: "adam".')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Initial learning rate. Default: 0.001.')
     parser.add_argument('--lrdecay', type=float, default=0.1,
                         help='Factor of learning rate decay over the whole training. Default: 0.1.')
-    parser.add_argument('--validationsplit', type=float, default=0.2,
-                        help='Validation split. Default: 0.2.')
+    parser.add_argument('--validationsplit', type=float, default=0.3,
+                        help='Validation split. Default: 0.3.')
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
 
     # Pretraining
     parser.add_argument('--pretrain', action='store_true',
                         help='Acticate a separate pretraining phase.')
-    parser.add_argument('--prealpha', type=float, default=0.01,
-                        help='alpha parameter during pretraining. Default: 0.01.')
-    parser.add_argument('--prebeta', type=float, default=0.01,
-                        help='beta parameter during pretraining. Default: 0.01.')
+    parser.add_argument('--prealpha', type=float, default=1.,
+                        help='alpha parameter during pretraining. Default: 1.')
+    parser.add_argument('--prebeta', type=float, default=1.,
+                        help='beta parameter during pretraining. Default: 1.')
     parser.add_argument('--pregamma', type=float, default=1.,
                         help='gamma parameter during pretraining. Default: 1.')
     parser.add_argument('--sequential', action='store_true',
