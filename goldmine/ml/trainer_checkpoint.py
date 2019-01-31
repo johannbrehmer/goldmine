@@ -65,7 +65,9 @@ def train_checkpointed_model(
         batch_size=64,
         trainer='adam',
         initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
-        clip_gradient=1.,
+        clip_gradient=10.,
+        freeze_model=False,
+        freeze_score_model=False,
         run_on_gpu=True,
         double_precision=False,
         validation_split=0.2, early_stopping=True, early_stopping_patience=None,
@@ -80,6 +82,7 @@ def train_checkpointed_model(
 
     # Move model to device
     model = model.to(device, dtype)
+    score_model = score_model.to(device, dtype)
 
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
@@ -140,6 +143,16 @@ def train_checkpointed_model(
             shuffle=True,
             pin_memory=run_on_gpu
         )
+
+    # Hyperparameters to be optimized
+    if freeze_model and freeze_score_model:
+        raise ValueError("Cannot freeze both model and score model!")
+    elif freeze_model:
+        parameters = score_model.parameters()
+    elif freeze_score_model:
+        parameters = model.parameters()
+    else:
+        parameters = list(model.parameters()) + list(score_model.parameters())
 
     # Optimizer
     if trainer == 'adam':

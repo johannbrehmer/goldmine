@@ -146,6 +146,8 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             alpha=1.,
             beta=1.,
             gamma=1.,
+            freeze_flow=False,
+            freeze_score_model=False,
             learning_curve_folder=None,
             learning_curve_filename=None,
             **params
@@ -172,6 +174,8 @@ class CheckpointedSCANDALInference(CheckpointedInference):
         logging.info('  Latent variables:       %s', z_checkpoints.shape[2])
         logging.info('  Batch size:             %s', batch_size)
         logging.info('  Optimizer:              %s', trainer)
+        logging.info('  Freeze score model:     %s', freeze_score_model)
+        logging.info('  Freeze flow model:      %s', freeze_flow)
         logging.info('  Learning rate:          %s initially, decaying to %s', initial_learning_rate,
                      final_learning_rate)
         logging.info('  Valid. split:           %s', validation_split)
@@ -192,6 +196,8 @@ class CheckpointedSCANDALInference(CheckpointedInference):
             z_checkpoints=z_checkpoints,
             batch_size=batch_size,
             trainer=trainer,
+            freeze_model=freeze_flow,
+            freeze_score_model=freeze_score_model,
             initial_learning_rate=initial_learning_rate,
             final_learning_rate=final_learning_rate,
             n_epochs=n_epochs,

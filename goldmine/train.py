@@ -52,7 +52,8 @@ def train(simulator_name,
           pretrain=False,
           pre_alpha=0.0001,
           pre_beta=0.0001,
-          pre_gamma=1.):
+          pre_gamma=1.,
+          freeze_checkpoint_score_model_after_pretraining=False):
     """ Main training function """
 
     if single_theta:
@@ -81,6 +82,7 @@ def train(simulator_name,
     logging.info('  Fill empty bins:       %s', fill_empty_bins)
     logging.info('  SCANDAL/RASCAL alpha:  %s', alpha)
     logging.info('  RASCANDAL beta:        %s', beta)
+    logging.info('  CV SCANDAL gamma:      %s', gamma)
     logging.info('  Training sample name:  %s', training_sample)
     logging.info('  Train on single theta: %s', single_theta)
     logging.info('  Training sample size:  %s',
@@ -294,7 +296,8 @@ def train(simulator_name,
             learning_curve_filename=output_filename,
             validation_split=validation_split,
             early_stopping=early_stopping,
-            fill_empty_bins=fill_empty_bins
+            fill_empty_bins=fill_empty_bins,
+            freeze_score_model=(pretrain and freeze_checkpoint_score_model_after_pretraining)
         )
 
     else:
@@ -401,7 +404,6 @@ def main():
     parser.add_argument('--noearlystopping', action='store_true',
                         help='Deactivate early stopping.')
 
-
     # Pretraining
     parser.add_argument('--pretrain', action='store_true',
                         help='Acticate a separate pretraining phase.')
@@ -411,6 +413,8 @@ def main():
                         help='beta parameter during pretraining. Default: 0.01.')
     parser.add_argument('--pregamma', type=float, default=1.,
                         help='gamma parameter during pretraining. Default: 1.')
+    parser.add_argument('--freezecheckpointscoremodel', action='store_true',
+                        help='Freezes the checkpoint-to-checkpoint score model after pretraining.')
 
     # Other settings
     parser.add_argument('--debug', action='store_true', help='Print debug output')
@@ -455,6 +459,7 @@ def main():
         pre_alpha=args.prealpha,
         pre_beta=args.prebeta,
         pre_gamma=args.pregamma,
+        freeze_checkpoint_score_model_after_pretraining=args.freezecheckpointscoremodel,
     )
 
     logging.info("That's all for now, have a nice day!")
