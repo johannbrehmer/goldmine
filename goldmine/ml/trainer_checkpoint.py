@@ -156,9 +156,9 @@ def train_checkpointed_model(
 
     # Optimizer
     if trainer == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
+        optimizer = optim.Adam(parameters, lr=initial_learning_rate)
     elif trainer == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=initial_learning_rate)
+        optimizer = optim.SGD(parameters, lr=initial_learning_rate)
     else:
         raise ValueError('Unknown trainer {}'.format(trainer))
 

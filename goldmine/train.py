@@ -413,7 +413,7 @@ def main():
                         help='beta parameter during pretraining. Default: 0.01.')
     parser.add_argument('--pregamma', type=float, default=1.,
                         help='gamma parameter during pretraining. Default: 1.')
-    parser.add_argument('--freezecheckpointscoremodel', action='store_true',
+    parser.add_argument('--freezescoremodel', action='store_true',
                         help='Freezes the checkpoint-to-checkpoint score model after pretraining.')
 
     # Other settings
@@ -459,7 +459,7 @@ def main():
         pre_alpha=args.prealpha,
         pre_beta=args.prebeta,
         pre_gamma=args.pregamma,
-        freeze_checkpoint_score_model_after_pretraining=args.freezecheckpointscoremodel,
+        freeze_checkpoint_score_model_after_pretraining=args.freezescoremodel,
     )
 
     logging.info("That's all for now, have a nice day!")
