@@ -53,6 +53,7 @@ class CheckpointedGoldDataset(torch.utils.data.Dataset):
 
 def train_checkpointed_model(
         model,
+        score_model,
         loss_functions,
         thetas, xs, ys=None, r_xzs=None, t_xzs=None,
         theta1=None,
@@ -64,7 +65,9 @@ def train_checkpointed_model(
         batch_size=64,
         trainer='adam',
         initial_learning_rate=0.001, final_learning_rate=0.0001, n_epochs=50,
-        clip_gradient=1.,
+        clip_gradient=10.,
+        freeze_model=False,
+        freeze_score_model=False,
         run_on_gpu=True,
         double_precision=False,
         validation_split=0.2, early_stopping=True, early_stopping_patience=None,
@@ -79,6 +82,7 @@ def train_checkpointed_model(
 
     # Move model to device
     model = model.to(device, dtype)
+    score_model = score_model.to(device, dtype)
 
     # Convert to Tensor
     thetas = torch.stack([tensor(i, requires_grad=True) for i in thetas])
@@ -140,11 +144,21 @@ def train_checkpointed_model(
             pin_memory=run_on_gpu
         )
 
+    # Hyperparameters to be optimized
+    if freeze_model and freeze_score_model:
+        raise ValueError("Cannot freeze both model and score model!")
+    elif freeze_model:
+        parameters = score_model.parameters()
+    elif freeze_score_model:
+        parameters = model.parameters()
+    else:
+        parameters = list(model.parameters()) + list(score_model.parameters())
+
     # Optimizer
     if trainer == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
+        optimizer = optim.Adam(parameters, lr=initial_learning_rate)
     elif trainer == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=initial_learning_rate)
+        optimizer = optim.SGD(parameters, lr=initial_learning_rate)
     else:
         raise ValueError('Unknown trainer {}'.format(trainer))
 
@@ -226,12 +240,18 @@ def train_checkpointed_model(
 
             optimizer.zero_grad()
 
-            # Evaluate model
+            # Step model (score between checkpoints) for that_i(v_i, v_{i-1})
+            that_xv_checkpoints = score_model.forward_trajectory(theta, z_checkpoints)
+
+            # Sum for that(x,v)
+            that_xv = torch.sum(that_xv_checkpoints, dim=1)
+
+            # Global model (flow)
             if global_mode == 'flow':
-                _, log_likelihood, score, score_checkpoints = model(theta, x, z_checkpoints)
+                _, log_likelihood, that_x = model.log_likelihood_and_score(theta, x)
 
                 if theta1 is not None:
-                    _, log_likelihood_theta1, _, _ = model(theta1_tensor, x, z_checkpoints)
+                    _, log_likelihood_theta1 = model.model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
             elif global_mode == 'ratio':
                 raise NotImplementedError
@@ -243,7 +263,9 @@ def train_checkpointed_model(
 
             # Evaluate loss
             try:
-                losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
+                # Signature: fn(log_p_pred, t_x_pred, t_xv_pred, t_xv_checkpoints_pred, t_xz_checkpoints)
+                losses = [fn(log_likelihood, that_x, that_xv, that_xv_checkpoints, t_xz_checkpoints) for fn in
+                          loss_functions]
             except RuntimeError:
                 logging.error('Error in evaluating loss functions!')
                 raise
@@ -279,7 +301,8 @@ def train_checkpointed_model(
 
         # Validation
         if validation_split is None:
-            if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
+            if (n_epochs_verbose is not None and n_epochs_verbose > 0 and
+                    (epoch == 0 or (epoch + 1) % n_epochs_verbose == 0)):
                 logging.info('  Epoch %d: train loss %.2f (%s)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1]))
             continue
@@ -320,12 +343,18 @@ def train_checkpointed_model(
                 theta1_tensor = torch.tensor(theta1).to(device, dtype)
                 theta1_tensor = theta1_tensor.view(1, -1).expand_as(theta)
 
-            # Evaluate model
+            # Step model (score between checkpoints) for that_i(v_i, v_{i-1})
+            that_xv_checkpoints = score_model.forward_trajectory(theta, z_checkpoints)
+
+            # Sum for that(x,v)
+            that_xv = torch.sum(that_xv_checkpoints, dim=1)
+
+            # Global model (flow)
             if global_mode == 'flow':
-                _, log_likelihood, score, score_checkpoints = model(theta, x, z_checkpoints)
+                _, log_likelihood, that_x = model.log_likelihood_and_score(theta, x)
 
                 if theta1 is not None:
-                    _, log_likelihood_theta1, _, _ = model(theta1_tensor, x, z_checkpoints)
+                    _, log_likelihood_theta1 = model.model.log_likelihood(theta1_tensor, x)
                     log_r = log_likelihood - log_likelihood_theta1
             elif global_mode == 'ratio':
                 raise NotImplementedError
@@ -335,30 +364,15 @@ def train_checkpointed_model(
             else:
                 raise ValueError('Unknown method type {}'.format(global_mode))
 
-            # Evaluate losses
+            # Evaluate loss
             try:
-                losses = [fn(log_likelihood, score, t_xz, score_checkpoints, t_xz_checkpoints) for fn in loss_functions]
+                # Signature: fn(log_p_pred, t_x_pred, t_xv_pred, t_xv_checkpoints_pred, t_xz_checkpoints)
+                losses = [fn(log_likelihood, that_x, that_xv, that_xv_checkpoints, t_xz_checkpoints) for fn in
+                          loss_functions]
             except RuntimeError:
-                logging.error('Error in evaluating loss functions in validation! Variables:')
-                logging.info('log_likelihood: %s', log_likelihood)
-                if log_likelihood is not None:
-                    logging.info('  Shape: %s', log_likelihood.shape)
-                logging.info('log_r: %s', log_likelihood)
-                if log_r is not None:
-                    logging.info('  Shape: %s', log_r.shape)
-                logging.info('score: %s', score)
-                if score is not None:
-                    logging.info('  Shape: %s', score.shape)
-                logging.info('y: %s', y)
-                if y is not None:
-                    logging.info('  Shape: %s', y.shape)
-                logging.info('r_xz: %s', r_xz)
-                if r_xz is not None:
-                    logging.info('  Shape: %s', r_xz.shape)
-                logging.info('t_xz: %s', t_xz)
-                if t_xz is not None:
-                    logging.info('  Shape: %s', t_xz.shape)
+                logging.error('Error in evaluating loss functions!')
                 raise
+
             loss = loss_weights[0] * losses[0]
             for _w, _l in zip(loss_weights[1:], losses[1:]):
                 loss += _w * _l
@@ -381,7 +395,8 @@ def train_checkpointed_model(
                 early_stopping_epoch = epoch
 
         # Print out information
-        if n_epochs_verbose is not None and n_epochs_verbose > 0 and (epoch + 1) % n_epochs_verbose == 0:
+        if (n_epochs_verbose is not None and n_epochs_verbose > 0 and
+                (epoch == 0 or (epoch + 1) % n_epochs_verbose == 0)):
             if early_stopping and epoch == early_stopping_epoch:
                 logging.info('  Epoch %d: train loss %.2f (%s), validation loss %.2f (%s) (*)'
                              % (epoch + 1, total_losses_train[-1], individual_losses_train[-1],
